@@ -7,41 +7,48 @@ import 'package:provider/provider.dart';
 import 'demo_firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
+import 'providers/cart_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/message_provider.dart';
 import 'providers/order_provider.dart';
+import 'screens/auth/language_screen.dart';
 import 'screens/auth/otp_screen.dart';
 import 'screens/auth/phone_screen.dart';
-import 'screens/auth/profile_setup_screen.dart';
-import 'screens/home/home_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/main_shell.dart';
 import 'screens/splash_screen.dart';
-import 'utils/theme.dart';
+import 'utils/app_theme.dart';
 
-/// Background FCM handler must be a top-level function.
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+Future<void> _bgHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DemoFirebaseOptions.current);
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Guarded init so the app boots even without real Firebase config / envs.
   try {
     await Firebase.initializeApp(options: DemoFirebaseOptions.current);
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onBackgroundMessage(_bgHandler);
   } catch (e) {
-    debugPrint('Firebase init skipped/failed (demo mode): $e');
+    debugPrint('Firebase init skipped: $e');
   }
 
   final localeProvider = LocaleProvider();
   await localeProvider.load();
+  final cartProvider = CartProvider();
+  await cartProvider.loadPersisted();
 
-  runApp(SarkisBreadApp(localeProvider: localeProvider));
+  runApp(SarkisApp(localeProvider: localeProvider, cartProvider: cartProvider));
 }
 
-class SarkisBreadApp extends StatelessWidget {
+class SarkisApp extends StatelessWidget {
   final LocaleProvider localeProvider;
-  const SarkisBreadApp({super.key, required this.localeProvider});
+  final CartProvider cartProvider;
+  const SarkisApp({
+    super.key,
+    required this.localeProvider,
+    required this.cartProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -49,32 +56,33 @@ class SarkisBreadApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => MessageProvider()),
+        ChangeNotifierProvider.value(value: cartProvider),
         ChangeNotifierProvider.value(value: localeProvider),
       ],
       child: Consumer<LocaleProvider>(
-        builder: (context, locale, _) {
-          return MaterialApp(
-            title: 'Sarkis Bread',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            locale: locale.locale,
-            supportedLocales: LocaleProvider.supportedLocales,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            initialRoute: '/',
-            routes: {
-              '/': (_) => const SplashScreen(),
-              '/phone': (_) => const PhoneScreen(),
-              '/otp': (_) => const OtpScreen(),
-              '/profileSetup': (_) => const ProfileSetupScreen(),
-              '/home': (_) => const HomeScreen(),
-            },
-          );
-        },
+        builder: (context, locale, _) => MaterialApp(
+          title: 'Sarkis Bread',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark,
+          locale: locale.locale,
+          supportedLocales: LocaleProvider.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          initialRoute: '/',
+          routes: {
+            '/': (_) => const SplashScreen(),
+            '/language': (_) => const LanguageScreen(),
+            '/phone': (_) => const PhoneScreen(),
+            '/otp': (_) => const OtpScreen(),
+            '/register': (_) => const RegisterScreen(),
+            '/main': (_) => const MainShell(),
+          },
+        ),
       ),
     );
   }

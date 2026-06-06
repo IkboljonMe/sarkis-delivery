@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
-import '../utils/theme.dart';
+import '../providers/locale_provider.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_text_styles.dart';
 
-/// Shows the brand briefly, then routes based on auth + profile state.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,55 +18,64 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _decideRoute());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _route());
   }
 
-  Future<void> _decideRoute() async {
-    await Future.delayed(const Duration(milliseconds: 900));
+  Future<void> _route() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
-
     final auth = context.read<AuthProvider>();
-    if (!auth.isLoggedIn) {
-      Navigator.of(context).pushReplacementNamed('/phone');
+    final locale = context.read<LocaleProvider>();
+
+    if (!locale.hasChosenLanguage) {
+      Navigator.pushReplacementNamed(context, '/language');
       return;
     }
-
+    if (!auth.isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/phone');
+      return;
+    }
     final user = await auth.loadCurrentUser();
     if (!mounted) return;
-    if (user == null) {
-      // Logged in but no profile yet.
-      Navigator.of(context).pushReplacementNamed('/profileSetup');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/home');
-    }
+    Navigator.pushReplacementNamed(context, user == null ? '/register' : '/main');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.primary,
+      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.bakery_dining, size: 96, color: Colors.white),
-            SizedBox(height: 16),
-            Text(
-              'Sarkis Bread',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppColors.goldGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.4),
+                    blurRadius: 40,
+                    spreadRadius: 4,
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 24),
-            SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(
-                  color: Colors.white, strokeWidth: 3),
-            ),
+              child: const Icon(Icons.bakery_dining,
+                  size: 64, color: Colors.white),
+            )
+                .animate()
+                .scale(duration: 600.ms, curve: Curves.easeOutBack)
+                .fadeIn(),
+            const SizedBox(height: 24),
+            Text('Sarkis Bread', style: AppTextStyles.headingXL.copyWith(fontSize: 36))
+                .animate()
+                .fadeIn(delay: 300.ms, duration: 500.ms),
+            const SizedBox(height: 8),
+            Text(
+              'Армянский хлеб с доставкой',
+              style: AppTextStyles.caption,
+            ).animate().fadeIn(delay: 600.ms, duration: 600.ms),
           ],
         ),
       ),

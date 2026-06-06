@@ -1,51 +1,50 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../services/firebase_service.dart';
+import '../services/fcm_service.dart';
+import '../services/user_service.dart';
 
-enum AuthStatus { unknown, codeSent, verifying, authenticated, error }
+enum AuthStatus { unknown, codeSent, authenticated, error }
 
-/// Holds the authenticated user and drives the phone-auth flow.
 class AuthProvider extends ChangeNotifier {
   final AuthService _auth = AuthService.instance;
-  final FirebaseService _db = FirebaseService.instance;
+  final UserService _users = UserService.instance;
 
   UserModel? _user;
   String? _verificationId;
   int? _resendToken;
   AuthStatus _status = AuthStatus.unknown;
-  String? _errorMessage;
+  String? _error;
   bool _busy = false;
 
   UserModel? get user => _user;
   String? get verificationId => _verificationId;
-  int? get resendToken => _resendToken;
   AuthStatus get status => _status;
-  String? get errorMessage => _errorMessage;
+  String? get error => _error;
   bool get busy => _busy;
   bool get isLoggedIn => _auth.isLoggedIn;
-  String? get uid => _auth.currentUser?.uid;
+  String? get uid => _auth.uid;
   String? get phone => _auth.currentUser?.phoneNumber;
 
-  void _setBusy(bool value) {
-    _busy = value;
+  void _setBusy(bool v) {
+    _busy = v;
     notifyListeners();
   }
 
-  /// Loads the Firestore user doc for the signed-in account (if any).
   Future<UserModel?> loadCurrentUser() async {
-    final id = _auth.currentUser?.uid;
+    final id = _auth.uid;
     if (id == null) return null;
     try {
-      _user = await _db.getUser(id);
-      await _saveFcmToken();
+      _user = await _users.getUser(id);
+      if (_user != null) {
+        await FcmService.instance.init(id);
+      }
       notifyListeners();
       return _user;
     } catch (e) {
-      _errorMessage = e.toString();
+      _error = e.toString();
       notifyListeners();
       return null;
     }
@@ -53,64 +52,57 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> startPhoneVerification(String phoneNumber) async {
     _setBusy(true);
-    _errorMessage = null;
+    _error = null;
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         forceResendingToken: _resendToken,
-        codeSent: (verificationId, resendToken) {
-          _verificationId = verificationId;
-          _resendToken = resendToken;
+        codeSent: (vid, token) {
+          _verificationId = vid;
+          _resendToken = token;
           _status = AuthStatus.codeSent;
           _setBusy(false);
         },
-        verificationCompleted: (credential) async {
-          // Android auto-retrieval — sign in directly.
+        verificationCompleted: (cred) async {
           try {
-            await _auth.signInWithCredential(credential);
+            await _auth.signInWithCredential(cred);
             _status = AuthStatus.authenticated;
           } catch (_) {}
           _setBusy(false);
         },
         verificationFailed: (e) {
-          _errorMessage = e.message ?? 'Verification failed';
+          _error = e.message ?? 'Verification failed';
           _status = AuthStatus.error;
           _setBusy(false);
         },
-        codeAutoRetrievalTimeout: (verificationId) {
-          _verificationId = verificationId;
-        },
+        codeAutoRetrievalTimeout: (vid) => _verificationId = vid,
       );
     } catch (e) {
-      _errorMessage = e.toString();
+      _error = e.toString();
       _status = AuthStatus.error;
       _setBusy(false);
     }
   }
 
-  /// Verifies the entered SMS code. Returns true on success.
   Future<bool> verifyOtp(String smsCode) async {
     if (_verificationId == null) return false;
     _setBusy(true);
-    _errorMessage = null;
+    _error = null;
     try {
       await _auth.signInWithSmsCode(
-        verificationId: _verificationId!,
-        smsCode: smsCode,
-      );
+          verificationId: _verificationId!, smsCode: smsCode);
       _status = AuthStatus.authenticated;
       await loadCurrentUser();
       _setBusy(false);
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _error = e.toString().replaceFirst('Exception: ', '');
       _status = AuthStatus.error;
       _setBusy(false);
       return false;
     }
   }
 
-  /// Persists the profile created during setup.
   Future<bool> saveProfile({
     required String name,
     required String address,
@@ -119,57 +111,42 @@ class AuthProvider extends ChangeNotifier {
     required String group,
     required String language,
   }) async {
-    final id = _auth.currentUser?.uid;
+    final id = _auth.uid;
     if (id == null) return false;
     _setBusy(true);
     try {
       final user = UserModel(
         id: id,
-        phone: _auth.currentUser?.phoneNumber ?? '',
         name: name,
+        phone: _auth.currentUser?.phoneNumber ?? '',
         address: address,
         city: city,
         postalCode: postalCode,
         group: group,
         language: language,
-        fcmToken: '',
-        createdAt: null,
+        isAdmin: false,
       );
-      await _db.saveUser(user);
+      await _users.saveUser(user);
       _user = user;
-      await _saveFcmToken();
+      await FcmService.instance.init(id);
       _setBusy(false);
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _error = e.toString();
       _setBusy(false);
       return false;
     }
   }
 
-  Future<void> updateProfileFields(Map<String, dynamic> data) async {
-    final id = _auth.currentUser?.uid;
+  Future<void> updateFields(Map<String, dynamic> data) async {
+    final id = _auth.uid;
     if (id == null) return;
     try {
-      await _db.updateUserFields(id, data);
+      await _users.updateFields(id, data);
       await loadCurrentUser();
     } catch (e) {
-      _errorMessage = e.toString();
+      _error = e.toString();
       notifyListeners();
-    }
-  }
-
-  Future<void> _saveFcmToken() async {
-    final id = _auth.currentUser?.uid;
-    if (id == null) return;
-    try {
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        await _db.updateFcmToken(id, token);
-        _user = _user?.copyWith(fcmToken: token);
-      }
-    } catch (_) {
-      // FCM token retrieval is best-effort.
     }
   }
 
@@ -182,7 +159,16 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void resetError() {
-    _errorMessage = null;
+    _error = null;
     notifyListeners();
+  }
+
+  // Helper to build E.164 number, leaving all-zero test numbers intact.
+  static String buildE164(String countryCode, String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    final hasNonZero = digits.replaceAll('0', '').isNotEmpty;
+    final trimmed =
+        (digits.startsWith('0') && hasNonZero) ? digits.substring(1) : digits;
+    return '$countryCode$trimmed';
   }
 }

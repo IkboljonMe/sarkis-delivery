@@ -1,77 +1,102 @@
 class ProductModel {
   final String id;
+  final String categoryId;
   final Map<String, String> name; // {en, hy, ru, tr, de}
+  final Map<String, String> description; // {en, hy, ru, tr, de}
   final double price; // EUR
-  final String unit; // piece, pack
+  final String unit;
   final int maxQty;
-  final bool isActive;
   final String imageUrl;
+  final bool isActive;
+  final int sortOrder;
 
   ProductModel({
     required this.id,
+    required this.categoryId,
     required this.name,
+    this.description = const {},
     required this.price,
-    required this.unit,
-    required this.maxQty,
-    required this.isActive,
+    this.unit = 'piece',
+    this.maxQty = 10,
     this.imageUrl = '',
+    this.isActive = true,
+    this.sortOrder = 0,
   });
 
-  /// Returns the localized name for [lang], falling back to en then any value.
-  String nameFor(String lang) {
-    if (name[lang] != null && name[lang]!.isNotEmpty) return name[lang]!;
-    if (name['en'] != null && name['en']!.isNotEmpty) return name['en']!;
-    return name.values.isNotEmpty ? name.values.first : '';
+  String nameFor(String lang) => _localized(name, lang);
+  String descriptionFor(String lang) => _localized(description, lang);
+
+  static String _localized(Map<String, String> map, String lang) {
+    if (map[lang]?.isNotEmpty ?? false) return map[lang]!;
+    if (map['en']?.isNotEmpty ?? false) return map['en']!;
+    return map.values.isNotEmpty ? map.values.first : '';
+  }
+
+  static Map<String, String> _parseMap(dynamic raw) {
+    final parsed = <String, String>{};
+    if (raw is Map) {
+      raw.forEach((k, v) => parsed[k.toString()] = v?.toString() ?? '');
+    }
+    return parsed;
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    final rawName = json['name'];
-    final Map<String, String> parsedName = {};
-    if (rawName is Map) {
-      rawName.forEach((key, value) {
-        parsedName[key.toString()] = value?.toString() ?? '';
-      });
-    }
     return ProductModel(
       id: json['id'] as String? ?? '',
-      name: parsedName,
+      categoryId: json['categoryId'] as String? ?? '',
+      name: _parseMap(json['name']),
+      description: _parseMap(json['description']),
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] as String? ?? 'piece',
       maxQty: (json['maxQty'] as num?)?.toInt() ?? 10,
-      isActive: json['isActive'] as bool? ?? true,
       imageUrl: json['imageUrl'] as String? ?? '',
+      isActive: json['isActive'] as bool? ?? true,
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'price': price,
-      'unit': unit,
-      'maxQty': maxQty,
-      'isActive': isActive,
-      'imageUrl': imageUrl,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'categoryId': categoryId,
+        'name': name,
+        'description': description,
+        'price': price,
+        'unit': unit,
+        'maxQty': maxQty,
+        'imageUrl': imageUrl,
+        'isActive': isActive,
+        'sortOrder': sortOrder,
+      };
 
   ProductModel copyWith({
     String? id,
+    String? categoryId,
     Map<String, String>? name,
+    Map<String, String>? description,
     double? price,
     String? unit,
     int? maxQty,
-    bool? isActive,
     String? imageUrl,
+    bool? isActive,
+    int? sortOrder,
   }) {
     return ProductModel(
       id: id ?? this.id,
+      categoryId: categoryId ?? this.categoryId,
       name: name ?? this.name,
+      description: description ?? this.description,
       price: price ?? this.price,
       unit: unit ?? this.unit,
       maxQty: maxQty ?? this.maxQty,
-      isActive: isActive ?? this.isActive,
       imageUrl: imageUrl ?? this.imageUrl,
+      isActive: isActive ?? this.isActive,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
+
+  @override
+  bool operator ==(Object other) => other is ProductModel && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

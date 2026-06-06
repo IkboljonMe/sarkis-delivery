@@ -5,8 +5,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
-import '../../utils/theme.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_text_styles.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -16,32 +18,32 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  final TextEditingController _pinController = TextEditingController();
+  final _pin = TextEditingController();
   Timer? _timer;
-  int _secondsLeft = 60;
+  int _left = 60;
   bool _verifying = false;
 
   @override
   void initState() {
     super.initState();
-    _startCountdown();
+    _startTimer();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _pinController.dispose();
+    _pin.dispose();
     super.dispose();
   }
 
-  void _startCountdown() {
+  void _startTimer() {
     _timer?.cancel();
-    setState(() => _secondsLeft = 60);
+    setState(() => _left = 60);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_secondsLeft <= 0) {
+      if (_left <= 0) {
         t.cancel();
       } else {
-        setState(() => _secondsLeft--);
+        setState(() => _left--);
       }
     });
   }
@@ -53,83 +55,74 @@ class _OtpScreenState extends State<OtpScreen> {
     final ok = await auth.verifyOtp(code);
     if (!mounted) return;
     setState(() => _verifying = false);
-
     if (ok) {
-      final user = auth.user;
-      if (user == null) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-            '/profileSetup', (route) => false);
-      } else {
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil('/home', (route) => false);
-      }
+      Navigator.pushNamedAndRemoveUntil(
+          context, auth.user == null ? '/register' : '/main', (r) => false);
     } else {
-      Fluttertoast.showToast(msg: auth.errorMessage ?? 'Invalid code');
+      Fluttertoast.showToast(msg: auth.error ?? 'Invalid code');
       auth.resetError();
-      _pinController.clear();
-    }
-  }
-
-  Future<void> _resend(String phoneNumber) async {
-    final auth = context.read<AuthProvider>();
-    await auth.startPhoneVerification(phoneNumber);
-    if (!mounted) return;
-    if (auth.status == AuthStatus.codeSent) {
-      Fluttertoast.showToast(msg: 'Code resent');
-      _startCountdown();
+      _pin.clear();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final phoneNumber =
-        ModalRoute.of(context)?.settings.arguments as String? ?? '';
+    final t = AppLocalizations.of(context);
+    final number = ModalRoute.of(context)?.settings.arguments as String? ?? '';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify code')),
+      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
-              Text(
-                'Enter the 6-digit code sent to\n$phoneNumber',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text(t.enterOtp, style: AppTextStyles.headingL),
+              const SizedBox(height: 8),
+              Text(number, style: AppTextStyles.caption),
               const SizedBox(height: 32),
               PinCodeTextField(
                 appContext: context,
                 length: 6,
-                controller: _pinController,
-                keyboardType: TextInputType.number,
-                animationType: AnimationType.fade,
+                controller: _pin,
                 autoFocus: true,
+                keyboardType: TextInputType.number,
+                textStyle: AppTextStyles.headingM,
                 onChanged: (_) {},
                 onCompleted: _verify,
                 pinTheme: PinTheme(
                   shape: PinCodeFieldShape.box,
-                  borderRadius: BorderRadius.circular(10),
-                  fieldHeight: 52,
-                  fieldWidth: 44,
-                  activeColor: AppTheme.primary,
-                  selectedColor: AppTheme.primary,
-                  inactiveColor: const Color(0xFFE0D6C2),
+                  borderRadius: BorderRadius.circular(12),
+                  fieldHeight: 54,
+                  fieldWidth: 46,
+                  activeColor: AppColors.primary,
+                  selectedColor: AppColors.primary,
+                  inactiveColor: AppColors.border,
+                  activeFillColor: AppColors.surfaceElevated,
+                  selectedFillColor: AppColors.surfaceElevated,
+                  inactiveFillColor: AppColors.surfaceElevated,
                 ),
+                enableActiveFill: true,
               ),
               const SizedBox(height: 16),
               if (_verifying)
                 const Center(child: CircularProgressIndicator())
               else
                 Center(
-                  child: _secondsLeft > 0
-                      ? Text('Resend code in $_secondsLeft s',
-                          style: const TextStyle(color: Colors.black54))
+                  child: _left > 0
+                      ? Text('${t.resendCode} ($_left)',
+                          style: AppTextStyles.caption)
                       : TextButton(
-                          onPressed: () => _resend(phoneNumber),
-                          child: const Text('Resend code'),
+                          onPressed: () {
+                            context
+                                .read<AuthProvider>()
+                                .startPhoneVerification(number);
+                            _startTimer();
+                          },
+                          child: Text(t.resendCode,
+                              style:
+                                  const TextStyle(color: AppColors.primary)),
                         ),
                 ),
             ],
