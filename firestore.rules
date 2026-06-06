@@ -1,76 +1,77 @@
 rules_version = '2';
 
-// Sarkis Bread Firestore security rules.
-// Replace ADMIN_UID below with the Firebase Auth UID of the admin account.
+// Sarkis Bread v2 Firestore security rules.
+// Admin access is granted via the users/{uid}.isAdmin flag.
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Admin UID — must match admin_app/lib/utils/constants.dart adminUid.
-    function adminUid() {
-      return 'HjygD2zQpKZ0zakT0JZWFvc3GcA3';
-    }
 
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.uid == adminUid();
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // ---------------------------------------------------------------- users
+    // users -------------------------------------------------------------
     match /users/{userId} {
-      // A user can read/write their own document; admin can do anything.
-      allow read, write: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow read, write: if isAdmin() ||
+        (isSignedIn() && request.auth.uid == userId);
     }
 
-    // ------------------------------------------------------------- products
+    // categories --------------------------------------------------------
+    match /categories/{catId} {
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.isActive == true);
+      allow write: if isAdmin();
+    }
+
+    // products ----------------------------------------------------------
     match /products/{productId} {
-      // Customers can only read active products; admin has full access.
-      allow read: if isAdmin() || (isSignedIn() && resource.data.isActive == true);
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.isActive == true);
       allow write: if isAdmin();
     }
 
-    // -------------------------------------------------------- delivery_dates
-    match /delivery_dates/{dateId} {
-      // Customers can only read open dates; admin has full access.
-      allow read: if isAdmin() || (isSignedIn() && resource.data.isOpen == true);
+    // shifts ------------------------------------------------------------
+    match /shifts/{shiftId} {
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.isOpen == true);
       allow write: if isAdmin();
     }
 
-    // --------------------------------------------------------------- orders
+    // orders ------------------------------------------------------------
     match /orders/{orderId} {
-      // A customer can create an order for themselves and read only their own.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      // Only the admin can update/delete orders (status changes, notes).
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
+    }
 
-      // ---------------------------------------------------------- messages
+    // messages: one topic per user (topicId == userId) ------------------
+    match /messages/{topicId} {
+      allow read, write: if isAdmin() ||
+        (isSignedIn() && request.auth.uid == topicId);
+
       match /messages/{msgId} {
-        // Customer can read messages on their own order; admin reads all.
-        allow read: if isAdmin() ||
-          (isSignedIn() &&
-           get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
-        // Customer may mark admin messages read (update isRead) on their order;
-        // admin can write anything.
+        allow read, create: if isAdmin() ||
+          (isSignedIn() && request.auth.uid == topicId);
         allow update: if isAdmin() ||
-          (isSignedIn() &&
-           get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
-        allow create: if isAdmin() ||
-          (isSignedIn() &&
-           get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
+          (isSignedIn() && request.auth.uid == topicId);
         allow delete: if isAdmin();
       }
     }
 
-    // ------------------------------------------------------------- settings
-    match /settings/{docId} {
+    // settings ----------------------------------------------------------
+    match /settings/{doc} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Default deny — no unauthenticated access to anything else.
+    // default deny ------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }

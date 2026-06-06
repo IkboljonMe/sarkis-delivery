@@ -1,72 +1,44 @@
-# Sarkis Bread — Admin / Driver App
+# Sarkis Bread — Admin App (v2)
 
-Flutter app for the owner/driver to manage the Sarkis Bread delivery business.
-Single admin account (email + password). Manage delivery dates and products,
-view and progress orders, message customers (with FCM push), tap an address to
-open Google Maps navigation, and call customers directly. UI is in Russian
-(primary) with English fallbacks.
-
-## Prerequisites
-- Flutter 3.x (`flutter --version`)
-- Firebase CLI (`npm install -g firebase-tools`)
-- Android Studio + Android SDK
+Dark, premium operational Flutter app for the owner/driver. Russian-primary UI.
+Manage shifts, products, orders, chats, broadcast messages, and drive to
+addresses with one-tap Google Maps navigation.
 
 ## Setup
+1. Clone the repository.
+2. `cd admin_app`
+3. Add `google-services.json` to `android/app/` (Android builds).
+4. Update `lib/utils/constants.dart` (`adminWhatsappNumber`). Firebase config is
+   in `lib/demo_firebase_options.dart`.
+5. Before the first Android build, add the `compileSdk 36` `subprojects` block to
+   `android/build.gradle.kts` (see `../docs/ANDROID_SETUP.md`).
+6. `flutter pub get`
+7. Run:
+   - Web: `flutter run -d chrome`
+   - Android: `flutter run -d <device>`
 
-### Step 1 — Clone the repo
-```bash
-git clone <repo-url>
-cd SarkisBread/admin_app
-```
+## First login
+- Use the email/password created in Firebase Console.
+- The Firestore `users/{uid}` document **must** have `isAdmin: true` — the app
+  verifies this after login and rejects non-admins.
 
-### Step 2 — Add `google-services.json`
-Download it from the Firebase console (see
-[`../docs/FIREBASE_SETUP.md`](../docs/FIREBASE_SETUP.md)) and place it at:
-```
-admin_app/android/app/google-services.json
-```
+## Key features
+- **Dashboard** — live pending/confirmed/on-the-way/delivered counters
+  (count-up animation), recent orders, all filtered by the active group.
+- **Group switch** — Berlin/Hamburg toggle in the drawer & app bar; everything
+  filters by it.
+- **Shifts** — create/open/close/delete delivery dates; shift detail with
+  Active/Finished tabs and mark-as-delivered.
+- **Orders** — status tabs + date filter; detail with tap-to-call, copy
+  address, Maps navigation, status workflow, and in-order chat with FCM push.
+- **Products** — Categories & Products tabs; add/edit with 5-language tabbed
+  name/description fields.
+- **Chats** — topic list (unread-first), search, group filter, and broadcast
+  (all / by group) with FCM.
+- **Locations** — pick a shift, get current location, ordered address list with
+  copy + navigate, and copy-all.
+- **Settings** — min/max qty, contact numbers, app info, logout.
 
-### Step 3 — Set keys in `lib/utils/constants.dart`
-```dart
-static const String adminUid          = 'YOUR_ADMIN_UID_HERE';
-static const String firebaseProjectId = 'YOUR_FIREBASE_PROJECT_ID';
-static const String adminWhatsappNumber = 'YOUR_NUMBER_HERE';
-```
-> **Create the admin account manually** in the Firebase Console
-> (Authentication → Users → Add user), then **copy its UID** into
-> `adminUid` above and into `firestore.rules`.
-
-For push notifications, configure `lib/services/fcm_service.dart` with a
-service-account key (testing) or point it at a Cloud Function (production).
-Also set the Google Maps API key in
-`android/app/src/main/AndroidManifest.xml`.
-
-### Step 4 — Install dependencies
-```bash
-flutter pub get
-```
-
-### Step 5 — Run
-```bash
-flutter run
-```
-Build a release apk with:
-```bash
-flutter build apk
-```
-
-## Screen overview
-| Screen | Description |
-| --- | --- |
-| **Login** | Email/password with "remember me" auto-login. |
-| **Dashboard** | Real-time summary cards (pending, today, Berlin/Hamburg) + quick actions. |
-| **Delivery dates** | Create/open/close/delete delivery dates per group. |
-| **Products** | CRUD products with per-language names, price, unit, max qty, active toggle. |
-| **Orders** | Filter by status tab, group chip and delivery date; real-time list. |
-| **Order detail** | Customer info, tap-to-call, Maps navigation, items table, status actions, message thread with FCM. |
-| **Messages overview** | Orders with unread customer messages. |
-| **Settings** | Edit min/max order qty, admin WhatsApp number, app version. |
-
-## Tech
-Firebase Auth (email), Cloud Firestore, FCM HTTP v1, Provider, url_launcher,
-grouped_list, badges.
+## Architecture
+Provider (`AdminAuthProvider`, `GroupProvider`), shared service layer, shared
+design system mirrored from the customer app.
