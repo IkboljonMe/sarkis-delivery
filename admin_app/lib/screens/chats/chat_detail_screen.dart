@@ -13,7 +13,7 @@ import '../../services/message_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/voice_recorder.dart';
-import '../../widgets/chat_image.dart';
+import '../../widgets/chat_album.dart';
 import '../../widgets/media_composer.dart';
 import '../../widgets/voice_bubble.dart';
 
@@ -39,6 +39,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _recorder = VoiceRecorder();
   final ItemScrollController _itemScroll = ItemScrollController();
   final ItemPositionsListener _positions = ItemPositionsListener.create();
+  final FocusNode _inputFocus = FocusNode();
   MessageModel? _replyTo;
   bool _uploading = false;
   bool _recording = false;
@@ -48,6 +49,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   List<MessageModel> _msgs = const [];
   bool _initialized = false;
   String? _unreadAnchorId; // first unread message on entry (Telegram divider)
+  String? _highlightedId; // message briefly highlighted after a reply jump
+  Timer? _flashTimer;
 
   @override
   void initState() {
@@ -56,6 +59,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _controller.text = widget.initialText!;
     }
     _controller.addListener(_onTextChanged);
+    // Keyboard: when the composer is focused, bring the latest message above it.
+    _inputFocus.addListener(() {
+      if (_inputFocus.hasFocus) {
+        Future.delayed(const Duration(milliseconds: 250), () {
+          if (mounted && _itemScroll.isAttached && _msgs.isNotEmpty) {
+            _itemScroll.scrollTo(
+                index: _msgs.length - 1,
+                duration: const Duration(milliseconds: 200));
+          }
+        });
+      }
+    });
+  }
+
+  void _flashMessage(String id) {
+    setState(() => _highlightedId = id);
+    _flashTimer?.cancel();
+    _flashTimer = Timer(const Duration(milliseconds: 2200), () {
+      if (mounted) setState(() => _highlightedId = null);
+    });
   }
 
   /// On first data: capture the unread boundary, jump to it (or to bottom),
@@ -87,6 +110,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         alignment: 0.3,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut);
+    _flashMessage(id);
   }
 
   void _scrollToBottom() {
@@ -104,7 +128,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void dispose() {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _inputFocus.dispose();
     _recTimer?.cancel();
+    _flashTimer?.cancel();
     _recorder.dispose();
     super.dispose();
   }
@@ -190,28 +216,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     if (result == null || result.files.isEmpty) return;
     setState(() => _uploading = true);
     try {
-      for (var idx = 0; idx < result.files.length; idx++) {
-        final f = result.files[idx];
+      // Upload all, then send ONE album message (Telegram-style group).
+      final urls = <String>[];
+      for (final f in result.files) {
         final bytes = await f.readAsBytes();
         final ext = f.name.split('.').last.toLowerCase();
-        final url = await MessageService.instance.uploadChatMedia(
+        urls.add(await MessageService.instance.uploadChatMedia(
           widget.topicId,
           bytes,
           ext: ext == 'png' ? 'png' : 'jpg',
           contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
-        );
-        // Caption goes on the last photo (Telegram-style album caption).
-        final caption = idx == result.files.length - 1 ? result.caption : '';
-        await MessageService.instance.sendMessage(
-          topicId: widget.topicId,
-          text: caption,
-          senderId: _uid,
-          senderName: 'Admin',
-          isFromAdmin: true,
-          type: 'image',
-          mediaUrl: url,
-        );
+        ));
       }
+      await MessageService.instance.sendMessage(
+        topicId: widget.topicId,
+        text: result.caption,
+        senderId: _uid,
+        senderName: 'Admin',
+        isFromAdmin: true,
+        type: 'image',
+        mediaUrls: urls,
+      );
     } catch (e) {
       Fluttertoast.showToast(msg: 'Не удалось отправить фото');
     } finally {
@@ -390,67 +415,142 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
       child: GestureDetector(
         onLongPress: () => _showReactions(m),
-        child: Align(
-          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-          child: Column(
-            crossAxisAlignment:
-                mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 3),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.72),
-                decoration: BoxDecoration(
-                  gradient: mine ? AppColors.goldGradient : null,
-                  color: mine ? null : AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: mine ? null : Border.all(color: AppColors.border),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          color: m.id == _highlightedId
+              ? AppColors.primary.withOpacity(0.16)
+              : Colors.transparent,
+          child: Align(
+            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment:
+                  mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 3),
+                  padding: m.isImage
+                      ? const EdgeInsets.all(3)
+                      : const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                  constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.72),
+                  decoration: BoxDecoration(
+                    gradient: mine ? AppColors.goldGradient : null,
+                    color: mine ? null : AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: mine ? null : Border.all(color: AppColors.border),
+                  ),
+                  child: _bubbleContent(m, mine, time),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (m.hasReply) _replyQuote(m, mine),
-                    if (m.isImage) ChatImage(url: m.mediaUrl),
-                    if (m.isVoice)
-                      VoiceBubble(
-                          url: m.mediaUrl,
-                          durationMs: m.durationMs,
-                          mine: mine),
-                    if (!m.isImage && !m.isVoice)
-                      Text(m.text,
-                          style: TextStyle(
-                              color: mine
-                                  ? Colors.white
-                                  : AppColors.textPrimary)),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(time,
-                            style: TextStyle(
-                                fontSize: 10,
-                                color: mine
-                                    ? Colors.white70
-                                    : AppColors.textMuted)),
-                        if (mine) ...[
-                          const SizedBox(width: 4),
-                          Icon(m.isRead ? Icons.done_all : Icons.done,
-                              size: 14,
-                              color: m.isRead
-                                  ? const Color(0xFF7FE0FF)
-                                  : Colors.white70),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              if (reactions.isNotEmpty) _reactionChips(reactions),
-            ],
+                if (reactions.isNotEmpty) _reactionChips(reactions),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  List<Widget> _metaInline(MessageModel m, bool mine, String time) {
+    return [
+      Text(time,
+          style: TextStyle(
+              fontSize: 10,
+              color: mine ? Colors.white70 : AppColors.textMuted)),
+      if (mine) ...[
+        const SizedBox(width: 4),
+        Icon(m.isRead ? Icons.done_all : Icons.done,
+            size: 14,
+            color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white70),
+      ],
+    ];
+  }
+
+  Widget _metaChip(MessageModel m, bool mine, String time) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(time,
+              style: const TextStyle(fontSize: 10, color: Colors.white)),
+          if (mine) ...[
+            const SizedBox(width: 4),
+            Icon(m.isRead ? Icons.done_all : Icons.done,
+                size: 14,
+                color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _bubbleContent(MessageModel m, bool mine, String time) {
+    final textColor = mine ? Colors.white : AppColors.textPrimary;
+
+    if (m.isImage) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (m.hasReply)
+            Padding(
+                padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+                child: _replyQuote(m, mine)),
+          Stack(
+            children: [
+              ChatAlbum(urls: m.images),
+              Positioned(
+                  right: 8, bottom: 8, child: _metaChip(m, mine, time)),
+            ],
+          ),
+          if (m.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
+              child: Text(m.text, style: TextStyle(color: textColor)),
+            ),
+        ],
+      );
+    }
+
+    if (m.isVoice) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (m.hasReply) _replyQuote(m, mine),
+          VoiceBubble(url: m.mediaUrl, durationMs: m.durationMs, mine: mine),
+          const SizedBox(height: 2),
+          SizedBox(
+            width: 190,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: _metaInline(m, mine, time),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Text message: IntrinsicWidth keeps the time/ticks at the right edge.
+    return IntrinsicWidth(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (m.hasReply) _replyQuote(m, mine),
+          Text(m.text, style: TextStyle(color: textColor)),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: _metaInline(m, mine, time),
+          ),
+        ],
       ),
     );
   }
@@ -560,6 +660,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           Expanded(
             child: TextField(
               controller: _controller,
+              focusNode: _inputFocus,
               style: AppTextStyles.body,
               minLines: 1,
               maxLines: 4,

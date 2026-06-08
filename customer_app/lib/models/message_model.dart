@@ -17,7 +17,8 @@ class MessageModel {
   final Map<String, String> reactions;
   // Media: type is 'text' | 'image' | 'voice'.
   final String type;
-  final String mediaUrl;
+  final String mediaUrl; // single (voice / legacy image)
+  final List<String> mediaUrls; // album: multiple photos in one message
   final int durationMs; // voice length
 
   MessageModel({
@@ -34,6 +35,7 @@ class MessageModel {
     this.reactions = const {},
     this.type = 'text',
     this.mediaUrl = '',
+    this.mediaUrls = const [],
     this.durationMs = 0,
   });
 
@@ -41,6 +43,11 @@ class MessageModel {
   bool get isImage => type == 'image';
   bool get isVoice => type == 'voice';
   bool get isVideo => type == 'video';
+
+  /// All image urls for an image message (album-aware, legacy-compatible).
+  List<String> get images => mediaUrls.isNotEmpty
+      ? mediaUrls
+      : (mediaUrl.isNotEmpty ? [mediaUrl] : const []);
 
   /// Short text for previews/notifications (label for media messages).
   String get previewText {
@@ -86,6 +93,11 @@ class MessageModel {
       reactions: _parseReactions(json['reactions']),
       type: json['type'] as String? ?? 'text',
       mediaUrl: json['mediaUrl'] as String? ?? '',
+      mediaUrls: (json['mediaUrls'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const [],
       durationMs: (json['durationMs'] as num?)?.toInt() ?? 0,
     );
   }
@@ -103,6 +115,7 @@ class MessageModel {
         'reactions': reactions,
         'type': type,
         'mediaUrl': mediaUrl,
+        'mediaUrls': mediaUrls,
         'durationMs': durationMs,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)

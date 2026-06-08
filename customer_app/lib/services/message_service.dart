@@ -50,6 +50,7 @@ class MessageService {
     String replyToSender = '',
     String type = 'text',
     String mediaUrl = '',
+    List<String> mediaUrls = const [],
     int durationMs = 0,
   }) async {
     try {
@@ -67,6 +68,7 @@ class MessageService {
         'reactions': <String, String>{},
         'type': type,
         'mediaUrl': mediaUrl,
+        'mediaUrls': mediaUrls,
         'durationMs': durationMs,
         'createdAt': FieldValue.serverTimestamp(),
       });

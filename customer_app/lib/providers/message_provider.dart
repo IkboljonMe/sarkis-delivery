@@ -26,6 +26,7 @@ class MessageProvider extends ChangeNotifier {
     String replyToSender = '',
     String type = 'text',
     String mediaUrl = '',
+    List<String> mediaUrls = const [],
     int durationMs = 0,
   }) async {
     await _service.ensureTopic(
@@ -41,6 +42,7 @@ class MessageProvider extends ChangeNotifier {
       replyToSender: replyToSender,
       type: type,
       mediaUrl: mediaUrl,
+      mediaUrls: mediaUrls,
       durationMs: durationMs,
     );
   }
