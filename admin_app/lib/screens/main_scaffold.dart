@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/admin_auth_provider.dart';
 import '../providers/group_provider.dart';
+import '../services/fcm_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/constants.dart';
+import '../widgets/brand_logo.dart';
 import 'auth/login_screen.dart';
 import 'chats/chats_screen.dart';
 import 'coupons/coupons_screen.dart';
@@ -26,6 +31,40 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _index = 0;
+  static const _chatsIndex = 4;
+  final List<StreamSubscription> _subs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initMessaging());
+  }
+
+  void _initMessaging() {
+    final uid = context.read<AdminAuthProvider>().uid;
+    if (uid != null) FcmService.instance.registerToken(uid);
+
+    _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
+      final n = m.notification;
+      if (n != null) {
+        Fluttertoast.showToast(
+            msg: '${n.title ?? ''}: ${n.body ?? ''}'.trim());
+      }
+    }));
+    _subs.add(FcmService.instance.onMessageOpened.listen((m) {
+      if (m.data['type'] == 'chat' && mounted) {
+        setState(() => _index = _chatsIndex);
+      }
+    }));
+  }
+
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    super.dispose();
+  }
 
   static const _titles = [
     'Главная',
@@ -141,14 +180,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppColors.goldGradient),
-                    child: const Icon(Icons.bakery_dining,
-                        color: Colors.white),
-                  ),
+                  const BrandLogo(size: 44),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

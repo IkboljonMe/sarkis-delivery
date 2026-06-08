@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/admin_auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/app_input_field.dart';
 import '../../widgets/golden_button.dart';
 import '../main_scaffold.dart';
@@ -60,13 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: const BoxDecoration(
-                shape: BoxShape.circle, gradient: AppColors.goldGradient),
-            child: const Icon(Icons.bakery_dining,
-                size: 48, color: Colors.white),
-          ),
+          const Center(child: BrandLogo(size: 84)),
           const SizedBox(height: 16),
           Text('Sarkis Bread',
               textAlign: TextAlign.center, style: AppTextStyles.headingXL),

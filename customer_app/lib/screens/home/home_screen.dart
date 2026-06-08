@@ -14,6 +14,7 @@ import '../../services/product_service.dart';
 import '../../services/shift_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/gold_badge.dart';
@@ -55,14 +56,7 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.bakery_dining,
-                            color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Text('Sarkis Bread', style: AppTextStyles.headingM),
-                      ],
-                    ),
+                    const BrandLogo.wordmark(size: 34),
                     const Spacer(),
                     const Icon(Icons.notifications_none,
                         color: AppColors.textSecondary),

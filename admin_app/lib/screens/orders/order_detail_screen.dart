@@ -6,11 +6,9 @@ import 'package:provider/provider.dart';
 import '../../models/message_model.dart';
 import '../../models/order_model.dart';
 import '../../providers/admin_auth_provider.dart';
-import '../../services/fcm_service.dart';
 import '../../services/message_service.dart';
 import '../../services/navigation_service.dart';
 import '../../services/order_service.dart';
-import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
@@ -79,17 +77,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       senderId: admin.uid ?? 'admin',
       senderName: 'Admin',
       isFromAdmin: true,
+      silent: true, // push handled by the order-status Cloud Function
     );
-
-    final user = await UserService.instance.getUser(o.userId);
-    if (user != null && user.fcmToken.isNotEmpty) {
-      await FcmService.instance.sendToUser(
-        user.fcmToken,
-        'Sarkis Bread',
-        statusMsg,
-        data: {'orderId': o.id},
-      );
-    }
+    // The push is sent server-side by onOrderStatusChanged when the order
+    // document's status field updates.
     Fluttertoast.showToast(msg: 'Статус обновлён');
   }
 
@@ -108,11 +99,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       isFromAdmin: true,
     );
     _message.clear();
-    final user = await UserService.instance.getUser(o.userId);
-    if (user != null && user.fcmToken.isNotEmpty) {
-      await FcmService.instance
-          .sendToUser(user.fcmToken, 'Sarkis Bread', text, data: {'orderId': o.id});
-    }
+    // The push is sent server-side by onChatMessageCreated.
     if (mounted) setState(() => _sending = false);
   }
 

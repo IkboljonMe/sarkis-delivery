@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
-import '../../services/fcm_service.dart';
 import '../../services/message_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
@@ -235,11 +234,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         senderName: 'Admin',
         isFromAdmin: true,
       );
+      // Each message triggers onChatMessageCreated, which pushes to the user.
     }
-    final tokens = targets
-        .map((u) => u.fcmToken)
-        .where((t) => t.isNotEmpty)
-        .toList();
-    await FcmService.instance.sendToMany(tokens, 'Sarkis Bread', text);
   }
 }

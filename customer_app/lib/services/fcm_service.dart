@@ -23,4 +23,11 @@ class FcmService {
       // Best-effort; messaging is not available on every platform/run.
     }
   }
+
+  /// Fires while the app is in the foreground.
+  Stream<RemoteMessage> get onForegroundMessage => FirebaseMessaging.onMessage;
+
+  /// Fires when the user taps a notification that opened/resumed the app.
+  Stream<RemoteMessage> get onMessageOpened =>
+      FirebaseMessaging.onMessageOpenedApp;
 }

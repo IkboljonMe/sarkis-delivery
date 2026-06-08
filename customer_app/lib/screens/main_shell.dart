@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/message_provider.dart';
+import '../services/fcm_service.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'chats/chats_screen.dart';
 import 'home/home_screen.dart';
@@ -20,6 +24,35 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+  final List<StreamSubscription> _subs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
+      final n = m.notification;
+      if (n != null) {
+        Fluttertoast.showToast(msg: '${n.title ?? ''}: ${n.body ?? ''}'.trim());
+      }
+    }));
+    _subs.add(FcmService.instance.onMessageOpened.listen((m) {
+      if (!mounted) return;
+      final type = m.data['type'];
+      if (type == 'chat') {
+        setState(() => _index = 2);
+      } else if (type == 'order') {
+        setState(() => _index = 1);
+      }
+    }));
+  }
+
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

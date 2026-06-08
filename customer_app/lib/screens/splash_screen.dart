@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
+import '../widgets/brand_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -48,22 +49,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.goldGradient,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.4),
-                    blurRadius: 40,
-                    spreadRadius: 4,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.bakery_dining,
-                  size: 64, color: Colors.white),
-            )
+            const BrandLogo(size: 104)
                 .animate()
                 .scale(duration: 600.ms, curve: Curves.easeOutBack)
                 .fadeIn(),

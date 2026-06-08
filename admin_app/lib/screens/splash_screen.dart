@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/admin_auth_provider.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
+import '../widgets/brand_logo.dart';
 import 'auth/login_screen.dart';
 import 'main_scaffold.dart';
 
@@ -42,15 +43,9 @@ class _AdminSplashScreenState extends State<AdminSplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(26),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.goldGradient,
-              ),
-              child: const Icon(Icons.bakery_dining,
-                  size: 56, color: Colors.white),
-            ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+            const BrandLogo(size: 96)
+                .animate()
+                .scale(duration: 500.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 20),
             Text('Sarkis Bread', style: AppTextStyles.headingXL)
                 .animate()

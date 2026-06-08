@@ -28,6 +28,7 @@ class MessageService {
     required String senderId,
     required String senderName,
     required bool isFromAdmin,
+    bool silent = false,
   }) async {
     try {
       final ref = _msgs(topicId).doc();
@@ -38,6 +39,9 @@ class MessageService {
         'text': text,
         'isFromAdmin': isFromAdmin,
         'isRead': false,
+        // Status-update messages set silent:true so the Cloud Function does
+        // not send a duplicate chat push (the order trigger handles it).
+        'silent': silent,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {

@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/message_model.dart';
 import '../../providers/admin_auth_provider.dart';
-import '../../services/fcm_service.dart';
 import '../../services/message_service.dart';
-import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 
@@ -49,11 +47,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       senderName: 'Admin',
       isFromAdmin: true,
     );
-    final user = await UserService.instance.getUser(widget.topicId);
-    if (user != null && user.fcmToken.isNotEmpty) {
-      await FcmService.instance
-          .sendToUser(user.fcmToken, 'Sarkis Bread', text);
-    }
+    // The push to the customer is sent server-side by onChatMessageCreated.
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/brand_logo.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/golden_button.dart';
@@ -67,17 +68,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 24),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: AppColors.goldGradient,
-                  ),
-                  child: const Icon(Icons.bakery_dining,
-                      size: 48, color: Colors.white),
-                ),
-              ),
+              const Center(child: BrandLogo(size: 84)),
               const SizedBox(height: 24),
               Text(t.welcome,
                   textAlign: TextAlign.center, style: AppTextStyles.headingL),
