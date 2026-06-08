@@ -106,10 +106,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Text(p.nameFor(lang), style: AppTextStyles.headingL),
                 const SizedBox(height: 8),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('€${p.price.toStringAsFixed(2)}',
+                    Text('€${p.discountedPrice.toStringAsFixed(2)}',
                         style: AppTextStyles.headingM
                             .copyWith(color: AppColors.primary)),
+                    if (p.hasDiscount) ...[
+                      const SizedBox(width: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text('€${p.price.toStringAsFixed(2)}',
+                            style: AppTextStyles.caption.copyWith(
+                                decoration: TextDecoration.lineThrough,
+                                color: AppColors.textMuted)),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('-${p.discountPercentLabel}%',
+                            style: const TextStyle(
+                                color: AppColors.error,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                     Text(' / ${p.unit}', style: AppTextStyles.caption),
                   ],
                 ),

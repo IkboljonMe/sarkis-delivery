@@ -71,6 +71,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // coupons: doc id == normalized code -------------------------------
+    // A signed-in customer can fetch a single coupon by code (get) and bump
+    // only its usedCount on redemption; listing/editing is admin-only.
+    match /coupons/{code} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (isSignedIn() &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['usedCount']));
+    }
+
     // default deny ------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;

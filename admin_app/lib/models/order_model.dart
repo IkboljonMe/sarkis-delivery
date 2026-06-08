@@ -14,6 +14,9 @@ class OrderModel {
   final DateTime shiftDate;
   final String shiftLabel;
   final List<OrderItemModel> items;
+  final double subtotal;
+  final double discount;
+  final String couponCode;
   final double totalPrice;
   final String status;
   final String adminNote;
@@ -32,12 +35,15 @@ class OrderModel {
     required this.shiftDate,
     required this.shiftLabel,
     required this.items,
+    double? subtotal,
+    this.discount = 0,
+    this.couponCode = '',
     required this.totalPrice,
     this.status = 'pending',
     this.adminNote = '',
     this.createdAt,
     this.updatedAt,
-  });
+  }) : subtotal = subtotal ?? totalPrice;
 
   int get itemCount => items.fold(0, (s, i) => s + i.qty);
 
@@ -71,6 +77,9 @@ class OrderModel {
           : DateTime.now(),
       shiftLabel: json['shiftLabel'] as String? ?? '',
       items: items,
+      subtotal: (json['subtotal'] as num?)?.toDouble(),
+      discount: (json['discount'] as num?)?.toDouble() ?? 0.0,
+      couponCode: json['couponCode'] as String? ?? '',
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
       adminNote: json['adminNote'] as String? ?? '',
@@ -95,6 +104,9 @@ class OrderModel {
         'shiftDate': Timestamp.fromDate(shiftDate),
         'shiftLabel': shiftLabel,
         'items': items.map((e) => e.toJson()).toList(),
+        'subtotal': subtotal,
+        'discount': discount,
+        'couponCode': couponCode,
         'totalPrice': totalPrice,
         'status': status,
         'adminNote': adminNote,

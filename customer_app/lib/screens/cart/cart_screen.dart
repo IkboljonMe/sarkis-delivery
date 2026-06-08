@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import 'package:fluttertoast/fluttertoast.dart';
+
 import '../../l10n/app_localizations.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/coupon_service.dart';
 import '../../services/product_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/app_input_field.dart';
 import '../../widgets/dark_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
@@ -16,8 +20,44 @@ import '../../widgets/gold_badge.dart';
 import '../../widgets/golden_button.dart';
 import 'order_success_screen.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  final _couponCtrl = TextEditingController();
+  bool _validatingCoupon = false;
+
+  @override
+  void dispose() {
+    _couponCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _applyCoupon(double subtotal) async {
+    final t = AppLocalizations.of(context);
+    final code = _couponCtrl.text.trim();
+    if (code.isEmpty) return;
+    setState(() => _validatingCoupon = true);
+    final coupon = await CouponService.instance.getByCode(code);
+    if (!mounted) return;
+    setState(() => _validatingCoupon = false);
+    if (coupon == null) {
+      Fluttertoast.showToast(msg: t.t('couponNotFound'));
+      return;
+    }
+    final problem = coupon.validate(subtotal, DateTime.now());
+    if (problem != null) {
+      Fluttertoast.showToast(msg: t.t(problem));
+      return;
+    }
+    context.read<CartProvider>().setCoupon(coupon);
+    _couponCtrl.clear();
+    Fluttertoast.showToast(msg: t.t('couponApplied'));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +87,9 @@ class CartScreen extends StatelessWidget {
             return EmptyState(
                 icon: Icons.shopping_cart_outlined, title: t.cartEmpty);
           }
-          final total = cart.total(all);
+          final subtotal = cart.total(all);
+          final discount = cart.couponDiscount(subtotal);
+          final total = (subtotal - discount).clamp(0, subtotal).toDouble();
           final shift = cart.shift;
 
           return Column(
@@ -74,11 +116,20 @@ class CartScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     ...inCart.map((p) => _cartItem(context, p, cart, lang)),
                     const SizedBox(height: 16),
+                    _couponSection(context, t, cart, subtotal),
+                    const SizedBox(height: 16),
                     DarkCard(
                       child: Column(
                         children: [
-                          _summaryRow(t.total, '', isHeader: true),
+                          _summaryRow(t.t('subtotal'),
+                              '€${subtotal.toStringAsFixed(2)}'),
                           const SizedBox(height: 8),
+                          if (discount > 0) ...[
+                            _summaryRow(t.t('discount'),
+                                '−€${discount.toStringAsFixed(2)}',
+                                highlight: true),
+                            const SizedBox(height: 8),
+                          ],
                           _summaryRow(t.delivery, t.free),
                           const Divider(color: AppColors.border, height: 24),
                           Row(
@@ -142,7 +193,7 @@ class CartScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(p.nameFor(lang), style: AppTextStyles.bodyBold),
-                  Text('€${p.price.toStringAsFixed(2)}',
+                  Text('€${p.discountedPrice.toStringAsFixed(2)}',
                       style: AppTextStyles.caption),
                 ],
               ),
@@ -159,7 +210,7 @@ class CartScreen extends StatelessWidget {
             ),
             SizedBox(
               width: 60,
-              child: Text('€${(p.price * qty).toStringAsFixed(2)}',
+              child: Text('€${(p.discountedPrice * qty).toStringAsFixed(2)}',
                   textAlign: TextAlign.right, style: AppTextStyles.price),
             ),
           ],
@@ -168,13 +219,85 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _summaryRow(String label, String value, {bool isHeader = false}) {
+  Widget _summaryRow(String label, String value,
+      {bool isHeader = false, bool highlight = false}) {
     return Row(
       children: [
         Text(label,
             style: isHeader ? AppTextStyles.bodyBold : AppTextStyles.caption),
         const Spacer(),
-        Text(value, style: AppTextStyles.body),
+        Text(value,
+            style: highlight
+                ? AppTextStyles.body.copyWith(color: AppColors.primary)
+                : AppTextStyles.body),
+      ],
+    );
+  }
+
+  Widget _couponSection(BuildContext context, AppLocalizations t,
+      CartProvider cart, double subtotal) {
+    final coupon = cart.coupon;
+    if (coupon != null) {
+      final value = coupon.type == 'percent'
+          ? '${coupon.value % 1 == 0 ? coupon.value.toStringAsFixed(0) : coupon.value}%'
+          : '€${coupon.value.toStringAsFixed(2)}';
+      return DarkCard(
+        child: Row(
+          children: [
+            const Icon(Icons.local_offer, color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(coupon.code, style: AppTextStyles.bodyBold),
+                  Text('−$value', style: AppTextStyles.caption),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.read<CartProvider>().setCoupon(null),
+              child: Text(t.t('remove'),
+                  style: const TextStyle(color: AppColors.error)),
+            ),
+          ],
+        ),
+      );
+    }
+    return Row(
+      children: [
+        Expanded(
+          child: AppInputField(
+            controller: _couponCtrl,
+            label: t.t('couponCode'),
+            prefixIcon: Icons.local_offer_outlined,
+            textCapitalization: TextCapitalization.characters,
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 52,
+          child: _validatingCoupon
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Center(
+                      child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2))),
+                )
+              : TextButton(
+                  onPressed: () => _applyCoupon(subtotal),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.surfaceElevated,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(t.t('apply'),
+                      style: const TextStyle(color: AppColors.primary)),
+                ),
+        ),
       ],
     );
   }

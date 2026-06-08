@@ -224,6 +224,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ]),
               )),
           const Divider(color: AppColors.border),
+          if (o.discount > 0) ...[
+            Row(children: [
+              Text('Сумма', style: AppTextStyles.caption),
+              const Spacer(),
+              Text('€${o.subtotal.toStringAsFixed(2)}',
+                  style: AppTextStyles.body),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              Text(
+                  o.couponCode.isNotEmpty
+                      ? 'Скидка (${o.couponCode})'
+                      : 'Скидка',
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.primary)),
+              const Spacer(),
+              Text('−€${o.discount.toStringAsFixed(2)}',
+                  style: AppTextStyles.body
+                      .copyWith(color: AppColors.primary)),
+            ]),
+            const SizedBox(height: 6),
+          ],
           Row(children: [
             Text('Итого', style: AppTextStyles.bodyBold),
             const Spacer(),

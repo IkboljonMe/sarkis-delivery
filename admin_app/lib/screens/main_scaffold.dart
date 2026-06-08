@@ -8,6 +8,7 @@ import '../utils/app_text_styles.dart';
 import '../utils/constants.dart';
 import 'auth/login_screen.dart';
 import 'chats/chats_screen.dart';
+import 'coupons/coupons_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'locations/locations_screen.dart';
 import 'orders/orders_screen.dart';
@@ -30,6 +31,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     'Главная',
     'Заказы',
     'Товары',
+    'Купоны',
     'Чаты',
     'Смены',
     'Локации',
@@ -40,6 +42,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     Icons.dashboard_outlined,
     Icons.receipt_long_outlined,
     Icons.storefront_outlined,
+    Icons.local_offer_outlined,
     Icons.chat_bubble_outline,
     Icons.event_note_outlined,
     Icons.location_on_outlined,
@@ -50,6 +53,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         DashboardScreen(),
         OrdersScreen(),
         ProductsScreen(),
+        CouponsScreen(),
         ChatsScreen(),
         ShiftsScreen(),
         LocationsScreen(),

@@ -38,6 +38,8 @@ class _ProductSheetState extends State<_ProductSheet> {
   late final TextEditingController _maxQty;
   late final TextEditingController _image;
   late final TextEditingController _images;
+  late final TextEditingController _discountValue;
+  String _discountType = 'none';
   String? _categoryId;
   bool _active = true;
 
@@ -58,6 +60,9 @@ class _ProductSheetState extends State<_ProductSheet> {
     _maxQty = TextEditingController(text: '${p?.maxQty ?? 10}');
     _image = TextEditingController(text: p?.imageUrl ?? '');
     _images = TextEditingController(text: (p?.images ?? const []).join('\n'));
+    _discountType = p?.discountType ?? 'none';
+    _discountValue = TextEditingController(
+        text: (p?.discountValue ?? 0) > 0 ? '${p!.discountValue}' : '');
     _categoryId = p?.categoryId;
     _active = p?.isActive ?? true;
   }
@@ -72,6 +77,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     _maxQty.dispose();
     _image.dispose();
     _images.dispose();
+    _discountValue.dispose();
     super.dispose();
   }
 
@@ -93,6 +99,10 @@ class _ProductSheetState extends State<_ProductSheet> {
           .where((e) => e.isNotEmpty)
           .toList(),
       isActive: _active,
+      discountType: _discountType,
+      discountValue: _discountType == 'none'
+          ? 0
+          : (double.tryParse(_discountValue.text.replaceAll(',', '.')) ?? 0),
     ));
     if (mounted) Navigator.pop(context);
   }
@@ -177,6 +187,37 @@ class _ProductSheetState extends State<_ProductSheet> {
                   controller: _maxQty,
                   label: 'Макс. количество',
                   keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _discountType,
+                      dropdownColor: AppColors.surfaceElevated,
+                      decoration: const InputDecoration(labelText: 'Скидка'),
+                      items: const [
+                        DropdownMenuItem(value: 'none', child: Text('Нет')),
+                        DropdownMenuItem(
+                            value: 'percent', child: Text('Процент %')),
+                        DropdownMenuItem(value: 'fixed', child: Text('Сумма €')),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _discountType = v ?? 'none'),
+                    ),
+                  ),
+                  if (_discountType != 'none') ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: AppInputField(
+                        controller: _discountValue,
+                        label: _discountType == 'percent' ? 'Скидка %' : 'Скидка €',
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 12),
               AppInputField(
                   controller: _image, label: 'Главное фото (URL)'),

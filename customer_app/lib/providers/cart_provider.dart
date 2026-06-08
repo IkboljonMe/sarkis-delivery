@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/coupon_model.dart';
 import '../models/order_item_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../models/shift_model.dart';
 import '../models/user_model.dart';
+import '../services/coupon_service.dart';
 import '../services/order_service.dart';
 import '../utils/constants.dart';
 
@@ -17,12 +19,14 @@ class CartProvider extends ChangeNotifier {
 
   final Map<String, int> _qty = {}; // productId -> qty
   ShiftModel? _shift;
+  CouponModel? _coupon;
   int _minQty = AppConstants.defaultMinQty;
   int _maxQty = AppConstants.defaultMaxQty;
   bool _placing = false;
 
   Map<String, int> get quantities => Map.unmodifiable(_qty);
   ShiftModel? get shift => _shift;
+  CouponModel? get coupon => _coupon;
   int get minQty => _minQty;
   int get maxQty => _maxQty;
   bool get placing => _placing;
@@ -41,6 +45,14 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
     _persist();
   }
+
+  void setCoupon(CouponModel? coupon) {
+    _coupon = coupon;
+    notifyListeners();
+  }
+
+  /// Order-level discount the applied coupon yields for [subtotal].
+  double couponDiscount(double subtotal) => _coupon?.discountFor(subtotal) ?? 0;
 
   int effectiveMax(ProductModel p) {
     final pMax = p.maxQty > 0 ? p.maxQty : _maxQty;
@@ -86,6 +98,7 @@ class CartProvider extends ChangeNotifier {
 
   void clear() {
     _qty.clear();
+    _coupon = null;
     notifyListeners();
     _persist();
   }
@@ -93,7 +106,7 @@ class CartProvider extends ChangeNotifier {
   double total(List<ProductModel> products) {
     double t = 0;
     for (final p in products) {
-      t += (_qty[p.id] ?? 0) * p.price;
+      t += (_qty[p.id] ?? 0) * p.discountedPrice;
     }
     return t;
   }
@@ -121,11 +134,14 @@ class CartProvider extends ChangeNotifier {
   }
 
   /// Builds and writes the order. Returns new order id, or null on failure.
+  /// An optional [coupon] applies an order-level discount on top of any
+  /// per-product discounts already baked into the item unit prices.
   Future<String?> placeOrder({
     required UserModel user,
     required List<ProductModel> products,
   }) async {
     if (_qty.isEmpty || _shift == null) return null;
+    final coupon = _coupon;
     _placing = true;
     notifyListeners();
     try {
@@ -138,14 +154,17 @@ class CartProvider extends ChangeNotifier {
             categoryId: p.categoryId,
             name: p.nameFor(user.language),
             qty: q,
-            unitPrice: p.price,
+            unitPrice: p.discountedPrice,
           ));
         }
       }
+      final subtotal = items.fold(0.0, (s, i) => s + i.subtotal);
+      final discount = coupon?.discountFor(subtotal) ?? 0;
+      final grandTotal = (subtotal - discount).clamp(0, subtotal).toDouble();
       final order = OrderModel(
         id: '',
         userId: user.id,
-        userName: user.name,
+        userName: user.fullName,
         userPhone: user.phone,
         userAddress: user.address,
         userCity: user.city,
@@ -154,10 +173,17 @@ class CartProvider extends ChangeNotifier {
         shiftDate: _shift!.date,
         shiftLabel: _shift!.label,
         items: items,
-        totalPrice: items.fold(0.0, (s, i) => s + i.subtotal),
+        subtotal: subtotal,
+        discount: discount,
+        couponCode: discount > 0 ? (coupon?.code ?? '') : '',
+        totalPrice: grandTotal,
         status: AppConstants.statusPending,
       );
       final id = await OrderService.instance.createOrder(order);
+      // Best-effort: bump the coupon's redemption counter.
+      if (discount > 0 && coupon != null) {
+        await CouponService.instance.incrementUsage(coupon.id);
+      }
       clear();
       _placing = false;
       notifyListeners();

@@ -123,10 +123,18 @@ class _ProductCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Text('€${product.price.toStringAsFixed(2)}',
-                        style: AppTextStyles.price),
-                    Text(' / ${product.unit}',
-                        style: AppTextStyles.caption),
+                    if (product.hasDiscount) ...[
+                      Text('€${product.discountedPrice.toStringAsFixed(2)}',
+                          style: AppTextStyles.price),
+                      const SizedBox(width: 6),
+                      Text('€${product.price.toStringAsFixed(2)}',
+                          style: AppTextStyles.caption.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                              color: AppColors.textMuted)),
+                    ] else
+                      Text('€${product.price.toStringAsFixed(2)}',
+                          style: AppTextStyles.price),
+                    Text(' / ${product.unit}', style: AppTextStyles.caption),
                     const Spacer(),
                     _qtyPicker(context, cart, qty),
                   ],

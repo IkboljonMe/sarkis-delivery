@@ -10,6 +10,8 @@ class ProductModel {
   final List<String> images; // gallery (2-3 photos); imageUrl is the primary
   final bool isActive;
   final int sortOrder;
+  final String discountType; // 'none' | 'percent' | 'fixed'
+  final double discountValue; // percent (0-100) or fixed EUR amount
 
   ProductModel({
     required this.id,
@@ -23,7 +25,29 @@ class ProductModel {
     this.images = const [],
     this.isActive = true,
     this.sortOrder = 0,
+    this.discountType = 'none',
+    this.discountValue = 0,
   });
+
+  /// Final price after any active discount (rounded to cents).
+  double get discountedPrice {
+    if (discountType == 'percent' && discountValue > 0) {
+      final p = price * (1 - discountValue / 100);
+      return (p.clamp(0, price) * 100).round() / 100;
+    }
+    if (discountType == 'fixed' && discountValue > 0) {
+      return ((price - discountValue).clamp(0, price) * 100).round() / 100;
+    }
+    return price;
+  }
+
+  /// Whether an active discount actually lowers the price.
+  bool get hasDiscount =>
+      discountType != 'none' && discountValue > 0 && discountedPrice < price;
+
+  /// Discount as a percentage off, for badge display (e.g. "-20%").
+  int get discountPercentLabel =>
+      price <= 0 ? 0 : (((price - discountedPrice) / price) * 100).round();
 
   /// All gallery images (falls back to imageUrl). De-duplicated, non-empty.
   List<String> get gallery {
@@ -65,6 +89,8 @@ class ProductModel {
           const [],
       isActive: json['isActive'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      discountType: json['discountType'] as String? ?? 'none',
+      discountValue: (json['discountValue'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -80,6 +106,8 @@ class ProductModel {
         'images': images,
         'isActive': isActive,
         'sortOrder': sortOrder,
+        'discountType': discountType,
+        'discountValue': discountValue,
       };
 
   ProductModel copyWith({
@@ -94,6 +122,8 @@ class ProductModel {
     List<String>? images,
     bool? isActive,
     int? sortOrder,
+    String? discountType,
+    double? discountValue,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -107,6 +137,8 @@ class ProductModel {
       images: images ?? this.images,
       isActive: isActive ?? this.isActive,
       sortOrder: sortOrder ?? this.sortOrder,
+      discountType: discountType ?? this.discountType,
+      discountValue: discountValue ?? this.discountValue,
     );
   }
 
