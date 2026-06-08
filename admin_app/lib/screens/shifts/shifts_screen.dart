@@ -39,20 +39,16 @@ class ShiftsScreen extends StatelessWidget {
             children: [
               Text('Создать смену', style: AppTextStyles.headingM),
               const SizedBox(height: 16),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: AppConstants.groups.map((g) {
                   final sel = selectedGroup == g;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(AppConstants.groupLabel(g)),
-                        selected: sel,
-                        selectedColor: AppColors.primary.withOpacity(0.2),
-                        onSelected: (_) =>
-                            setSheet(() => selectedGroup = g),
-                      ),
-                    ),
+                  return ChoiceChip(
+                    label: Text(AppConstants.groupLabel(g)),
+                    selected: sel,
+                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    onSelected: (_) => setSheet(() => selectedGroup = g),
                   );
                 }).toList(),
               ),

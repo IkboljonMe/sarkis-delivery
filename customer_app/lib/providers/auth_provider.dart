@@ -105,10 +105,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> saveProfile({
     required String name,
+    String lastName = '',
     required String address,
     required String city,
     required String postalCode,
     required String group,
+    double? lat,
+    double? lng,
     required String language,
   }) async {
     final id = _auth.uid;
@@ -118,11 +121,14 @@ class AuthProvider extends ChangeNotifier {
       final user = UserModel(
         id: id,
         name: name,
+        lastName: lastName,
         phone: _auth.currentUser?.phoneNumber ?? '',
         address: address,
         city: city,
         postalCode: postalCode,
         group: group,
+        lat: lat,
+        lng: lng,
         language: language,
         isAdmin: false,
       );

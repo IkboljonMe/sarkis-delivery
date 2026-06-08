@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import '../demo_firebase_options.dart' show DemoFirebaseOptions;
 
 /// App-wide constants and configuration.
@@ -8,20 +10,44 @@ class AppConstants {
   static const String adminWhatsappNumber = 'YOUR_NUMBER_HERE';
   static const String adminUid = 'HjygD2zQpKZ0zakT0JZWFvc3GcA3';
 
+  /// Google Geocoding + Static Maps API key, loaded from the bundled .env.
+  static String get googleApiKey =>
+      dotenv.maybeGet('GOOGLE_GEOCODING_API_KEY') ?? '';
+
   // Firebase project id (mirrors DemoFirebaseOptions.current.projectId).
   static String get firebaseProjectId =>
       DemoFirebaseOptions.current.projectId;
 
-  // --- Groups ---
+  // --- Groups (Germany split into 4 big delivery regions) ---
   static const String groupBerlin = 'Berlin';
   static const String groupHamburg = 'Hamburg';
-  static const List<String> groups = [groupBerlin, groupHamburg];
+  static const String groupFrankfurt = 'Frankfurt';
+  static const String groupMunich = 'München';
+  static const List<String> groups = [
+    groupBerlin,
+    groupHamburg,
+    groupFrankfurt,
+    groupMunich,
+  ];
 
-  // --- Postal ranges ---
-  static const int berlinMin = 10000;
-  static const int berlinMax = 14999;
-  static const int hamburgMin = 20000;
-  static const int hamburgMax = 22999;
+  /// Postal-code ranges per group (German PLZ leading digits).
+  static const Map<String, List<List<int>>> groupPostalRanges = {
+    groupBerlin: [
+      [10000, 14199]
+    ],
+    groupHamburg: [
+      [20000, 22999]
+    ],
+    groupFrankfurt: [
+      [60000, 65999]
+    ],
+    groupMunich: [
+      [80000, 85999]
+    ],
+  };
+
+  /// Display label for a group (currently the city name itself).
+  static String groupLabel(String g) => g;
 
   static const int defaultMinQty = 1;
   static const int defaultMaxQty = 10;
@@ -41,8 +67,11 @@ class AppConstants {
   static String? groupForPostalCode(String postalCode) {
     final code = int.tryParse(postalCode.trim());
     if (code == null) return null;
-    if (code >= berlinMin && code <= berlinMax) return groupBerlin;
-    if (code >= hamburgMin && code <= hamburgMax) return groupHamburg;
+    for (final entry in groupPostalRanges.entries) {
+      for (final range in entry.value) {
+        if (code >= range[0] && code <= range[1]) return entry.key;
+      }
+    }
     return null;
   }
 

@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +27,12 @@ Future<void> _bgHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Loads GOOGLE_GEOCODING_API_KEY (used for address geocoding + static maps).
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('.env not loaded: $e');
+  }
   try {
     await Firebase.initializeApp(options: DemoFirebaseOptions.current);
     FirebaseMessaging.onBackgroundMessage(_bgHandler);

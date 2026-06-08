@@ -50,8 +50,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
                 _chip('Все', ''),
-                _chip('Берлин', AppConstants.groupBerlin),
-                _chip('Гамбург', AppConstants.groupHamburg),
+                ...AppConstants.groups
+                    .map((g) => _chip(AppConstants.groupLabel(g), g)),
               ],
             ),
           ),

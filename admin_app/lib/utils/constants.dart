@@ -10,7 +10,30 @@ class AppConstants {
 
   static const String groupBerlin = 'Berlin';
   static const String groupHamburg = 'Hamburg';
-  static const List<String> groups = [groupBerlin, groupHamburg];
+  static const String groupFrankfurt = 'Frankfurt';
+  static const String groupMunich = 'München';
+  static const List<String> groups = [
+    groupBerlin,
+    groupHamburg,
+    groupFrankfurt,
+    groupMunich,
+  ];
+
+  /// Postal-code ranges per group (German PLZ leading digits).
+  static const Map<String, List<List<int>>> groupPostalRanges = {
+    groupBerlin: [
+      [10000, 14199]
+    ],
+    groupHamburg: [
+      [20000, 22999]
+    ],
+    groupFrankfurt: [
+      [60000, 65999]
+    ],
+    groupMunich: [
+      [80000, 85999]
+    ],
+  };
 
   static const List<String> languageCodes = ['en', 'hy', 'ru', 'tr', 'de'];
   static const Map<String, String> languageLabels = {
@@ -40,6 +63,8 @@ class AppConstants {
   static const Map<String, String> groupRu = {
     groupBerlin: 'Берлин',
     groupHamburg: 'Гамбург',
+    groupFrankfurt: 'Франкфурт',
+    groupMunich: 'Мюнхен',
   };
 
   static String groupLabel(String g) => groupRu[g] ?? g;
