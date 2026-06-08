@@ -14,6 +14,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/voice_recorder.dart';
 import '../../widgets/chat_image.dart';
+import '../../widgets/media_composer.dart';
 import '../../widgets/voice_bubble.dart';
 
 const _kReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -177,30 +178,40 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // The push to the customer is sent server-side by onChatMessageCreated.
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickAndSendImages() async {
     if (_uploading) return;
+    final picked =
+        await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
+    if (picked.isEmpty || !mounted) return;
+    final result = await Navigator.push<MediaComposerResult>(
+      context,
+      MaterialPageRoute(builder: (_) => MediaComposer(initial: picked)),
+    );
+    if (result == null || result.files.isEmpty) return;
+    setState(() => _uploading = true);
     try {
-      final picked = await _picker.pickImage(
-          source: ImageSource.gallery, imageQuality: 70, maxWidth: 1600);
-      if (picked == null) return;
-      setState(() => _uploading = true);
-      final bytes = await picked.readAsBytes();
-      final ext = picked.name.split('.').last.toLowerCase();
-      final url = await MessageService.instance.uploadChatMedia(
-        widget.topicId,
-        bytes,
-        ext: ext == 'png' ? 'png' : 'jpg',
-        contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
-      );
-      await MessageService.instance.sendMessage(
-        topicId: widget.topicId,
-        text: '',
-        senderId: _uid,
-        senderName: 'Admin',
-        isFromAdmin: true,
-        type: 'image',
-        mediaUrl: url,
-      );
+      for (var idx = 0; idx < result.files.length; idx++) {
+        final f = result.files[idx];
+        final bytes = await f.readAsBytes();
+        final ext = f.name.split('.').last.toLowerCase();
+        final url = await MessageService.instance.uploadChatMedia(
+          widget.topicId,
+          bytes,
+          ext: ext == 'png' ? 'png' : 'jpg',
+          contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
+        );
+        // Caption goes on the last photo (Telegram-style album caption).
+        final caption = idx == result.files.length - 1 ? result.caption : '';
+        await MessageService.instance.sendMessage(
+          topicId: widget.topicId,
+          text: caption,
+          senderId: _uid,
+          senderName: 'Admin',
+          isFromAdmin: true,
+          type: 'image',
+          mediaUrl: url,
+        );
+      }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Не удалось отправить фото');
     } finally {
@@ -543,7 +554,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         padding: const EdgeInsets.all(8),
         child: Row(children: [
           IconButton(
-            onPressed: _uploading ? null : _pickAndSendImage,
+            onPressed: _uploading ? null : _pickAndSendImages,
             icon: const Icon(Icons.attach_file, color: AppColors.primary),
           ),
           Expanded(

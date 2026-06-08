@@ -17,6 +17,7 @@ import '../../utils/app_text_styles.dart';
 import '../../utils/voice_recorder.dart';
 import '../../widgets/chat_image.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/media_composer.dart';
 import '../../widgets/voice_bubble.dart';
 
 const _kReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -172,32 +173,41 @@ class _ChatsScreenState extends State<ChatsScreen> {
         );
   }
 
-  Future<void> _pickAndSendImage(UserModel user) async {
+  Future<void> _pickAndSendImages(UserModel user) async {
     if (_uploading) return;
+    final picked =
+        await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
+    if (picked.isEmpty || !mounted) return;
+    final result = await Navigator.push<MediaComposerResult>(
+      context,
+      MaterialPageRoute(builder: (_) => MediaComposer(initial: picked)),
+    );
+    if (result == null || result.files.isEmpty || !mounted) return;
     final msg = context.read<MessageProvider>();
+    setState(() => _uploading = true);
     try {
-      final picked = await _picker.pickImage(
-          source: ImageSource.gallery, imageQuality: 70, maxWidth: 1600);
-      if (picked == null) return;
-      setState(() => _uploading = true);
-      final bytes = await picked.readAsBytes();
-      final ext = picked.name.split('.').last.toLowerCase();
-      final url = await msg.uploadChatMedia(
-        user.id,
-        bytes,
-        ext: ext == 'png' ? 'png' : 'jpg',
-        contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
-      );
-      await msg.send(
-        topicId: user.id,
-        text: '',
-        senderId: user.id,
-        senderName: user.name,
-        isFromAdmin: false,
-        userGroup: user.group,
-        type: 'image',
-        mediaUrl: url,
-      );
+      for (var idx = 0; idx < result.files.length; idx++) {
+        final f = result.files[idx];
+        final bytes = await f.readAsBytes();
+        final ext = f.name.split('.').last.toLowerCase();
+        final url = await msg.uploadChatMedia(
+          user.id,
+          bytes,
+          ext: ext == 'png' ? 'png' : 'jpg',
+          contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
+        );
+        final caption = idx == result.files.length - 1 ? result.caption : '';
+        await msg.send(
+          topicId: user.id,
+          text: caption,
+          senderId: user.id,
+          senderName: user.name,
+          isFromAdmin: false,
+          userGroup: user.group,
+          type: 'image',
+          mediaUrl: url,
+        );
+      }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Не удалось отправить фото');
     } finally {
@@ -581,7 +591,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         child: Row(
           children: [
             IconButton(
-              onPressed: _uploading ? null : () => _pickAndSendImage(user),
+              onPressed: _uploading ? null : () => _pickAndSendImages(user),
               icon: const Icon(Icons.attach_file, color: AppColors.primary),
             ),
             Expanded(
