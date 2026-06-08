@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -45,9 +47,14 @@ class _RouteScreenState extends State<RouteScreen> {
 
   LatLng? _start; // null => use current location once fetched
   bool _customStart = false;
+  String? _startName; // set when a saved address is chosen as start
   final Map<String, _Stop> _stops = {}; // id -> stop (with coords)
   List<String> _order = []; // visiting order of stop ids
   int _withoutCoords = 0;
+
+  // Numbered marker icons (0 = start), generated once and cached by number.
+  Set<Marker> _markerSet = {};
+  final Map<int, BitmapDescriptor> _iconCache = {};
 
   @override
   void initState() {
@@ -77,6 +84,7 @@ class _RouteScreenState extends State<RouteScreen> {
       if (!mounted) return;
       if (!_customStart) {
         setState(() => _start = LatLng(pos.latitude, pos.longitude));
+        _rebuildMarkers();
       }
     } catch (_) {/* best effort */}
   }
@@ -116,6 +124,7 @@ class _RouteScreenState extends State<RouteScreen> {
         ..addAll(next);
       _order = order;
     });
+    _rebuildMarkers();
     _fitToStops();
   }
 
@@ -132,6 +141,7 @@ class _RouteScreenState extends State<RouteScreen> {
     final order = RouteOptimizer.nearestNeighborOrder(
         _effectiveStart, stops.map((s) => s.pos).toList());
     setState(() => _order = order.map((i) => stops[i].id).toList());
+    _rebuildMarkers();
     _fitToStops();
     final km = RouteOptimizer.totalDistanceKm(
         _effectiveStart, _orderedStops.map((s) => s.pos).toList());
@@ -144,30 +154,77 @@ class _RouteScreenState extends State<RouteScreen> {
       final id = _order.removeAt(oldIndex);
       _order.insert(newIndex, id);
     });
+    _rebuildMarkers();
   }
 
-  // ---- Map -----------------------------------------------------------------
-  Set<Marker> _markers() {
+  // ---- Map markers ---------------------------------------------------------
+  String get _startTitle => _startName != null
+      ? 'Старт: $_startName'
+      : (_customStart ? 'Старт: выбрано на карте' : 'Старт: моя локация');
+
+  /// Builds (and caches) a circular pin bitmap with the number drawn on it.
+  /// Number 0 is the start (blue); others are gold delivery stops.
+  Future<BitmapDescriptor> _numberedIcon(int n) async {
+    final cached = _iconCache[n];
+    if (cached != null) return cached;
+    const size = 96.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    const center = Offset(size / 2, size / 2);
+    const radius = size / 2 - 6;
+    final bg = n == 0 ? const Color(0xFF2E7DFF) : AppColors.primary;
+    canvas.drawCircle(center, radius, Paint()..color = bg);
+    canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6);
+    final tp = TextPainter(
+      text: TextSpan(
+        text: '$n',
+        style: const TextStyle(
+            color: Colors.white, fontSize: 44, fontWeight: FontWeight.w800),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas,
+        Offset(center.dx - tp.width / 2, center.dy - tp.height / 2));
+    final img =
+        await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List bytes = data!.buffer.asUint8List();
+    final desc = BitmapDescriptor.fromBytes(bytes);
+    _iconCache[n] = desc;
+    return desc;
+  }
+
+  Future<void> _rebuildMarkers() async {
+    final stops = _orderedStops;
     final markers = <Marker>{
       Marker(
         markerId: const MarkerId('start'),
         position: _effectiveStart,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: InfoWindow(
-            title: _customStart ? 'Старт (выбран)' : 'Старт (моя локация)'),
+        icon: await _numberedIcon(0),
+        anchor: const Offset(0.5, 0.5),
+        infoWindow: InfoWindow(title: _startTitle),
+        zIndex: 1000,
       ),
     };
-    final stops = _orderedStops;
     for (var i = 0; i < stops.length; i++) {
       markers.add(Marker(
         markerId: MarkerId(stops[i].id),
         position: stops[i].pos,
+        icon: await _numberedIcon(i + 1),
+        anchor: const Offset(0.5, 0.5),
         infoWindow: InfoWindow(
             title: '${i + 1}. ${stops[i].order.userName}',
             snippet: stops[i].order.userAddress),
       ));
     }
-    return markers;
+    if (!mounted) return;
+    setState(() => _markerSet = markers);
   }
 
   Set<Polyline> _polylines() {
@@ -208,9 +265,71 @@ class _RouteScreenState extends State<RouteScreen> {
   }
 
   Future<void> _setCurrentAsStart() async {
-    setState(() => _customStart = false);
+    setState(() {
+      _customStart = false;
+      _startName = null;
+    });
     await _fetchLocation();
+    _rebuildMarkers();
     _fitToStops();
+  }
+
+  /// Lets the admin choose the start: GPS, or any seeded address ("from app").
+  void _chooseStart() {
+    final stops = _orderedStops;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (ctx, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Откуда старт?', style: AppTextStyles.headingM),
+            const SizedBox(height: 4),
+            Text('или нажмите на карту, чтобы поставить точку',
+                style: AppTextStyles.caption),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.my_location, color: AppColors.primary),
+              title: Text('Моя локация (GPS)', style: AppTextStyles.body),
+              onTap: () {
+                Navigator.pop(ctx);
+                _setCurrentAsStart();
+              },
+            ),
+            const Divider(color: AppColors.border),
+            Text('Выбрать адрес как старт:', style: AppTextStyles.caption),
+            ...stops.map((s) => ListTile(
+                  leading: const Icon(Icons.location_on_outlined,
+                      color: AppColors.textSecondary),
+                  title: Text(s.order.userName, style: AppTextStyles.body),
+                  subtitle: Text(s.order.userAddress,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() {
+                      _start = s.pos;
+                      _customStart = true;
+                      _startName = s.order.userName;
+                    });
+                    _rebuildMarkers();
+                    _fitToStops();
+                  },
+                )),
+          ],
+        ),
+      ),
+    );
   }
 
   void _openFullRoute() {
@@ -297,16 +416,19 @@ class _RouteScreenState extends State<RouteScreen> {
                     CameraPosition(target: _effectiveStart, zoom: 11),
                 onMapCreated: (c) {
                   _map = c;
+                  _rebuildMarkers();
                   _fitToStops();
                 },
                 onTap: (pos) {
                   setState(() {
                     _start = pos;
                     _customStart = true;
+                    _startName = null;
                   });
+                  _rebuildMarkers();
                   Fluttertoast.showToast(msg: 'Старт установлен на карте');
                 },
-                markers: _markers(),
+                markers: _markerSet,
                 polylines: _polylines(),
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
@@ -324,6 +446,7 @@ class _RouteScreenState extends State<RouteScreen> {
             ],
           ),
         ),
+        _startBar(),
         _toolbar(stops.length),
         if (_withoutCoords > 0)
           Padding(
@@ -345,6 +468,40 @@ class _RouteScreenState extends State<RouteScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _startBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+                color: Color(0xFF2E7DFF), shape: BoxShape.circle),
+            child: const Text('0',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(_startTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body),
+          ),
+          TextButton.icon(
+            onPressed: _chooseStart,
+            icon: const Icon(Icons.edit_location_alt, size: 18),
+            label: const Text('Изменить'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -44,7 +44,7 @@
         <!-- Google Maps API key (navigation opens external Maps app) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_API_KEY_HERE"/>
+            android:value="AIzaSyCBn0ipc7LKoJMwvMMFOOsAw1x88Oy4rFA"/>
 
         <!-- FCM default notification channel -->
         <meta-data
