@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Sarkis Bread Storage rules — chat media lives under chat/{topicId}/...,
+// where topicId == the customer's userId.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid))
+          .data.isAdmin == true;
+    }
+
+    match /chat/{topicId}/{fileName} {
+      // Either party in the conversation can view the media.
+      allow read: if isSignedIn();
+      // Only the topic owner (customer) or an admin can upload, capped at 15 MB
+      // and limited to images / audio.
+      allow write: if isSignedIn()
+        && (request.auth.uid == topicId || isAdmin())
+        && request.resource.size < 15 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('audio/.*'));
+    }
+
+    // Everything else denied.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

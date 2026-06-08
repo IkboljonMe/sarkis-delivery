@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/message_model.dart';
 
@@ -9,9 +12,23 @@ class MessageService {
   static final MessageService instance = MessageService._();
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   CollectionReference<Map<String, dynamic>> _msgs(String topicId) =>
       _db.collection('messages').doc(topicId).collection('messages');
+
+  /// Uploads chat media to Storage and returns its download URL.
+  Future<String> uploadChatMedia(
+    String topicId,
+    Uint8List bytes, {
+    required String ext,
+    required String contentType,
+  }) async {
+    final name = _msgs(topicId).doc().id;
+    final ref = _storage.ref().child('chat/$topicId/$name.$ext');
+    await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return ref.getDownloadURL();
+  }
 
   Stream<List<MessageModel>> messagesStream(String topicId) {
     return _msgs(topicId)
@@ -32,6 +49,9 @@ class MessageService {
     String replyToId = '',
     String replyToText = '',
     String replyToSender = '',
+    String type = 'text',
+    String mediaUrl = '',
+    int durationMs = 0,
   }) async {
     try {
       final ref = _msgs(topicId).doc();
@@ -49,6 +69,9 @@ class MessageService {
         'replyToText': replyToText,
         'replyToSender': replyToSender,
         'reactions': <String, String>{},
+        'type': type,
+        'mediaUrl': mediaUrl,
+        'durationMs': durationMs,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {

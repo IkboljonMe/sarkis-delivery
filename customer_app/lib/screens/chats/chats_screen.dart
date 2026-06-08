@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/message_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/chat_image.dart';
 import '../../widgets/empty_state.dart';
 
 const _kReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -22,7 +25,9 @@ class ChatsScreen extends StatefulWidget {
 
 class _ChatsScreenState extends State<ChatsScreen> {
   final _controller = TextEditingController();
+  final _picker = ImagePicker();
   bool _marked = false;
+  bool _uploading = false;
   MessageModel? _replyTo;
 
   @override
@@ -49,6 +54,39 @@ class _ChatsScreenState extends State<ChatsScreen> {
           replyToSender:
               reply == null ? '' : (reply.isFromAdmin ? 'Admin' : user.name),
         );
+  }
+
+  Future<void> _pickAndSendImage(UserModel user) async {
+    if (_uploading) return;
+    final msg = context.read<MessageProvider>();
+    try {
+      final picked = await _picker.pickImage(
+          source: ImageSource.gallery, imageQuality: 70, maxWidth: 1600);
+      if (picked == null) return;
+      setState(() => _uploading = true);
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last.toLowerCase();
+      final url = await msg.uploadChatMedia(
+        user.id,
+        bytes,
+        ext: ext == 'png' ? 'png' : 'jpg',
+        contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
+      );
+      await msg.send(
+        topicId: user.id,
+        text: '',
+        senderId: user.id,
+        senderName: user.name,
+        isFromAdmin: false,
+        userGroup: user.group,
+        type: 'image',
+        mediaUrl: url,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Не удалось отправить фото');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   void _showReactions(UserModel user, MessageModel m) {
@@ -202,10 +240,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
                         ],
                       ),
                     if (m.hasReply) _replyQuote(m, mine),
-                    Text(m.text,
-                        style: TextStyle(
-                            color:
-                                mine ? Colors.white : AppColors.textPrimary)),
+                    if (m.isImage) ChatImage(url: m.mediaUrl),
+                    if (!m.isImage)
+                      Text(m.text,
+                          style: TextStyle(
+                              color: mine
+                                  ? Colors.white
+                                  : AppColors.textPrimary)),
                     const SizedBox(height: 2),
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -328,9 +369,18 @@ class _ChatsScreenState extends State<ChatsScreen> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        padding: const EdgeInsets.fromLTRB(6, 8, 12, 8),
         child: Row(
           children: [
+            IconButton(
+              onPressed: _uploading ? null : () => _pickAndSendImage(user),
+              icon: _uploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.attach_file, color: AppColors.primary),
+            ),
             Expanded(
               child: TextField(
                 controller: _controller,

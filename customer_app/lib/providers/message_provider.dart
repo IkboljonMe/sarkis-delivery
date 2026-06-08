@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/message_model.dart';
@@ -22,6 +24,9 @@ class MessageProvider extends ChangeNotifier {
     String replyToId = '',
     String replyToText = '',
     String replyToSender = '',
+    String type = 'text',
+    String mediaUrl = '',
+    int durationMs = 0,
   }) async {
     await _service.ensureTopic(
         topicId: topicId, userName: senderName, userGroup: userGroup);
@@ -34,8 +39,16 @@ class MessageProvider extends ChangeNotifier {
       replyToId: replyToId,
       replyToText: replyToText,
       replyToSender: replyToSender,
+      type: type,
+      mediaUrl: mediaUrl,
+      durationMs: durationMs,
     );
   }
+
+  Future<String> uploadChatMedia(String topicId, Uint8List bytes,
+          {required String ext, required String contentType}) =>
+      _service.uploadChatMedia(topicId, bytes,
+          ext: ext, contentType: contentType);
 
   Future<void> toggleReaction(
           String topicId, String msgId, String userId, String emoji) =>

@@ -15,6 +15,10 @@ class MessageModel {
   final String replyToSender;
   // Emoji reactions: userId -> emoji.
   final Map<String, String> reactions;
+  // Media: type is 'text' | 'image' | 'voice'.
+  final String type;
+  final String mediaUrl;
+  final int durationMs; // voice length
 
   MessageModel({
     required this.id,
@@ -28,9 +32,14 @@ class MessageModel {
     this.replyToText = '',
     this.replyToSender = '',
     this.reactions = const {},
+    this.type = 'text',
+    this.mediaUrl = '',
+    this.durationMs = 0,
   });
 
   bool get hasReply => replyToId.isNotEmpty;
+  bool get isImage => type == 'image';
+  bool get isVoice => type == 'voice';
 
   /// Reactions grouped to emoji -> count, for display.
   Map<String, int> get reactionCounts {
@@ -65,6 +74,9 @@ class MessageModel {
       replyToText: json['replyToText'] as String? ?? '',
       replyToSender: json['replyToSender'] as String? ?? '',
       reactions: _parseReactions(json['reactions']),
+      type: json['type'] as String? ?? 'text',
+      mediaUrl: json['mediaUrl'] as String? ?? '',
+      durationMs: (json['durationMs'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -79,6 +91,9 @@ class MessageModel {
         'replyToText': replyToText,
         'replyToSender': replyToSender,
         'reactions': reactions,
+        'type': type,
+        'mediaUrl': mediaUrl,
+        'durationMs': durationMs,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),
@@ -96,6 +111,9 @@ class MessageModel {
         replyToText: replyToText,
         replyToSender: replyToSender,
         reactions: reactions,
+        type: type,
+        mediaUrl: mediaUrl,
+        durationMs: durationMs,
       );
 }
 
