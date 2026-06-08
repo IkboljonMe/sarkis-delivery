@@ -40,6 +40,16 @@ class MessageModel {
   bool get hasReply => replyToId.isNotEmpty;
   bool get isImage => type == 'image';
   bool get isVoice => type == 'voice';
+  bool get isVideo => type == 'video';
+
+  /// Short text for previews/notifications (label for media messages).
+  String get previewText {
+    if (text.trim().isNotEmpty) return text;
+    if (isImage) return '📷 Фото';
+    if (isVoice) return '🎤 Голосовое';
+    if (isVideo) return '🎥 Видео';
+    return '';
+  }
 
   /// Reactions grouped to emoji -> count, for display.
   Map<String, int> get reactionCounts {

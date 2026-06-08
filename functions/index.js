@@ -78,7 +78,13 @@ exports.onChatMessageCreated = onDocumentCreated(
       // their push is handled by onOrderStatusChanged — avoid double-notifying.
       if (msg.silent === true) return;
       const topicId = event.params.topicId; // == customer userId
-      const text = (msg.text || "").toString();
+      let text = (msg.text || "").toString();
+      if (!text) {
+        // Media messages have no text — show a content label instead of blank.
+        if (msg.type === "image") text = "📷 Фото";
+        else if (msg.type === "voice") text = "🎤 Голосовое сообщение";
+        else if (msg.type === "video") text = "🎥 Видео";
+      }
       const preview = text.length > 80 ? `${text.slice(0, 79)}…` : text;
 
       if (msg.isFromAdmin === true) {

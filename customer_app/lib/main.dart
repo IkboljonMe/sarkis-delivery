@@ -12,6 +12,7 @@ import 'providers/cart_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/message_provider.dart';
 import 'providers/order_provider.dart';
+import 'services/local_notifications.dart';
 import 'screens/auth/language_screen.dart';
 import 'screens/auth/otp_screen.dart';
 import 'screens/auth/phone_screen.dart';
@@ -36,6 +37,7 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp(options: DemoFirebaseOptions.current);
     FirebaseMessaging.onBackgroundMessage(_bgHandler);
+    await LocalNotifications.init();
   } catch (e) {
     debugPrint('Firebase init skipped: $e');
   }

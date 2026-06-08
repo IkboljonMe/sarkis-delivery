@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'demo_firebase_options.dart';
 import 'providers/admin_auth_provider.dart';
 import 'providers/group_provider.dart';
+import 'services/local_notifications.dart';
 import 'screens/splash_screen.dart';
 import 'utils/app_theme.dart';
 
@@ -19,6 +20,7 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp(options: DemoFirebaseOptions.current);
     FirebaseMessaging.onBackgroundMessage(_bgHandler);
+    await LocalNotifications.init();
   } catch (e) {
     debugPrint('Firebase init skipped: $e');
   }

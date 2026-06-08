@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/message_provider.dart';
 import '../services/fcm_service.dart';
+import '../services/local_notifications.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'chats/chats_screen.dart';
 import 'home/home_screen.dart';
@@ -30,10 +30,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
-      final n = m.notification;
-      if (n != null) {
-        Fluttertoast.showToast(msg: '${n.title ?? ''}: ${n.body ?? ''}'.trim());
-      }
+      LocalNotifications.showFromMessage(m);
     }));
     _subs.add(FcmService.instance.onMessageOpened.listen((m) {
       if (!mounted) return;

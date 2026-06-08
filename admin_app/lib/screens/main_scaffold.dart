@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/admin_auth_provider.dart';
 import '../providers/group_provider.dart';
 import '../services/fcm_service.dart';
+import '../services/local_notifications.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/constants.dart';
@@ -46,11 +46,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     if (uid != null) FcmService.instance.registerToken(uid);
 
     _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
-      final n = m.notification;
-      if (n != null) {
-        Fluttertoast.showToast(
-            msg: '${n.title ?? ''}: ${n.body ?? ''}'.trim());
-      }
+      LocalNotifications.showFromMessage(m);
     }));
     _subs.add(FcmService.instance.onMessageOpened.listen((m) {
       if (m.data['type'] == 'chat' && mounted) {

@@ -141,7 +141,7 @@ class MessageService {
           topicId: doc.id,
           userName: data['userName'] as String? ?? '',
           userGroup: data['userGroup'] as String? ?? '',
-          lastMessage: lastMsg?.text ?? '',
+          lastMessage: lastMsg?.previewText ?? '',
           lastAt: lastMsg?.createdAt,
           unread: unread.docs.length,
         ));
