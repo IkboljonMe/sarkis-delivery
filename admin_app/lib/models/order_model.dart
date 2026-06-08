@@ -10,6 +10,8 @@ class OrderModel {
   final String userAddress;
   final String userCity;
   final String userGroup;
+  final double? userLat;
+  final double? userLng;
   final String shiftId;
   final DateTime shiftDate;
   final String shiftLabel;
@@ -31,6 +33,8 @@ class OrderModel {
     required this.userAddress,
     this.userCity = '',
     required this.userGroup,
+    this.userLat,
+    this.userLng,
     required this.shiftId,
     required this.shiftDate,
     required this.shiftLabel,
@@ -71,6 +75,8 @@ class OrderModel {
       userAddress: json['userAddress'] as String? ?? '',
       userCity: json['userCity'] as String? ?? '',
       userGroup: json['userGroup'] as String? ?? '',
+      userLat: (json['userLat'] as num?)?.toDouble(),
+      userLng: (json['userLng'] as num?)?.toDouble(),
       shiftId: json['shiftId'] as String? ?? '',
       shiftDate: json['shiftDate'] is Timestamp
           ? (json['shiftDate'] as Timestamp).toDate()
@@ -100,6 +106,8 @@ class OrderModel {
         'userAddress': userAddress,
         'userCity': userCity,
         'userGroup': userGroup,
+        'userLat': userLat,
+        'userLng': userLng,
         'shiftId': shiftId,
         'shiftDate': Timestamp.fromDate(shiftDate),
         'shiftLabel': shiftLabel,
@@ -131,6 +139,8 @@ class OrderModel {
       userAddress: userAddress,
       userCity: userCity,
       userGroup: userGroup,
+      userLat: userLat,
+      userLng: userLng,
       shiftId: shiftId,
       shiftDate: shiftDate,
       shiftLabel: shiftLabel,

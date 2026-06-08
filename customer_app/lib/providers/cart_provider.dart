@@ -169,6 +169,8 @@ class CartProvider extends ChangeNotifier {
         userAddress: user.address,
         userCity: user.city,
         userGroup: user.group,
+        userLat: user.lat,
+        userLng: user.lng,
         shiftId: _shift!.id,
         shiftDate: _shift!.date,
         shiftLabel: _shift!.label,
