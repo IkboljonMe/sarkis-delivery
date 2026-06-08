@@ -1,8 +1,14 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import '../demo_firebase_options.dart' show DemoFirebaseOptions;
 
 /// App-wide constants for the admin app (Russian primary).
 class AppConstants {
   AppConstants._();
+
+  /// Google Cloud Translate API key, loaded from the bundled .env.
+  static String get translateApiKey =>
+      dotenv.maybeGet('GOOGLE_TRANSLATE_API_KEY') ?? '';
 
   static const String adminWhatsappNumber = 'YOUR_NUMBER_HERE';
   static String get firebaseProjectId =>

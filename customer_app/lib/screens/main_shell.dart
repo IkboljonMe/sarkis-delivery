@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../main.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/message_provider.dart';
@@ -32,19 +33,24 @@ class _MainShellState extends State<MainShell> {
     _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
       LocalNotifications.showFromMessage(m);
     }));
-    _subs.add(FcmService.instance.onMessageOpened.listen((m) {
-      if (!mounted) return;
-      final type = m.data['type'];
-      if (type == 'chat') {
-        setState(() => _index = 2);
-      } else if (type == 'order') {
-        setState(() => _index = 1);
-      }
-    }));
+    // Notification taps (FCM or local) set kRequestedTab; switch to it.
+    kRequestedTab.addListener(_onRequestedTab);
+    if (kRequestedTab.value != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _onRequestedTab());
+    }
+  }
+
+  void _onRequestedTab() {
+    final tab = kRequestedTab.value;
+    if (tab != null && mounted) {
+      setState(() => _index = tab);
+      kRequestedTab.value = null;
+    }
   }
 
   @override
   void dispose() {
+    kRequestedTab.removeListener(_onRequestedTab);
     for (final s in _subs) {
       s.cancel();
     }

@@ -12,6 +12,7 @@ import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/message_provider.dart';
+import '../../services/translate_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/voice_recorder.dart';
@@ -47,6 +48,22 @@ class _ChatsScreenState extends State<ChatsScreen> {
   String? _unreadAnchorId;
   String? _highlightedId;
   Timer? _flashTimer;
+  final Map<String, String> _translations = {};
+  final Set<String> _translating = {};
+
+  Future<void> _translate(MessageModel m, String target) async {
+    if (_translations.containsKey(m.id)) {
+      setState(() => _translations.remove(m.id));
+      return;
+    }
+    setState(() => _translating.add(m.id));
+    final out = await TranslateService.translate(m.text, target);
+    if (!mounted) return;
+    setState(() {
+      _translating.remove(m.id);
+      if (out != null) _translations[m.id] = out;
+    });
+  }
 
   @override
   void initState() {
@@ -248,22 +265,46 @@ class _ChatsScreenState extends State<ChatsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _kReactions
-                .map((e) => GestureDetector(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        context
-                            .read<MessageProvider>()
-                            .toggleReaction(user.id, m.id, user.id, e);
-                      },
-                      child: Text(e, style: const TextStyle(fontSize: 30)),
-                    ))
-                .toList(),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: _kReactions
+                    .map((e) => GestureDetector(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context
+                                .read<MessageProvider>()
+                                .toggleReaction(user.id, m.id, user.id, e);
+                          },
+                          child: Text(e, style: const TextStyle(fontSize: 30)),
+                        ))
+                    .toList(),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.reply, color: AppColors.primary),
+              title: const Text('Ответить'),
+              onTap: () {
+                Navigator.pop(ctx);
+                setState(() => _replyTo = m);
+              },
+            ),
+            if (m.text.trim().isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.translate, color: AppColors.primary),
+                title: Text(_translations.containsKey(m.id)
+                    ? 'Оригинал'
+                    : 'Перевести'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _translate(m, user.language);
+                },
+              ),
+          ],
         ),
       ),
     );
@@ -527,6 +568,40 @@ class _ChatsScreenState extends State<ChatsScreen> {
         ),
       );
 
+  Widget _maybeTranslation(MessageModel m, Color textColor, bool mine) {
+    if (_translating.contains(m.id)) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text('Перевод…',
+            style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: mine ? Colors.white70 : AppColors.textSecondary)),
+      );
+    }
+    final tr = _translations[m.id];
+    if (tr == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: (mine ? Colors.white : AppColors.primary).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Перевод',
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: mine ? Colors.white70 : AppColors.primary)),
+          Text(tr, style: TextStyle(color: textColor)),
+        ],
+      ),
+    );
+  }
+
   Widget _bubbleContent(MessageModel m, bool mine, String time) {
     final textColor = mine ? Colors.white : AppColors.textPrimary;
 
@@ -553,7 +628,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
           if (m.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
-              child: Text(m.text, style: TextStyle(color: textColor)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(m.text, style: TextStyle(color: textColor)),
+                  _maybeTranslation(m, textColor, mine),
+                ],
+              ),
             ),
         ],
       );
@@ -587,6 +668,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           if (!mine) _adminLabel(),
           if (m.hasReply) _replyQuote(m, mine),
           Text(m.text, style: TextStyle(color: textColor)),
+          _maybeTranslation(m, textColor, mine),
           const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.max,

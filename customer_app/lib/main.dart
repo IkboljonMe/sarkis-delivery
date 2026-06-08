@@ -21,6 +21,19 @@ import 'screens/main_shell.dart';
 import 'screens/splash_screen.dart';
 import 'utils/app_theme.dart';
 
+/// When a notification is tapped, the requested tab index for MainShell
+/// (2 = chats, 1 = orders). MainShell listens and switches.
+final ValueNotifier<int?> kRequestedTab = ValueNotifier<int?>(null);
+
+void routeNotification(Map<String, dynamic> data) {
+  final type = data['type'];
+  if (type == 'chat') {
+    kRequestedTab.value = 2;
+  } else if (type == 'order') {
+    kRequestedTab.value = 1;
+  }
+}
+
 @pragma('vm:entry-point')
 Future<void> _bgHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DemoFirebaseOptions.current);
@@ -38,6 +51,10 @@ Future<void> main() async {
     await Firebase.initializeApp(options: DemoFirebaseOptions.current);
     FirebaseMessaging.onBackgroundMessage(_bgHandler);
     await LocalNotifications.init();
+    LocalNotifications.onSelect = routeNotification;
+    FirebaseMessaging.onMessageOpenedApp.listen((m) => routeNotification(m.data));
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) routeNotification(initial.data);
   } catch (e) {
     debugPrint('Firebase init skipped: $e');
   }

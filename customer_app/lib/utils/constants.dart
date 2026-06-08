@@ -14,6 +14,10 @@ class AppConstants {
   static String get googleApiKey =>
       dotenv.maybeGet('GOOGLE_GEOCODING_API_KEY') ?? '';
 
+  /// Google Cloud Translate API key, loaded from the bundled .env.
+  static String get translateApiKey =>
+      dotenv.maybeGet('GOOGLE_TRANSLATE_API_KEY') ?? '';
+
   // Firebase project id (mirrors DemoFirebaseOptions.current.projectId).
   static String get firebaseProjectId =>
       DemoFirebaseOptions.current.projectId;

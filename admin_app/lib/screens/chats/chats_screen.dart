@@ -23,6 +23,12 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   String _search = '';
   String _groupFilter = '';
+  int _streamKey = 0; // bump to force the topics stream to re-subscribe
+
+  Future<void> _refresh() async {
+    setState(() => _streamKey++);
+    await Future.delayed(const Duration(milliseconds: 700));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,34 +61,47 @@ class _ChatsScreenState extends State<ChatsScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<List<ChatTopicModel>>(
-              stream: MessageService.instance.topicsStream(),
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                var topics = snap.data ?? [];
-                if (_groupFilter.isNotEmpty) {
-                  topics = topics
-                      .where((t) => t.userGroup == _groupFilter)
-                      .toList();
-                }
-                if (_search.isNotEmpty) {
-                  topics = topics
-                      .where(
-                          (t) => t.userName.toLowerCase().contains(_search))
-                      .toList();
-                }
-                if (topics.isEmpty) {
-                  return const EmptyState(
-                      icon: Icons.chat_bubble_outline, title: 'Нет чатов');
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: topics.length,
-                  itemBuilder: (context, i) => _topicTile(topics[i]),
-                );
-              },
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: _refresh,
+              child: StreamBuilder<List<ChatTopicModel>>(
+                key: ValueKey(_streamKey),
+                stream: MessageService.instance.topicsStream(),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  var topics = snap.data ?? [];
+                  if (_groupFilter.isNotEmpty) {
+                    topics = topics
+                        .where((t) => t.userGroup == _groupFilter)
+                        .toList();
+                  }
+                  if (_search.isNotEmpty) {
+                    topics = topics
+                        .where(
+                            (t) => t.userName.toLowerCase().contains(_search))
+                        .toList();
+                  }
+                  if (topics.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 160),
+                        EmptyState(
+                            icon: Icons.chat_bubble_outline,
+                            title: 'Нет чатов'),
+                      ],
+                    );
+                  }
+                  return ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    itemCount: topics.length,
+                    itemBuilder: (context, i) => _topicTile(topics[i]),
+                  );
+                },
+              ),
             ),
           ),
         ],

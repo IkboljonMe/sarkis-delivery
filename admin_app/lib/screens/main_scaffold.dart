@@ -32,7 +32,6 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _index = 0;
-  static const _chatsIndex = 4;
   final List<StreamSubscription> _subs = [];
 
   @override
@@ -48,11 +47,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
       LocalNotifications.showFromMessage(m);
     }));
-    _subs.add(FcmService.instance.onMessageOpened.listen((m) {
-      if (m.data['type'] == 'chat' && mounted) {
-        setState(() => _index = _chatsIndex);
-      }
-    }));
+    // Notification taps are routed globally in main.dart (opens the chat).
   }
 
   @override

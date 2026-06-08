@@ -49,14 +49,20 @@ const STATUS_TEXT = {
 const pick = (map, lang) => (map && (map[lang] || map.en)) || "";
 
 /** Sends a notification to a set of tokens, pruning obvious empties. */
-async function sendToTokens(tokens, title, body, data) {
+async function sendToTokens(tokens, title, body, data, tag) {
   const list = [...new Set((tokens || []).filter((t) => t && t.length > 10))];
   if (list.length === 0) return;
   const res = await getMessaging().sendEachForMulticast({
     tokens: list,
     notification: {title, body},
     data: data || {},
-    android: {priority: "high"},
+    android: {
+      priority: "high",
+      // tag groups a chat's notifications: a new message replaces the
+      // previous one instead of stacking (Telegram-style, one per chat).
+      collapseKey: tag,
+      notification: tag ? {tag} : undefined,
+    },
     apns: {payload: {aps: {sound: "default"}}},
   });
   logger.info(`sent ${res.successCount}/${list.length}`, {title});
@@ -95,16 +101,18 @@ exports.onChatMessageCreated = onDocumentCreated(
             [user.get("fcmToken")],
             "Sarkis Bread",
             preview,
-            {type: "chat", topicId},
+            {type: "chat", topicId, senderName: "Sarkis Bread"},
+            `chat_${topicId}`,
         );
       } else {
         // Customer -> all admins.
-        const name = (msg.senderName || "").toString().trim();
+        const name = (msg.senderName || "").toString().trim() || "Клиент";
         await sendToTokens(
             await adminTokens(),
-            name ? `New message from ${name}` : "New customer message",
+            `New message from ${name}`,
             preview,
-            {type: "chat", topicId},
+            {type: "chat", topicId, senderName: name},
+            `chat_${topicId}`,
         );
       }
     },
@@ -135,6 +143,7 @@ exports.onOrderStatusChanged = onDocumentUpdated(
           `Order #${shortId}`,
           body,
           {type: "order", orderId: event.params.orderId, status: after.status},
+          `order_${event.params.orderId}`,
       );
     },
 );

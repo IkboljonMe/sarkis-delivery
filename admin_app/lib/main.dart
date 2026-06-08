@@ -1,14 +1,30 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'demo_firebase_options.dart';
 import 'providers/admin_auth_provider.dart';
 import 'providers/group_provider.dart';
 import 'services/local_notifications.dart';
+import 'screens/chats/chat_detail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'utils/app_theme.dart';
+
+/// Root navigator, used to open a chat when a notification is tapped.
+final GlobalKey<NavigatorState> adminNavKey = GlobalKey<NavigatorState>();
+
+/// Opens the relevant chat for a tapped notification's data payload.
+void routeNotification(Map<String, dynamic> data) {
+  if (data['type'] != 'chat') return;
+  final topicId = (data['topicId'] as String?) ?? '';
+  if (topicId.isEmpty) return;
+  final name = (data['senderName'] as String?) ?? 'Чат';
+  adminNavKey.currentState?.push(MaterialPageRoute(
+    builder: (_) => ChatDetailScreen(topicId: topicId, userName: name),
+  ));
+}
 
 @pragma('vm:entry-point')
 Future<void> _bgHandler(RemoteMessage message) async {
@@ -18,9 +34,21 @@ Future<void> _bgHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('.env not loaded: $e');
+  }
+  try {
     await Firebase.initializeApp(options: DemoFirebaseOptions.current);
     FirebaseMessaging.onBackgroundMessage(_bgHandler);
     await LocalNotifications.init();
+    LocalNotifications.onSelect = routeNotification;
+    FirebaseMessaging.onMessageOpenedApp.listen((m) => routeNotification(m.data));
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) {
+      Future.delayed(const Duration(milliseconds: 800),
+          () => routeNotification(initial.data));
+    }
   } catch (e) {
     debugPrint('Firebase init skipped: $e');
   }
@@ -47,6 +75,7 @@ class AdminApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Sarkis Bread Admin',
+        navigatorKey: adminNavKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,
         home: const AdminSplashScreen(),
