@@ -11,8 +11,12 @@ import '../../utils/app_text_styles.dart';
 class ChatDetailScreen extends StatefulWidget {
   final String topicId; // userId
   final String userName;
+  final String? initialText; // pre-filled draft (e.g. an ETA message)
   const ChatDetailScreen(
-      {super.key, required this.topicId, required this.userName});
+      {super.key,
+      required this.topicId,
+      required this.userName,
+      this.initialText});
 
   @override
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -24,6 +28,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialText != null && widget.initialText!.isNotEmpty) {
+      _controller.text = widget.initialText!;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MessageService.instance.markRead(widget.topicId, readingAsAdmin: true);
     });

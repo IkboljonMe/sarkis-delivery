@@ -20,7 +20,9 @@ class ShiftsScreen extends StatelessWidget {
 
   Future<void> _createShift(BuildContext context, String group) async {
     DateTime date = DateTime.now().add(const Duration(days: 1));
-    String selectedGroup = group;
+    // A shift needs a concrete group; default to the first when "All" is active.
+    String selectedGroup =
+        AppConstants.isAllGroups(group) ? AppConstants.groups.first : group;
     bool isOpen = true;
 
     await showModalBottomSheet(
@@ -131,7 +133,7 @@ class ShiftsScreen extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<List<ShiftModel>>(
-        stream: ShiftService.instance.allShiftsStream(group),
+        stream: ShiftService.instance.shiftsStream(group),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

@@ -24,7 +24,7 @@ class DashboardScreen extends StatelessWidget {
     final group = context.watch<GroupProvider>().group;
 
     return StreamBuilder<List<OrderModel>>(
-      stream: OrderService.instance.ordersByGroupStream(group),
+      stream: OrderService.instance.ordersStream(group),
       builder: (context, snap) {
         final orders = snap.data ?? [];
         final pending =
@@ -40,6 +40,13 @@ class DashboardScreen extends StatelessWidget {
                 o.status == AppConstants.statusDelivered &&
                 _isToday(o.updatedAt ?? o.shiftDate))
             .length;
+        final now = DateTime.now();
+        final monthIncome = orders
+            .where((o) =>
+                o.status != AppConstants.statusCancelled &&
+                (o.createdAt ?? o.shiftDate).year == now.year &&
+                (o.createdAt ?? o.shiftDate).month == now.month)
+            .fold(0.0, (s, o) => s + o.totalPrice);
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -70,6 +77,31 @@ class DashboardScreen extends StatelessWidget {
                     value: deliveredToday,
                     color: AppColors.success),
               ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [
+                  AppColors.primary.withOpacity(0.18),
+                  AppColors.surface,
+                ]),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.payments_outlined,
+                      color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Доход за месяц', style: AppTextStyles.body),
+                  ),
+                  Text('€${monthIncome.toStringAsFixed(2)}',
+                      style: AppTextStyles.headingL
+                          .copyWith(color: AppColors.primary)),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             Text('Последние заказы', style: AppTextStyles.headingM),

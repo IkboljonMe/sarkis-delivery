@@ -8,6 +8,7 @@ class AppConstants {
   static String get firebaseProjectId =>
       DemoFirebaseOptions.current.projectId;
 
+  static const String groupAll = 'all'; // pseudo-group: every region
   static const String groupBerlin = 'Berlin';
   static const String groupHamburg = 'Hamburg';
   static const String groupFrankfurt = 'Frankfurt';
@@ -18,6 +19,17 @@ class AppConstants {
     groupFrankfurt,
     groupMunich,
   ];
+
+  /// Groups including the "All" option, for the admin region switcher.
+  static const List<String> groupsWithAll = [
+    groupAll,
+    groupBerlin,
+    groupHamburg,
+    groupFrankfurt,
+    groupMunich,
+  ];
+
+  static bool isAllGroups(String g) => g == groupAll;
 
   /// Postal-code ranges per group (German PLZ leading digits).
   static const Map<String, List<List<int>>> groupPostalRanges = {
@@ -61,6 +73,7 @@ class AppConstants {
   };
 
   static const Map<String, String> groupRu = {
+    groupAll: 'Все',
     groupBerlin: 'Берлин',
     groupHamburg: 'Гамбург',
     groupFrankfurt: 'Франкфурт',

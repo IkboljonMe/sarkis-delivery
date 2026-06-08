@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/order_model.dart';
+import '../utils/constants.dart';
 
 class OrderService {
   OrderService._();
@@ -39,6 +40,16 @@ class OrderService {
 
   Stream<List<OrderModel>> ordersByGroupStream(String group) =>
       _col.where('userGroup', isEqualTo: group).snapshots().map(_sortByCreatedDesc);
+
+  /// Every order across all groups.
+  Stream<List<OrderModel>> allOrdersStream() =>
+      _col.snapshots().map(_sortByCreatedDesc);
+
+  /// All orders when [group] is the "All" pseudo-group, else just that group.
+  Stream<List<OrderModel>> ordersStream(String group) =>
+      AppConstants.isAllGroups(group)
+          ? allOrdersStream()
+          : ordersByGroupStream(group);
 
   Stream<List<OrderModel>> ordersByShiftStream(String shiftId) =>
       _col.where('shiftId', isEqualTo: shiftId).snapshots().map(_sortByCreatedDesc);

@@ -15,9 +15,9 @@ import 'auth/login_screen.dart';
 import 'chats/chats_screen.dart';
 import 'coupons/coupons_screen.dart';
 import 'dashboard/dashboard_screen.dart';
-import 'locations/locations_screen.dart';
 import 'orders/orders_screen.dart';
 import 'products/products_screen.dart';
+import 'reports/reports_screen.dart';
 import 'route/route_screen.dart';
 import 'settings/settings_screen.dart';
 import 'shifts/shifts_screen.dart';
@@ -74,8 +74,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     'Купоны',
     'Чаты',
     'Смены',
-    'Локации',
     'Маршрут',
+    'Отчёты',
     'Настройки',
   ];
 
@@ -86,8 +86,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     Icons.local_offer_outlined,
     Icons.chat_bubble_outline,
     Icons.event_note_outlined,
-    Icons.location_on_outlined,
     Icons.alt_route_outlined,
+    Icons.insights_outlined,
     Icons.settings_outlined,
   ];
 
@@ -98,8 +98,8 @@ class _MainScaffoldState extends State<MainScaffold> {
         CouponsScreen(),
         ChatsScreen(),
         ShiftsScreen(),
-        LocationsScreen(),
         RouteScreen(),
+        ReportsScreen(),
         SettingsScreen(),
       ];
 
@@ -118,7 +118,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           children: [
             Text('Сменить группу', style: AppTextStyles.headingM),
             const SizedBox(height: 16),
-            ...AppConstants.groups.map((g) {
+            ...AppConstants.groupsWithAll.map((g) {
               final sel = group.group == g;
               return ListTile(
                 leading: Icon(Icons.location_city,

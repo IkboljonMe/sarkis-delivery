@@ -86,7 +86,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         ),
         Expanded(
           child: StreamBuilder<List<OrderModel>>(
-            stream: OrderService.instance.ordersByGroupStream(group),
+            stream: OrderService.instance.ordersStream(group),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());

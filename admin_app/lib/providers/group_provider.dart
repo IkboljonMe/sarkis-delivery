@@ -9,12 +9,13 @@ class GroupProvider extends ChangeNotifier {
   String _group = AppConstants.groupBerlin;
   String get group => _group;
   String get label => AppConstants.groupLabel(_group);
+  bool get isAll => _group == AppConstants.groupAll;
 
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final g = prefs.getString(_key);
-      if (g != null && AppConstants.groups.contains(g)) {
+      if (g != null && AppConstants.groupsWithAll.contains(g)) {
         _group = g;
         notifyListeners();
       }
@@ -22,7 +23,7 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<void> setGroup(String group) async {
-    if (!AppConstants.groups.contains(group)) return;
+    if (!AppConstants.groupsWithAll.contains(group)) return;
     _group = group;
     notifyListeners();
     try {

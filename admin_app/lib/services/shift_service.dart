@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/shift_model.dart';
+import '../utils/constants.dart';
 
 class ShiftService {
   ShiftService._();
@@ -34,6 +35,23 @@ class ShiftService {
       return list;
     });
   }
+
+  /// All shifts across every group.
+  Stream<List<ShiftModel>> allGroupsShiftsStream() {
+    return _col.snapshots().map((s) {
+      final list = s.docs
+          .map((d) => ShiftModel.fromJson({...d.data(), 'id': d.id}))
+          .toList();
+      list.sort((a, b) => a.date.compareTo(b.date));
+      return list;
+    });
+  }
+
+  /// All shifts when [group] is "All", else just that group's shifts.
+  Stream<List<ShiftModel>> shiftsStream(String group) =>
+      AppConstants.isAllGroups(group)
+          ? allGroupsShiftsStream()
+          : allShiftsStream(group);
 
   Future<void> addShift(ShiftModel shift) async {
     try {
