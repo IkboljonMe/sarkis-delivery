@@ -28,6 +28,9 @@ class MessageService {
     required String senderId,
     required String senderName,
     required bool isFromAdmin,
+    String replyToId = '',
+    String replyToText = '',
+    String replyToSender = '',
   }) async {
     try {
       final ref = _msgs(topicId).doc();
@@ -38,11 +41,30 @@ class MessageService {
         'text': text,
         'isFromAdmin': isFromAdmin,
         'isRead': false,
+        'replyToId': replyToId,
+        'replyToText': replyToText,
+        'replyToSender': replyToSender,
+        'reactions': <String, String>{},
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
       throw Exception('Failed to send message: $e');
     }
+  }
+
+  /// Toggles an emoji reaction by [userId] on a message.
+  Future<void> toggleReaction(
+      String topicId, String msgId, String userId, String emoji) async {
+    try {
+      final ref = _msgs(topicId).doc(msgId);
+      final doc = await ref.get();
+      final reactions = (doc.data()?['reactions'] as Map?) ?? const {};
+      if (reactions[userId] == emoji) {
+        await ref.update({'reactions.$userId': FieldValue.delete()});
+      } else {
+        await ref.update({'reactions.$userId': emoji});
+      }
+    } catch (_) {}
   }
 
   /// Marks messages from the other party as read.

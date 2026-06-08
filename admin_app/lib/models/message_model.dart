@@ -9,6 +9,12 @@ class MessageModel {
   final bool isFromAdmin;
   final bool isRead;
   final DateTime? createdAt;
+  // Reply (quote) of another message.
+  final String replyToId;
+  final String replyToText;
+  final String replyToSender;
+  // Emoji reactions: userId -> emoji.
+  final Map<String, String> reactions;
 
   MessageModel({
     required this.id,
@@ -18,7 +24,31 @@ class MessageModel {
     required this.isFromAdmin,
     this.isRead = false,
     this.createdAt,
+    this.replyToId = '',
+    this.replyToText = '',
+    this.replyToSender = '',
+    this.reactions = const {},
   });
+
+  bool get hasReply => replyToId.isNotEmpty;
+
+  /// Reactions grouped to emoji -> count, for display.
+  Map<String, int> get reactionCounts {
+    final m = <String, int>{};
+    for (final e in reactions.values) {
+      if (e.isEmpty) continue;
+      m[e] = (m[e] ?? 0) + 1;
+    }
+    return m;
+  }
+
+  static Map<String, String> _parseReactions(dynamic raw) {
+    final m = <String, String>{};
+    if (raw is Map) {
+      raw.forEach((k, v) => m[k.toString()] = v?.toString() ?? '');
+    }
+    return m;
+  }
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
@@ -31,6 +61,10 @@ class MessageModel {
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
+      replyToId: json['replyToId'] as String? ?? '',
+      replyToText: json['replyToText'] as String? ?? '',
+      replyToSender: json['replyToSender'] as String? ?? '',
+      reactions: _parseReactions(json['reactions']),
     );
   }
 
@@ -41,6 +75,10 @@ class MessageModel {
         'text': text,
         'isFromAdmin': isFromAdmin,
         'isRead': isRead,
+        'replyToId': replyToId,
+        'replyToText': replyToText,
+        'replyToSender': replyToSender,
+        'reactions': reactions,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),
@@ -54,6 +92,10 @@ class MessageModel {
         isFromAdmin: isFromAdmin,
         isRead: isRead ?? this.isRead,
         createdAt: createdAt,
+        replyToId: replyToId,
+        replyToText: replyToText,
+        replyToSender: replyToSender,
+        reactions: reactions,
       );
 }
 

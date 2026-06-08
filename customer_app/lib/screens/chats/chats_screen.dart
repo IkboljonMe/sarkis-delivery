@@ -4,11 +4,14 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/message_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/empty_state.dart';
+
+const _kReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
@@ -20,6 +23,7 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   final _controller = TextEditingController();
   bool _marked = false;
+  MessageModel? _replyTo;
 
   @override
   void dispose() {
@@ -27,13 +31,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
     super.dispose();
   }
 
-  Future<void> _send() async {
+  Future<void> _send(UserModel user) async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    final auth = context.read<AuthProvider>();
-    final user = auth.user;
-    if (user == null) return;
     _controller.clear();
+    final reply = _replyTo;
+    setState(() => _replyTo = null);
     await context.read<MessageProvider>().send(
           topicId: user.id,
           text: text,
@@ -41,7 +44,40 @@ class _ChatsScreenState extends State<ChatsScreen> {
           senderName: user.name,
           isFromAdmin: false,
           userGroup: user.group,
+          replyToId: reply?.id ?? '',
+          replyToText: reply?.text ?? '',
+          replyToSender:
+              reply == null ? '' : (reply.isFromAdmin ? 'Admin' : user.name),
         );
+  }
+
+  void _showReactions(UserModel user, MessageModel m) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: _kReactions
+                .map((e) => GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        context
+                            .read<MessageProvider>()
+                            .toggleReaction(user.id, m.id, user.id, e);
+                      },
+                      child: Text(e, style: const TextStyle(fontSize: 30)),
+                    ))
+                .toList(),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -86,73 +122,209 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 final msgs = snap.data ?? [];
                 if (msgs.isEmpty) {
                   return EmptyState(
-                      icon: Icons.chat_bubble_outline, title: t.t('noMessages'));
+                      icon: Icons.chat_bubble_outline,
+                      title: t.t('noMessages'));
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   itemCount: msgs.length,
-                  itemBuilder: (context, i) => _bubble(msgs[i]),
+                  itemBuilder: (context, i) => _bubble(user, msgs[i]),
                 );
               },
             ),
           ),
-          _inputBar(t),
+          if (_replyTo != null) _replyBanner(),
+          _inputBar(t, user),
         ],
       ),
     );
   }
 
-  Widget _bubble(MessageModel m) {
+  Widget _bubble(UserModel user, MessageModel m) {
     final mine = !m.isFromAdmin;
     final time =
         m.createdAt != null ? DateFormat('HH:mm').format(m.createdAt!) : '';
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75),
-        decoration: BoxDecoration(
-          gradient: mine ? AppColors.goldGradient : null,
-          color: mine ? null : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: mine ? null : Border.all(color: AppColors.border),
+    final reactions = m.reactionCounts;
+
+    return Dismissible(
+      key: ValueKey(m.id),
+      direction: DismissDirection.startToEnd,
+      dismissThresholds: const {DismissDirection.startToEnd: 0.25},
+      confirmDismiss: (_) async {
+        setState(() => _replyTo = m);
+        return false;
+      },
+      background: const Padding(
+        padding: EdgeInsets.only(left: 20),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Icon(Icons.reply, color: AppColors.primary),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!mine)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Admin',
-                      style: AppTextStyles.label
-                          .copyWith(color: AppColors.primary)),
-                  const SizedBox(width: 4),
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: const BoxDecoration(
-                        color: AppColors.primary, shape: BoxShape.circle),
-                  ),
-                ],
+      ),
+      child: GestureDetector(
+        onLongPress: () => _showReactions(user, m),
+        child: Align(
+          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+          child: Column(
+            crossAxisAlignment:
+                mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.75),
+                decoration: BoxDecoration(
+                  gradient: mine ? AppColors.goldGradient : null,
+                  color: mine ? null : AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: mine ? null : Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!mine)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Admin',
+                              style: AppTextStyles.label
+                                  .copyWith(color: AppColors.primary)),
+                          const SizedBox(width: 4),
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle),
+                          ),
+                        ],
+                      ),
+                    if (m.hasReply) _replyQuote(m, mine),
+                    Text(m.text,
+                        style: TextStyle(
+                            color:
+                                mine ? Colors.white : AppColors.textPrimary)),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(time,
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: mine
+                                    ? Colors.white70
+                                    : AppColors.textMuted)),
+                        if (mine) ...[
+                          const SizedBox(width: 4),
+                          Icon(m.isRead ? Icons.done_all : Icons.done,
+                              size: 14,
+                              color: m.isRead
+                                  ? const Color(0xFF7FE0FF)
+                                  : Colors.white70),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            Text(m.text,
-                style: TextStyle(
-                    color: mine ? Colors.white : AppColors.textPrimary)),
-            const SizedBox(height: 2),
-            Text(time,
-                style: TextStyle(
-                    fontSize: 10,
-                    color: mine ? Colors.white70 : AppColors.textMuted)),
-          ],
+              if (reactions.isNotEmpty) _reactionChips(reactions),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _inputBar(AppLocalizations t) {
+  Widget _replyQuote(MessageModel m, bool mine) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+      decoration: BoxDecoration(
+        color: (mine ? Colors.white : AppColors.primary).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+            left: BorderSide(
+                color: mine ? Colors.white : AppColors.primary, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: mine ? Colors.white : AppColors.primary)),
+          Text(m.replyToText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: mine ? Colors.white70 : AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _reactionChips(Map<String, int> reactions) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Wrap(
+        spacing: 4,
+        children: reactions.entries
+            .map((e) => Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text('${e.key} ${e.value}',
+                      style: const TextStyle(fontSize: 12)),
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _replyBanner() {
+    final r = _replyTo!;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+      color: AppColors.surface,
+      child: Row(
+        children: [
+          const Icon(Icons.reply, size: 18, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Container(width: 3, height: 32, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(r.isFromAdmin ? 'Admin' : 'Вы',
+                    style: AppTextStyles.label
+                        .copyWith(color: AppColors.primary)),
+                Text(r.text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: () => setState(() => _replyTo = null),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inputBar(AppLocalizations t, UserModel user) {
     return SafeArea(
       top: false,
       child: Padding(
@@ -170,7 +342,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: _send,
+              onTap: () => _send(user),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: const BoxDecoration(

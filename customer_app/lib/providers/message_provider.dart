@@ -19,6 +19,9 @@ class MessageProvider extends ChangeNotifier {
     required String senderName,
     required bool isFromAdmin,
     String userGroup = '',
+    String replyToId = '',
+    String replyToText = '',
+    String replyToSender = '',
   }) async {
     await _service.ensureTopic(
         topicId: topicId, userName: senderName, userGroup: userGroup);
@@ -28,8 +31,15 @@ class MessageProvider extends ChangeNotifier {
       senderId: senderId,
       senderName: senderName,
       isFromAdmin: isFromAdmin,
+      replyToId: replyToId,
+      replyToText: replyToText,
+      replyToSender: replyToSender,
     );
   }
+
+  Future<void> toggleReaction(
+          String topicId, String msgId, String userId, String emoji) =>
+      _service.toggleReaction(topicId, msgId, userId, emoji);
 
   Future<void> markRead(String topicId, {required bool readingAsAdmin}) =>
       _service.markRead(topicId, readingAsAdmin: readingAsAdmin);
