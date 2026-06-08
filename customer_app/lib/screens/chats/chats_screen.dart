@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,8 +13,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/message_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/voice_recorder.dart';
 import '../../widgets/chat_image.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/voice_bubble.dart';
 
 const _kReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -26,15 +30,82 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   final _controller = TextEditingController();
   final _picker = ImagePicker();
+  final _recorder = VoiceRecorder();
   bool _marked = false;
   bool _uploading = false;
+  bool _recording = false;
+  int _recSeconds = 0;
+  Timer? _recTimer;
   MessageModel? _replyTo;
 
   @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() => setState(() {});
+
+  @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _recTimer?.cancel();
+    _recorder.dispose();
     super.dispose();
   }
+
+  Future<void> _startRecording() async {
+    final ok = await _recorder.hasPermission();
+    if (!ok) {
+      Fluttertoast.showToast(msg: 'Нет доступа к микрофону');
+      return;
+    }
+    await _recorder.start();
+    setState(() {
+      _recording = true;
+      _recSeconds = 0;
+    });
+    _recTimer = Timer.periodic(
+        const Duration(seconds: 1), (_) => setState(() => _recSeconds++));
+  }
+
+  Future<void> _cancelRecording() async {
+    _recTimer?.cancel();
+    await _recorder.cancel();
+    if (mounted) setState(() => _recording = false);
+  }
+
+  Future<void> _stopAndSendVoice(UserModel user) async {
+    _recTimer?.cancel();
+    setState(() => _recording = false);
+    final msg = context.read<MessageProvider>();
+    try {
+      final rec = await _recorder.stop();
+      if (rec == null || rec.durationMs < 500) return;
+      setState(() => _uploading = true);
+      final url = await msg.uploadChatMedia(user.id, rec.bytes,
+          ext: rec.ext, contentType: rec.contentType);
+      await msg.send(
+        topicId: user.id,
+        text: '',
+        senderId: user.id,
+        senderName: user.name,
+        isFromAdmin: false,
+        userGroup: user.group,
+        type: 'voice',
+        mediaUrl: url,
+        durationMs: rec.durationMs,
+      );
+    } catch (_) {
+      Fluttertoast.showToast(msg: 'Не удалось отправить голосовое');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  String _fmtSeconds(int s) =>
+      '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
 
   Future<void> _send(UserModel user) async {
     final text = _controller.text.trim();
@@ -241,7 +312,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       ),
                     if (m.hasReply) _replyQuote(m, mine),
                     if (m.isImage) ChatImage(url: m.mediaUrl),
-                    if (!m.isImage)
+                    if (m.isVoice)
+                      VoiceBubble(
+                          url: m.mediaUrl,
+                          durationMs: m.durationMs,
+                          mine: mine),
+                    if (!m.isImage && !m.isVoice)
                       Text(m.text,
                           style: TextStyle(
                               color: mine
@@ -366,6 +442,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   Widget _inputBar(AppLocalizations t, UserModel user) {
+    if (_recording) return _recordingBar(user);
+    final hasText = _controller.text.trim().isNotEmpty;
     return SafeArea(
       top: false,
       child: Padding(
@@ -374,12 +452,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           children: [
             IconButton(
               onPressed: _uploading ? null : () => _pickAndSendImage(user),
-              icon: _uploading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.attach_file, color: AppColors.primary),
+              icon: const Icon(Icons.attach_file, color: AppColors.primary),
             ),
             Expanded(
               child: TextField(
@@ -391,17 +464,89 @@ class _ChatsScreenState extends State<ChatsScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _send(user),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                    gradient: AppColors.goldGradient, shape: BoxShape.circle),
-                child: const Icon(Icons.send, color: Colors.white, size: 20),
-              ),
+            _circleBtn(
+              icon: _uploading ? null : (hasText ? Icons.send : Icons.mic),
+              loading: _uploading,
+              onTap: _uploading
+                  ? null
+                  : (hasText ? () => _send(user) : _startRecording),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _recordingBar(UserModel user) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(6, 8, 12, 8),
+        child: Row(children: [
+          IconButton(
+            onPressed: _cancelRecording,
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          ),
+          const _RecDot(),
+          const SizedBox(width: 8),
+          Text(_fmtSeconds(_recSeconds), style: AppTextStyles.bodyBold),
+          const Spacer(),
+          Text(_fmtSeconds(_recSeconds) == '0:00' ? '' : 'REC',
+              style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+          const SizedBox(width: 8),
+          _circleBtn(icon: Icons.send, onTap: () => _stopAndSendVoice(user)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _circleBtn(
+      {IconData? icon, bool loading = false, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: const BoxDecoration(
+            gradient: AppColors.goldGradient, shape: BoxShape.circle),
+        child: loading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white))
+            : Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
+}
+
+class _RecDot extends StatefulWidget {
+  const _RecDot();
+  @override
+  State<_RecDot> createState() => _RecDotState();
+}
+
+class _RecDotState extends State<_RecDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 700))
+    ..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _c,
+      child: Container(
+        width: 12,
+        height: 12,
+        decoration:
+            const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
       ),
     );
   }

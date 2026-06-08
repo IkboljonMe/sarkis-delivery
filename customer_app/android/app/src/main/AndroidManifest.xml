@@ -3,6 +3,8 @@
     <!-- Network access for Firebase and Geocoding API -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Voice messages -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!-- Allow opening external apps (WhatsApp, browser) -->
     <queries>

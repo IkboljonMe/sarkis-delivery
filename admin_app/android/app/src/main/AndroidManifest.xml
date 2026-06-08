@@ -7,6 +7,9 @@
     <!-- Admin app can place direct calls to customers -->
     <uses-permission android:name="android.permission.CALL_PHONE"/>
 
+    <!-- Voice messages -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
     <!-- Allow opening Maps, dialer and WhatsApp -->
     <queries>
         <intent>
