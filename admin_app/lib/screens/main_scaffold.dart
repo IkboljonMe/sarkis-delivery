@@ -18,6 +18,7 @@ import 'dashboard/dashboard_screen.dart';
 import 'locations/locations_screen.dart';
 import 'orders/orders_screen.dart';
 import 'products/products_screen.dart';
+import 'route/route_screen.dart';
 import 'settings/settings_screen.dart';
 import 'shifts/shifts_screen.dart';
 
@@ -74,6 +75,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     'Чаты',
     'Смены',
     'Локации',
+    'Маршрут',
     'Настройки',
   ];
 
@@ -85,6 +87,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     Icons.chat_bubble_outline,
     Icons.event_note_outlined,
     Icons.location_on_outlined,
+    Icons.alt_route_outlined,
     Icons.settings_outlined,
   ];
 
@@ -96,6 +99,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         ChatsScreen(),
         ShiftsScreen(),
         LocationsScreen(),
+        RouteScreen(),
         SettingsScreen(),
       ];
 
