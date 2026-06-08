@@ -66,12 +66,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
     if (ok != true) return;
     await OrderService.instance.updateStatus(o.id, status);
+
+    // Post a status update into the customer's chat thread.
+    final statusMsg =
+        '📦 Заказ #${o.shortId}: ${AppConstants.statusLabel(status)}';
+    final admin = context.read<AdminAuthProvider>();
+    await MessageService.instance.ensureTopic(
+        topicId: o.userId, userName: o.userName, userGroup: o.userGroup);
+    await MessageService.instance.sendMessage(
+      topicId: o.userId,
+      text: statusMsg,
+      senderId: admin.uid ?? 'admin',
+      senderName: 'Admin',
+      isFromAdmin: true,
+    );
+
     final user = await UserService.instance.getUser(o.userId);
     if (user != null && user.fcmToken.isNotEmpty) {
       await FcmService.instance.sendToUser(
         user.fcmToken,
         'Sarkis Bread',
-        'Статус заказа: ${AppConstants.statusLabel(status)}',
+        statusMsg,
         data: {'orderId': o.id},
       );
     }

@@ -7,6 +7,7 @@ class ProductModel {
   final String unit;
   final int maxQty;
   final String imageUrl;
+  final List<String> images; // gallery (2-3 photos); imageUrl is the primary
   final bool isActive;
   final int sortOrder;
 
@@ -19,9 +20,16 @@ class ProductModel {
     this.unit = 'piece',
     this.maxQty = 10,
     this.imageUrl = '',
+    this.images = const [],
     this.isActive = true,
     this.sortOrder = 0,
   });
+
+  /// All gallery images (falls back to imageUrl). De-duplicated, non-empty.
+  List<String> get gallery {
+    final all = <String>[if (imageUrl.isNotEmpty) imageUrl, ...images];
+    return all.where((e) => e.isNotEmpty).toSet().toList();
+  }
 
   String nameFor(String lang) => _localized(name, lang);
   String descriptionFor(String lang) => _localized(description, lang);
@@ -50,6 +58,11 @@ class ProductModel {
       unit: json['unit'] as String? ?? 'piece',
       maxQty: (json['maxQty'] as num?)?.toInt() ?? 10,
       imageUrl: json['imageUrl'] as String? ?? '',
+      images: (json['images'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const [],
       isActive: json['isActive'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
@@ -64,6 +77,7 @@ class ProductModel {
         'unit': unit,
         'maxQty': maxQty,
         'imageUrl': imageUrl,
+        'images': images,
         'isActive': isActive,
         'sortOrder': sortOrder,
       };
@@ -77,6 +91,7 @@ class ProductModel {
     String? unit,
     int? maxQty,
     String? imageUrl,
+    List<String>? images,
     bool? isActive,
     int? sortOrder,
   }) {
@@ -89,6 +104,7 @@ class ProductModel {
       unit: unit ?? this.unit,
       maxQty: maxQty ?? this.maxQty,
       imageUrl: imageUrl ?? this.imageUrl,
+      images: images ?? this.images,
       isActive: isActive ?? this.isActive,
       sortOrder: sortOrder ?? this.sortOrder,
     );

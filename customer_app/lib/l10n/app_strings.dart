@@ -105,6 +105,21 @@ const Map<String, String> kEn = {
   'personalInfo': 'Personal Info',
   'selectShift': 'Select a delivery date',
   'recentOrders': 'Your Recent Orders',
+  'settings': 'Settings',
+  'accountSettings': 'Account Settings',
+  'latestOrders': 'Latest Orders',
+  'termsOfService': 'Terms of Service',
+  'privacyPolicy': 'Privacy Policy',
+  'about': 'About',
+  'aboutApp': 'About App',
+  'contactUs': 'Contact Us',
+  'appVersionLabel': 'App Version',
+  'memberSince': 'Member since',
+  'general': 'General',
+  'support': 'Support',
+  'account': 'Account',
+  'termsBody': 'By using Sarkis Bread you agree to order for cash on delivery within the Berlin and Hamburg delivery zones. Orders are prepared per the selected delivery date. Prices are in EUR and may change. We may contact you about your order via the app or phone.',
+  'privacyBody': 'We collect your name, phone number and delivery address solely to fulfill your orders and contact you about them. Your data is stored securely in Firebase and is never sold. You can request deletion of your account at any time via WhatsApp.',
 };
 
 const Map<String, String> kRu = {
@@ -210,6 +225,21 @@ const Map<String, String> kRu = {
   'personalInfo': 'Личные данные',
   'selectShift': 'Выберите дату доставки',
   'recentOrders': 'Недавние заказы',
+  'settings': 'Настройки',
+  'accountSettings': 'Настройки аккаунта',
+  'latestOrders': 'Последние заказы',
+  'termsOfService': 'Условия использования',
+  'privacyPolicy': 'Политика конфиденциальности',
+  'about': 'О приложении',
+  'aboutApp': 'О приложении',
+  'contactUs': 'Связаться с нами',
+  'appVersionLabel': 'Версия приложения',
+  'memberSince': 'С нами с',
+  'general': 'Основное',
+  'support': 'Поддержка',
+  'account': 'Аккаунт',
+  'termsBody': 'Используя Sarkis Bread, вы соглашаетесь заказывать с оплатой наличными при доставке в зонах Берлина и Гамбурга. Заказы готовятся к выбранной дате доставки. Цены указаны в евро и могут меняться. Мы можем связаться с вами по поводу заказа через приложение или телефон.',
+  'privacyBody': 'Мы собираем ваше имя, номер телефона и адрес доставки только для выполнения заказов и связи по ним. Данные надёжно хранятся в Firebase и никогда не продаются. Вы можете запросить удаление аккаунта в любой момент через WhatsApp.',
 };
 
 const Map<String, String> kDe = {

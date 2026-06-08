@@ -26,7 +26,6 @@ class MyOrdersScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false,
           title: Text(t.myOrders),
           bottom: TabBar(
             indicatorColor: AppColors.primary,

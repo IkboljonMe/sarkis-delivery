@@ -37,6 +37,7 @@ class _ProductSheetState extends State<_ProductSheet> {
   late final TextEditingController _unit;
   late final TextEditingController _maxQty;
   late final TextEditingController _image;
+  late final TextEditingController _images;
   String? _categoryId;
   bool _active = true;
 
@@ -56,6 +57,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     _unit = TextEditingController(text: p?.unit ?? 'piece');
     _maxQty = TextEditingController(text: '${p?.maxQty ?? 10}');
     _image = TextEditingController(text: p?.imageUrl ?? '');
+    _images = TextEditingController(text: (p?.images ?? const []).join('\n'));
     _categoryId = p?.categoryId;
     _active = p?.isActive ?? true;
   }
@@ -69,6 +71,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     _unit.dispose();
     _maxQty.dispose();
     _image.dispose();
+    _images.dispose();
     super.dispose();
   }
 
@@ -84,6 +87,11 @@ class _ProductSheetState extends State<_ProductSheet> {
       unit: _unit.text.trim(),
       maxQty: int.tryParse(_maxQty.text) ?? 10,
       imageUrl: _image.text.trim(),
+      images: _images.text
+          .split('\n')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
       isActive: _active,
     ));
     if (mounted) Navigator.pop(context);
@@ -170,7 +178,13 @@ class _ProductSheetState extends State<_ProductSheet> {
                   label: 'Макс. количество',
                   keyboardType: TextInputType.number),
               const SizedBox(height: 12),
-              AppInputField(controller: _image, label: 'URL картинки'),
+              AppInputField(
+                  controller: _image, label: 'Главное фото (URL)'),
+              const SizedBox(height: 12),
+              AppInputField(
+                  controller: _images,
+                  label: 'Доп. фото (по одному URL на строку)',
+                  maxLines: 3),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.primary,

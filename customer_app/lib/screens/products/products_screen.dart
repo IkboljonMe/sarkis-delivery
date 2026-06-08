@@ -15,6 +15,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/golden_button.dart';
 import '../../widgets/loading_shimmer.dart';
 import '../cart/cart_screen.dart';
+import 'product_detail_screen.dart';
 
 class ProductsScreen extends StatelessWidget {
   final CategoryModel category;
@@ -73,7 +74,13 @@ class _ProductCard extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final qty = cart.qtyOf(product.id);
 
-    return Container(
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(product: product)),
+      ),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -125,6 +132,7 @@ class _ProductCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

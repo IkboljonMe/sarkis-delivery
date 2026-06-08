@@ -8,7 +8,7 @@ import '../widgets/bottom_nav_bar.dart';
 import 'chats/chats_screen.dart';
 import 'home/home_screen.dart';
 import 'orders/my_orders_screen.dart';
-import 'profile/profile_screen.dart';
+import 'profile/settings_screen.dart';
 
 /// Authenticated shell hosting the 4 customer tabs with a floating nav bar.
 class MainShell extends StatefulWidget {
@@ -30,14 +30,14 @@ class _MainShellState extends State<MainShell> {
       HomeScreen(),
       MyOrdersScreen(),
       ChatsScreen(),
-      ProfileScreen(),
+      SettingsScreen(),
     ];
 
     final items = [
       NavItem(Icons.home_outlined, Icons.home, t.home),
       NavItem(Icons.receipt_long_outlined, Icons.receipt_long, t.myOrders),
       NavItem(Icons.chat_bubble_outline, Icons.chat_bubble, t.chats),
-      NavItem(Icons.person_outline, Icons.person, t.profile),
+      NavItem(Icons.settings_outlined, Icons.settings, t.t('settings')),
     ];
 
     return Scaffold(
