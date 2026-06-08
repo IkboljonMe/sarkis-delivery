@@ -17,6 +17,7 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/gold_badge.dart';
+import '../cart/cart_screen.dart';
 import '../orders/order_status_badge.dart';
 import '../products/categories_screen.dart';
 import '../products/products_screen.dart';
@@ -77,6 +78,16 @@ class HomeScreen extends StatelessWidget {
                   style: AppTextStyles.body
                       .copyWith(color: AppColors.textSecondary),
                 ),
+              ),
+            ),
+            // Unfinished basket — lets the customer resume an order they
+            // started but never placed (quantities survive app restarts).
+            SliverToBoxAdapter(
+              child: Consumer<CartProvider>(
+                builder: (context, cart, _) {
+                  if (cart.totalItems == 0) return const SizedBox.shrink();
+                  return _basketBanner(context, t, cart.totalItems);
+                },
               ),
             ),
             // Deliveries
@@ -198,6 +209,51 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _basketBanner(BuildContext context, AppLocalizations t, int items) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CartScreen()),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.shopping_basket_outlined,
+                  color: AppColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t.t('unfinishedBasket'), style: AppTextStyles.bodyBold),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$items ${t.t('itemsWaiting')}',
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
+              ),
+              Text('${t.t('resume')} →',
+                  style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn().slideY(begin: -0.2);
   }
 
   Widget _sectionTitle(String title) => Padding(

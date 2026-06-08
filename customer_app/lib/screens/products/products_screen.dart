@@ -25,7 +25,6 @@ class ProductsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final lang = context.watch<AuthProvider>().user?.language ?? 'en';
-    final cart = context.watch<CartProvider>();
 
     return Scaffold(
       appBar: AppBar(title: Text(category.nameFor(lang))),
@@ -51,15 +50,20 @@ class ProductsScreen extends StatelessWidget {
           );
         },
       ),
-      bottomSheet: cart.totalItems > 0
-          ? _CartBar(
-              items: cart.totalItems,
-              onView: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CartScreen()),
-              ),
-            )
-          : null,
+      // Only the cart bar listens to the cart, so adding an item no longer
+      // rebuilds the whole list (which re-ran every card's entrance animation).
+      bottomSheet: Consumer<CartProvider>(
+        builder: (context, cart, _) {
+          if (cart.totalItems == 0) return const SizedBox.shrink();
+          return _CartBar(
+            items: cart.totalItems,
+            onView: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            ),
+          );
+        },
+      ),
     );
   }
 }

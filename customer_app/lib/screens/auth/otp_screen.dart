@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/golden_button.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({super.key});
@@ -49,10 +50,20 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _verify(String code) async {
+    code = code.trim();
+    // Guard against the duplicate trigger from onCompleted + manual submit.
     if (code.length != 6 || _verifying) return;
     setState(() => _verifying = true);
     final auth = context.read<AuthProvider>();
-    final ok = await auth.verifyOtp(code);
+
+    // A single retry covers transient sign-in failures that previously forced
+    // the user to submit the code twice.
+    bool ok = await auth.verifyOtp(code);
+    if (!ok && _isTransient(auth.error)) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      ok = await auth.verifyOtp(code);
+    }
+
     if (!mounted) return;
     setState(() => _verifying = false);
     if (ok) {
@@ -61,8 +72,23 @@ class _OtpScreenState extends State<OtpScreen> {
     } else {
       Fluttertoast.showToast(msg: auth.error ?? 'Invalid code');
       auth.resetError();
-      _pin.clear();
+      // Keep the entered digits so the user can just press Verify again
+      // instead of re-typing the whole code.
     }
+  }
+
+  /// Network / internal errors are worth an automatic retry; a wrong code is
+  /// not (the result would be identical).
+  bool _isTransient(String? error) {
+    if (error == null) return false;
+    final e = error.toLowerCase();
+    if (e.contains('invalid') || e.contains('expired') || e.contains('code')) {
+      return false;
+    }
+    return e.contains('network') ||
+        e.contains('timeout') ||
+        e.contains('internal') ||
+        e.contains('unavailable');
   }
 
   @override
@@ -89,6 +115,11 @@ class _OtpScreenState extends State<OtpScreen> {
                 autoFocus: true,
                 keyboardType: TextInputType.number,
                 textStyle: AppTextStyles.headingM,
+                // Disable the filled background that rendered as an ugly
+                // hover/fill block; use clean bordered boxes instead.
+                enableActiveFill: false,
+                showCursor: true,
+                cursorColor: AppColors.primary,
                 onChanged: (_) {},
                 onCompleted: _verify,
                 pinTheme: PinTheme(
@@ -96,35 +127,34 @@ class _OtpScreenState extends State<OtpScreen> {
                   borderRadius: BorderRadius.circular(12),
                   fieldHeight: 54,
                   fieldWidth: 46,
+                  borderWidth: 1.4,
                   activeColor: AppColors.primary,
                   selectedColor: AppColors.primary,
                   inactiveColor: AppColors.border,
-                  activeFillColor: AppColors.surfaceElevated,
-                  selectedFillColor: AppColors.surfaceElevated,
-                  inactiveFillColor: AppColors.surfaceElevated,
                 ),
-                enableActiveFill: true,
+              ),
+              const SizedBox(height: 24),
+              GoldenButton(
+                label: t.t('verify'),
+                loading: _verifying,
+                onPressed: () => _verify(_pin.text),
               ),
               const SizedBox(height: 16),
-              if (_verifying)
-                const Center(child: CircularProgressIndicator())
-              else
-                Center(
-                  child: _left > 0
-                      ? Text('${t.resendCode} ($_left)',
-                          style: AppTextStyles.caption)
-                      : TextButton(
-                          onPressed: () {
-                            context
-                                .read<AuthProvider>()
-                                .startPhoneVerification(number);
-                            _startTimer();
-                          },
-                          child: Text(t.resendCode,
-                              style:
-                                  const TextStyle(color: AppColors.primary)),
-                        ),
-                ),
+              Center(
+                child: _left > 0
+                    ? Text('${t.resendCode} ($_left)',
+                        style: AppTextStyles.caption)
+                    : TextButton(
+                        onPressed: () {
+                          context
+                              .read<AuthProvider>()
+                              .startPhoneVerification(number);
+                          _startTimer();
+                        },
+                        child: Text(t.resendCode,
+                            style: const TextStyle(color: AppColors.primary)),
+                      ),
+              ),
             ],
           ),
         ),
