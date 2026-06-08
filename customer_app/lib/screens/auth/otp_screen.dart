@@ -108,29 +108,51 @@ class _OtpScreenState extends State<OtpScreen> {
               const SizedBox(height: 8),
               Text(number, style: AppTextStyles.caption),
               const SizedBox(height: 32),
-              PinCodeTextField(
-                appContext: context,
-                length: 6,
-                controller: _pin,
-                autoFocus: true,
-                keyboardType: TextInputType.number,
-                textStyle: AppTextStyles.headingM,
-                // Disable the filled background that rendered as an ugly
-                // hover/fill block; use clean bordered boxes instead.
-                enableActiveFill: false,
-                showCursor: true,
-                cursorColor: AppColors.primary,
-                onChanged: (_) {},
-                onCompleted: _verify,
-                pinTheme: PinTheme(
-                  shape: PinCodeFieldShape.box,
-                  borderRadius: BorderRadius.circular(12),
-                  fieldHeight: 54,
-                  fieldWidth: 46,
-                  borderWidth: 1.4,
-                  activeColor: AppColors.primary,
-                  selectedColor: AppColors.primary,
-                  inactiveColor: AppColors.border,
+              // The global InputDecorationTheme has filled:true, which the
+              // pin field's underlying text field inherited and painted as a
+              // grey band behind the boxes. Override it to transparent here.
+              Theme(
+                data: Theme.of(context).copyWith(
+                  inputDecorationTheme: const InputDecorationTheme(
+                    filled: false,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+                // Constrain the width so the 6 boxes stay compact and evenly
+                // spaced instead of sprawling across a wide (web) window.
+                child: Center(
+                  child: SizedBox(
+                    width: 340,
+                    child: PinCodeTextField(
+                      appContext: context,
+                      length: 6,
+                      controller: _pin,
+                      autoFocus: true,
+                      keyboardType: TextInputType.number,
+                      textStyle: AppTextStyles.headingM,
+                      // Clean bordered boxes, no filled background.
+                      enableActiveFill: false,
+                      backgroundColor: Colors.transparent,
+                      showCursor: true,
+                      cursorColor: AppColors.primary,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      onChanged: (_) {},
+                      onCompleted: _verify,
+                      pinTheme: PinTheme(
+                        shape: PinCodeFieldShape.box,
+                        borderRadius: BorderRadius.circular(12),
+                        fieldHeight: 52,
+                        fieldWidth: 46,
+                        borderWidth: 1.4,
+                        activeColor: AppColors.primary,
+                        selectedColor: AppColors.primary,
+                        inactiveColor: AppColors.border,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
