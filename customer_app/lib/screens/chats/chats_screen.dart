@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
@@ -31,12 +32,17 @@ class _ChatsScreenState extends State<ChatsScreen> {
   final _controller = TextEditingController();
   final _picker = ImagePicker();
   final _recorder = VoiceRecorder();
-  bool _marked = false;
+  final ItemScrollController _itemScroll = ItemScrollController();
+  final ItemPositionsListener _positions = ItemPositionsListener.create();
   bool _uploading = false;
   bool _recording = false;
   int _recSeconds = 0;
   Timer? _recTimer;
   MessageModel? _replyTo;
+
+  List<MessageModel> _msgs = const [];
+  bool _initialized = false;
+  String? _unreadAnchorId;
 
   @override
   void initState() {
@@ -45,6 +51,45 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   void _onTextChanged() => setState(() {});
+
+  /// On first data: capture the unread boundary, jump to it (or bottom), then
+  /// mark read so the Telegram-style divider persists.
+  void _onMessages(UserModel user, List<MessageModel> msgs) {
+    _msgs = msgs;
+    if (_initialized || msgs.isEmpty) return;
+    _initialized = true;
+    final firstUnread = msgs.indexWhere((m) => m.isFromAdmin && !m.isRead);
+    final target = firstUnread >= 0 ? firstUnread : msgs.length - 1;
+    if (firstUnread >= 0) _unreadAnchorId = msgs[firstUnread].id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_itemScroll.isAttached) {
+        _itemScroll.jumpTo(
+            index: target, alignment: firstUnread >= 0 ? 0.3 : 0.0);
+      }
+      context
+          .read<MessageProvider>()
+          .markRead(user.id, readingAsAdmin: false);
+    });
+  }
+
+  void _scrollToMessage(String id) {
+    final i = _msgs.indexWhere((m) => m.id == id);
+    if (i < 0 || !_itemScroll.isAttached) return;
+    _itemScroll.scrollTo(
+        index: i,
+        alignment: 0.3,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut);
+  }
+
+  void _scrollToBottom(UserModel user) {
+    if (_msgs.isEmpty || !_itemScroll.isAttached) return;
+    _itemScroll.scrollTo(
+        index: _msgs.length - 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut);
+    context.read<MessageProvider>().markRead(user.id, readingAsAdmin: false);
+  }
 
   @override
   void dispose() {
@@ -199,13 +244,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
       return Scaffold(body: Center(child: Text(t.loading)));
     }
 
-    if (!_marked) {
-      _marked = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        msgProvider.markRead(user.id, readingAsAdmin: false);
-      });
-    }
-
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -229,15 +267,23 @@ class _ChatsScreenState extends State<ChatsScreen> {
               stream: msgProvider.messagesStream(user.id),
               builder: (context, snap) {
                 final msgs = snap.data ?? [];
+                _onMessages(user, msgs);
                 if (msgs.isEmpty) {
                   return EmptyState(
                       icon: Icons.chat_bubble_outline,
                       title: t.t('noMessages'));
                 }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: msgs.length,
-                  itemBuilder: (context, i) => _bubble(user, msgs[i]),
+                return Stack(
+                  children: [
+                    ScrollablePositionedList.builder(
+                      itemScrollController: _itemScroll,
+                      itemPositionsListener: _positions,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: msgs.length,
+                      itemBuilder: (context, i) => _item(user, msgs, i),
+                    ),
+                    _scrollDownButton(user, msgs),
+                  ],
                 );
               },
             ),
@@ -246,6 +292,87 @@ class _ChatsScreenState extends State<ChatsScreen> {
           _inputBar(t, user),
         ],
       ),
+    );
+  }
+
+  Widget _item(UserModel user, List<MessageModel> msgs, int i) {
+    final bubble = _bubble(user, msgs[i]);
+    if (msgs[i].id == _unreadAnchorId && i > 0) {
+      return Column(children: [_unreadDivider(), bubble]);
+    }
+    return bubble;
+  }
+
+  Widget _unreadDivider() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      alignment: Alignment.center,
+      color: AppColors.surfaceElevated.withOpacity(0.6),
+      child: Text('Непрочитанные сообщения',
+          style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
+    );
+  }
+
+  Widget _scrollDownButton(UserModel user, List<MessageModel> msgs) {
+    return ValueListenableBuilder<Iterable<ItemPosition>>(
+      valueListenable: _positions.itemPositions,
+      builder: (context, positions, _) {
+        if (positions.isEmpty) return const SizedBox.shrink();
+        final lastVisible = positions
+            .where((p) => p.itemTrailingEdge > 0)
+            .map((p) => p.index)
+            .fold(0, (a, b) => a > b ? a : b);
+        if (lastVisible >= msgs.length - 1) return const SizedBox.shrink();
+        final unreadBelow = msgs
+            .skip(lastVisible + 1)
+            .where((m) => m.isFromAdmin && !m.isRead)
+            .length;
+        return Positioned(
+          right: 12,
+          bottom: 12,
+          child: GestureDetector(
+            onTap: () => _scrollToBottom(user),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black45, blurRadius: 6)
+                    ],
+                  ),
+                  child: const Icon(Icons.keyboard_arrow_down,
+                      color: AppColors.primary),
+                ),
+                if (unreadBelow > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      constraints:
+                          const BoxConstraints(minWidth: 20, minHeight: 20),
+                      decoration: const BoxDecoration(
+                          color: AppColors.primary, shape: BoxShape.circle),
+                      child: Text('$unreadBelow',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -355,31 +482,34 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 
   Widget _replyQuote(MessageModel m, bool mine) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-      decoration: BoxDecoration(
-        color: (mine ? Colors.white : AppColors.primary).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-            left: BorderSide(
-                color: mine ? Colors.white : AppColors.primary, width: 3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: mine ? Colors.white : AppColors.primary)),
-          Text(m.replyToText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: mine ? Colors.white70 : AppColors.textSecondary)),
-        ],
+    return GestureDetector(
+      onTap: () => _scrollToMessage(m.replyToId),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        decoration: BoxDecoration(
+          color: (mine ? Colors.white : AppColors.primary).withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+              left: BorderSide(
+                  color: mine ? Colors.white : AppColors.primary, width: 3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: mine ? Colors.white : AppColors.primary)),
+            Text(m.replyToText.isEmpty ? '📎 вложение' : m.replyToText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: mine ? Colors.white70 : AppColors.textSecondary)),
+          ],
+        ),
       ),
     );
   }

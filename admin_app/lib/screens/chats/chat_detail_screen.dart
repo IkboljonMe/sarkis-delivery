@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../models/message_model.dart';
 import '../../providers/admin_auth_provider.dart';
@@ -35,11 +36,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _controller = TextEditingController();
   final _picker = ImagePicker();
   final _recorder = VoiceRecorder();
+  final ItemScrollController _itemScroll = ItemScrollController();
+  final ItemPositionsListener _positions = ItemPositionsListener.create();
   MessageModel? _replyTo;
   bool _uploading = false;
   bool _recording = false;
   int _recSeconds = 0;
   Timer? _recTimer;
+
+  List<MessageModel> _msgs = const [];
+  bool _initialized = false;
+  String? _unreadAnchorId; // first unread message on entry (Telegram divider)
 
   @override
   void initState() {
@@ -48,9 +55,46 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       _controller.text = widget.initialText!;
     }
     _controller.addListener(_onTextChanged);
+  }
+
+  /// On first data: capture the unread boundary, jump to it (or to bottom),
+  /// then mark as read so the divider persists.
+  void _onMessages(List<MessageModel> msgs) {
+    _msgs = msgs;
+    if (_initialized || msgs.isEmpty) return;
+    _initialized = true;
+    final firstUnread =
+        msgs.indexWhere((m) => !m.isFromAdmin && !m.isRead);
+    final target = firstUnread >= 0 ? firstUnread : msgs.length - 1;
+    if (firstUnread >= 0) _unreadAnchorId = msgs[firstUnread].id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_itemScroll.isAttached) {
+        _itemScroll.jumpTo(
+            index: target, alignment: firstUnread >= 0 ? 0.3 : 0.0);
+      }
       MessageService.instance.markRead(widget.topicId, readingAsAdmin: true);
     });
+  }
+
+  int _indexOfMessage(String id) => _msgs.indexWhere((m) => m.id == id);
+
+  void _scrollToMessage(String id) {
+    final i = _indexOfMessage(id);
+    if (i < 0 || !_itemScroll.isAttached) return;
+    _itemScroll.scrollTo(
+        index: i,
+        alignment: 0.3,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut);
+  }
+
+  void _scrollToBottom() {
+    if (_msgs.isEmpty || !_itemScroll.isAttached) return;
+    _itemScroll.scrollTo(
+        index: _msgs.length - 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut);
+    MessageService.instance.markRead(widget.topicId, readingAsAdmin: true);
   }
 
   void _onTextChanged() => setState(() {});
@@ -203,15 +247,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               stream: MessageService.instance.messagesStream(widget.topicId),
               builder: (context, snap) {
                 final msgs = snap.data ?? [];
+                _onMessages(msgs);
                 if (msgs.isEmpty) {
                   return Center(
                       child:
                           Text('Нет сообщений', style: AppTextStyles.caption));
                 }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: msgs.length,
-                  itemBuilder: (context, i) => _bubble(msgs[i]),
+                return Stack(
+                  children: [
+                    ScrollablePositionedList.builder(
+                      itemScrollController: _itemScroll,
+                      itemPositionsListener: _positions,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: msgs.length,
+                      itemBuilder: (context, i) => _item(msgs, i),
+                    ),
+                    _scrollDownButton(msgs),
+                  ],
                 );
               },
             ),
@@ -220,6 +272,87 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           _inputBar(),
         ],
       ),
+    );
+  }
+
+  Widget _item(List<MessageModel> msgs, int i) {
+    final bubble = _bubble(msgs[i]);
+    if (msgs[i].id == _unreadAnchorId && i > 0) {
+      return Column(children: [_unreadDivider(), bubble]);
+    }
+    return bubble;
+  }
+
+  Widget _unreadDivider() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      alignment: Alignment.center,
+      color: AppColors.surfaceElevated.withOpacity(0.6),
+      child: Text('Непрочитанные сообщения',
+          style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
+    );
+  }
+
+  Widget _scrollDownButton(List<MessageModel> msgs) {
+    return ValueListenableBuilder<Iterable<ItemPosition>>(
+      valueListenable: _positions.itemPositions,
+      builder: (context, positions, _) {
+        if (positions.isEmpty) return const SizedBox.shrink();
+        final lastVisible = positions
+            .where((p) => p.itemTrailingEdge > 0)
+            .map((p) => p.index)
+            .fold(0, (a, b) => a > b ? a : b);
+        if (lastVisible >= msgs.length - 1) return const SizedBox.shrink();
+        final unreadBelow = msgs
+            .skip(lastVisible + 1)
+            .where((m) => !m.isFromAdmin && !m.isRead)
+            .length;
+        return Positioned(
+          right: 12,
+          bottom: 12,
+          child: GestureDetector(
+            onTap: _scrollToBottom,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black45, blurRadius: 6)
+                    ],
+                  ),
+                  child: const Icon(Icons.keyboard_arrow_down,
+                      color: AppColors.primary),
+                ),
+                if (unreadBelow > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      constraints:
+                          const BoxConstraints(minWidth: 20, minHeight: 20),
+                      decoration: const BoxDecoration(
+                          color: AppColors.primary, shape: BoxShape.circle),
+                      child: Text('$unreadBelow',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -312,31 +445,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Widget _replyQuote(MessageModel m, bool mine) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-      decoration: BoxDecoration(
-        color: (mine ? Colors.white : AppColors.primary).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-            left: BorderSide(
-                color: mine ? Colors.white : AppColors.primary, width: 3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: mine ? Colors.white : AppColors.primary)),
-          Text(m.replyToText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: mine ? Colors.white70 : AppColors.textSecondary)),
-        ],
+    return GestureDetector(
+      onTap: () => _scrollToMessage(m.replyToId),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        decoration: BoxDecoration(
+          color: (mine ? Colors.white : AppColors.primary).withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+              left: BorderSide(
+                  color: mine ? Colors.white : AppColors.primary, width: 3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: mine ? Colors.white : AppColors.primary)),
+            Text(m.replyToText.isEmpty ? '📎 вложение' : m.replyToText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: mine ? Colors.white70 : AppColors.textSecondary)),
+          ],
+        ),
       ),
     );
   }
