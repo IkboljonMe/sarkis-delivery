@@ -26,6 +26,7 @@ class MessageModel {
   final int sizeBytes; // media size, shown on voice bubbles
   final bool uploading; // media still uploading (optimistic send)
   final int uploadCount; // expected number of album photos while uploading
+  final bool deleted; // removed for everyone -> shows "message deleted"
 
   MessageModel({
     required this.id,
@@ -49,6 +50,7 @@ class MessageModel {
     this.sizeBytes = 0,
     this.uploading = false,
     this.uploadCount = 0,
+    this.deleted = false,
   });
 
   bool get hasReply => replyToId.isNotEmpty;
@@ -122,6 +124,7 @@ class MessageModel {
       sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
       uploading: json['uploading'] as bool? ?? false,
       uploadCount: (json['uploadCount'] as num?)?.toInt() ?? 0,
+      deleted: json['deleted'] as bool? ?? false,
     );
   }
 
@@ -146,6 +149,7 @@ class MessageModel {
         'sizeBytes': sizeBytes,
         'uploading': uploading,
         'uploadCount': uploadCount,
+        'deleted': deleted,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),

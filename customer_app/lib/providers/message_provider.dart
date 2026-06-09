@@ -64,6 +64,13 @@ class MessageProvider extends ChangeNotifier {
   Future<void> appendMediaUrl(String topicId, String msgId, String url) =>
       _service.appendMediaUrl(topicId, msgId, url);
 
+  Future<String> uploadChatFile(String topicId, String path,
+          {required String ext, required String contentType}) =>
+      _service.uploadChatFile(topicId, path, ext: ext, contentType: contentType);
+
+  Future<void> deleteMessage(String topicId, String msgId) =>
+      _service.deleteMessage(topicId, msgId);
+
   Future<String> uploadChatMedia(String topicId, Uint8List bytes,
           {required String ext, required String contentType}) =>
       _service.uploadChatMedia(topicId, bytes,

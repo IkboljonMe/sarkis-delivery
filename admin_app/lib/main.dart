@@ -2,11 +2,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'demo_firebase_options.dart';
+import 'l10n/admin_localizations.dart';
 import 'providers/admin_auth_provider.dart';
 import 'providers/group_provider.dart';
+import 'providers/locale_provider.dart';
 import 'services/local_notifications.dart';
 import 'screens/chats/chat_detail_screen.dart';
 import 'screens/splash_screen.dart';
@@ -57,14 +60,21 @@ Future<void> main() async {
   await auth.loadPreferences();
   final group = GroupProvider();
   await group.load();
+  final locale = LocaleProvider();
+  await locale.load();
 
-  runApp(AdminApp(auth: auth, group: group));
+  runApp(AdminApp(auth: auth, group: group, locale: locale));
 }
 
 class AdminApp extends StatelessWidget {
   final AdminAuthProvider auth;
   final GroupProvider group;
-  const AdminApp({super.key, required this.auth, required this.group});
+  final LocaleProvider locale;
+  const AdminApp(
+      {super.key,
+      required this.auth,
+      required this.group,
+      required this.locale});
 
   @override
   Widget build(BuildContext context) {
@@ -72,13 +82,24 @@ class AdminApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: group),
+        ChangeNotifierProvider.value(value: locale),
       ],
-      child: MaterialApp(
-        title: 'Sarkis Bread Admin',
-        navigatorKey: adminNavKey,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
-        home: const AdminSplashScreen(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, loc, _) => MaterialApp(
+          title: 'Sarkis Bread Admin',
+          navigatorKey: adminNavKey,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark,
+          locale: loc.locale,
+          supportedLocales: LocaleProvider.supportedLocales,
+          localizationsDelegates: const [
+            AdminLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const AdminSplashScreen(),
+        ),
       ),
     );
   }

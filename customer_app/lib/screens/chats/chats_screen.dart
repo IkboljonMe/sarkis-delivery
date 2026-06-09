@@ -47,6 +47,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   bool _uploading = false;
   bool _recording = false;
   int _recSeconds = 0;
+  double _recDrag = 0; // horizontal drag during hold-to-record (slide to cancel)
   Timer? _recTimer;
   MessageModel? _replyTo;
 
@@ -398,8 +399,8 @@ class _ChatsScreenState extends State<ChatsScreen>
   Future<void> _pickAndSendVideo(UserModel user) async {
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null || !mounted) return;
-    final bytes = await picked.readAsBytes();
-    if (bytes.length > 50 * 1024 * 1024) {
+    final size = await picked.length();
+    if (size > 50 * 1024 * 1024) {
       Fluttertoast.showToast(msg: 'Видео слишком большое (макс 50 МБ)');
       return;
     }
@@ -415,10 +416,10 @@ class _ChatsScreenState extends State<ChatsScreen>
         userGroup: user.group,
         type: 'video',
         mediaUrl: '',
-        sizeBytes: bytes.length,
+        sizeBytes: size,
         uploading: true,
       );
-      final url = await msg.uploadChatMedia(user.id, bytes,
+      final url = await msg.uploadChatFile(user.id, picked.path,
           ext: 'mp4', contentType: 'video/mp4');
       await msg.patchMessage(user.id, id, {'mediaUrl': url, 'uploading': false});
     } catch (_) {
@@ -509,6 +510,19 @@ class _ChatsScreenState extends State<ChatsScreen>
                 setState(() => _replyTo = m);
               },
             ),
+            if (!m.isFromAdmin && !m.deleted)
+              ListTile(
+                leading: const Icon(Icons.delete_outline,
+                    color: AppColors.error),
+                title: Text(AppLocalizations.of(context).t('deleteMessage'),
+                    style: const TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context
+                      .read<MessageProvider>()
+                      .deleteMessage(user.id, m.id);
+                },
+              ),
           ],
         ),
       ),
@@ -918,6 +932,22 @@ class _ChatsScreenState extends State<ChatsScreen>
   Widget _bubbleContent(MessageModel m, bool mine, String time) {
     final textColor = mine ? Colors.white : AppColors.textPrimary;
 
+    if (m.deleted) {
+      final muted = mine ? Colors.white70 : AppColors.textMuted;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.block, size: 14, color: muted),
+          const SizedBox(width: 6),
+          Text(AppLocalizations.of(context).t('messageDeleted'),
+              style: TextStyle(
+                  fontStyle: FontStyle.italic, color: muted, fontSize: 13)),
+          const SizedBox(width: 8),
+          ..._metaInline(m, mine, time),
+        ],
+      );
+    }
+
     if (m.isOrder) return _orderCard(m, mine, time, textColor);
 
     if (m.isVideo) {
@@ -1181,7 +1211,6 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _inputBar(AppLocalizations t, UserModel user) {
-    if (_recording) return _recordingBar(user);
     final hasText = _controller.text.trim().isNotEmpty;
     return SafeArea(
       top: false,
@@ -1189,51 +1218,70 @@ class _ChatsScreenState extends State<ChatsScreen>
         padding: const EdgeInsets.fromLTRB(6, 8, 12, 8),
         child: Row(
           children: [
-            IconButton(
-              onPressed: () => _showAttachSheet(user),
-              icon: const Icon(Icons.attach_file, color: AppColors.primary),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _inputFocus,
-                style: AppTextStyles.body,
-                minLines: 1,
-                maxLines: 4,
-                decoration: InputDecoration(hintText: t.sendMessage),
+            if (_recording)
+              Expanded(child: _recordingStrip())
+            else ...[
+              IconButton(
+                onPressed: () => _showAttachSheet(user),
+                icon: const Icon(Icons.attach_file, color: AppColors.primary),
               ),
-            ),
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _inputFocus,
+                  style: AppTextStyles.body,
+                  minLines: 1,
+                  maxLines: 4,
+                  decoration: InputDecoration(hintText: t.sendMessage),
+                ),
+              ),
+            ],
             const SizedBox(width: 8),
-            _circleBtn(
-              icon: hasText ? Icons.send : Icons.mic,
-              onTap: hasText ? () => _send(user) : () => _startRecording(user),
-            ),
+            if (hasText && !_recording)
+              _circleBtn(icon: Icons.send, onTap: () => _send(user))
+            else
+              // Hold-to-record (Telegram-style): press to start, release to
+              // send, slide left to cancel. The button stays mounted across
+              // the recording state so the pointer-up still reaches it.
+              Listener(
+                onPointerDown: (_) {
+                  _recDrag = 0;
+                  _startRecording(user);
+                },
+                onPointerMove: (e) {
+                  _recDrag += e.delta.dx;
+                  if (_recDrag < -90 && _recording) _cancelRecording();
+                },
+                onPointerUp: (_) {
+                  if (_recording) _stopAndSendVoice(user);
+                },
+                onPointerCancel: (_) {
+                  if (_recording) _cancelRecording();
+                },
+                child: _circleBtn(
+                    icon: _recording ? Icons.send : Icons.mic, onTap: null),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _recordingBar(UserModel user) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 8, 12, 8),
-        child: Row(children: [
-          IconButton(
-            onPressed: _cancelRecording,
-            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+  Widget _recordingStrip() {
+    return Row(
+      children: [
+        const _RecDot(),
+        const SizedBox(width: 8),
+        Text(_fmtSeconds(_recSeconds), style: AppTextStyles.bodyBold),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            _recDrag < -40 ? 'Отпустите — отмена' : '← сдвиньте для отмены',
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption.copyWith(color: AppColors.error),
           ),
-          const _RecDot(),
-          const SizedBox(width: 8),
-          Text(_fmtSeconds(_recSeconds), style: AppTextStyles.bodyBold),
-          const Spacer(),
-          Text(_fmtSeconds(_recSeconds) == '0:00' ? '' : 'REC',
-              style: AppTextStyles.caption.copyWith(color: AppColors.error)),
-          const SizedBox(width: 8),
-          _circleBtn(icon: Icons.send, onTap: () => _stopAndSendVoice(user)),
-        ]),
-      ),
+        ),
+      ],
     );
   }
 

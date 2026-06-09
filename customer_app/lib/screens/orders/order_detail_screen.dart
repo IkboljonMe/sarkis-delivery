@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -78,8 +79,11 @@ class OrderDetailScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (order.status == 'on_the_way') _driverBanner(t),
-              _timeline(order.status),
+              if (order.status == 'on_the_way') _etaBanner(t),
+              _timeline(order.status)
+                  .animate()
+                  .fadeIn(duration: 350.ms)
+                  .slideY(begin: 0.1),
               const SizedBox(height: 16),
               DarkCard(
                 child: Column(
@@ -208,23 +212,53 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _driverBanner(AppLocalizations t) {
+  Widget _etaBanner(AppLocalizations t) {
+    final now = DateTime.now();
+    final from = DateFormat('HH:mm').format(now.add(const Duration(minutes: 25)));
+    final to = DateFormat('HH:mm').format(now.add(const Duration(minutes: 45)));
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: AppColors.goldGradient,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.primary.withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6)),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.local_shipping, color: Colors.white),
-          const SizedBox(width: 12),
-          Text(t.driverComing,
-              style: AppTextStyles.bodyBold.copyWith(color: Colors.white)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+                color: Colors.white24, shape: BoxShape.circle),
+            child: const Icon(Icons.local_shipping, color: Colors.white),
+          )
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .moveX(begin: -3, end: 3, duration: 900.ms),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t.driverComing,
+                    style:
+                        AppTextStyles.bodyBold.copyWith(color: Colors.white)),
+                const SizedBox(height: 2),
+                Text('${t.t('estimatedArrival')} • ~$from–$to',
+                    style: const TextStyle(color: Colors.white, fontSize: 12)),
+              ],
+            ),
+          ),
         ],
       ),
-    );
+    )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: -0.2, curve: Curves.easeOut);
   }
 
   Widget _timeline(String status) {

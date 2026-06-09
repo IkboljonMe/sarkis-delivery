@@ -19,6 +19,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/gold_badge.dart';
 import '../cart/cart_screen.dart';
+import '../orders/order_detail_screen.dart';
 import '../orders/order_status_badge.dart';
 import '../products/categories_screen.dart';
 import '../products/products_screen.dart';
@@ -96,7 +97,12 @@ class HomeScreen extends StatelessWidget {
                         stream: ShiftService.instance
                             .openShiftsStream(user.group),
                         builder: (context, snap) {
-                          final shifts = snap.data ?? [];
+                          // Hide delivery dates that have already passed.
+                          final now = DateTime.now();
+                          final today = DateTime(now.year, now.month, now.day);
+                          final shifts = (snap.data ?? [])
+                              .where((s) => !s.date.isBefore(today))
+                              .toList();
                           if (snap.connectionState ==
                               ConnectionState.waiting) {
                             return const Center(
@@ -192,7 +198,7 @@ class HomeScreen extends StatelessWidget {
                   }
                   return SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, i) => _recentOrder(orders[i], t),
+                      (context, i) => _recentOrder(context, orders[i], t, i),
                       childCount: orders.length,
                     ),
                   );
@@ -290,23 +296,30 @@ class HomeScreen extends StatelessWidget {
     ).animate().fadeIn(delay: (80 * i).ms).slideX(begin: 0.1);
   }
 
-  Widget _recentOrder(OrderModel o, AppLocalizations t) {
+  Widget _recentOrder(
+      BuildContext context, OrderModel o, AppLocalizations t, int i) {
     final active = o.status != 'delivered' && o.status != 'cancelled';
     final deliverDate = DateFormat('d MMM').format(o.shiftDate);
     final summary = o.itemsSummary.isNotEmpty
         ? o.itemsSummary
         : '${o.itemCount} • ${t.products}';
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: o.id)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,10 +360,11 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          OrderStatusBadge(status: o.status),
-        ],
+            const SizedBox(width: 10),
+            OrderStatusBadge(status: o.status),
+          ],
+        ),
       ),
-    );
+    ).animate().fadeIn(delay: (60 * i).ms).slideY(begin: 0.15);
   }
 }

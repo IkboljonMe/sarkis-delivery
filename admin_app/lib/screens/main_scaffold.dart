@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/admin_localizations.dart';
 import '../providers/admin_auth_provider.dart';
 import '../providers/group_provider.dart';
 import '../services/fcm_service.dart';
@@ -59,17 +60,18 @@ class _MainScaffoldState extends State<MainScaffold> {
     super.dispose();
   }
 
+  // Localization keys; resolved per-locale via AdminLocalizations.
   static const _titles = [
-    'Главная',
-    'Заказы',
-    'Заявки',
-    'Товары',
-    'Купоны',
-    'Чаты',
-    'Смены',
-    'Маршрут',
-    'Отчёты',
-    'Настройки',
+    'navHome',
+    'navOrders',
+    'navApprovals',
+    'navProducts',
+    'navCoupons',
+    'navChats',
+    'navShifts',
+    'navRoute',
+    'navReports',
+    'navSettings',
   ];
 
   static const _icons = [
@@ -150,7 +152,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     final group = context.watch<GroupProvider>();
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_index]),
+        title: Text(AdminLocalizations.of(context).t(_titles[_index])),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -204,7 +206,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                         color: sel
                             ? AppColors.primary
                             : AppColors.textSecondary),
-                    title: Text(_titles[i],
+                    title: Text(AdminLocalizations.of(context).t(_titles[i]),
                         style: AppTextStyles.body.copyWith(
                             color: sel
                                 ? AppColors.primary

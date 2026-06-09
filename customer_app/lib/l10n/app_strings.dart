@@ -163,6 +163,10 @@ const Map<String, String> kEn = {
   'editCancelClosed': 'Editing and cancellation are closed for this delivery date.',
   'changesSentForApproval': 'Changes sent for approval',
   'namePhoneNeedApproval': 'Name and phone changes require admin approval.',
+  'messageDeleted': 'Message deleted',
+  'deleteMessage': 'Delete',
+  'holdToRecord': 'Hold to record, release to send',
+  'estimatedArrival': 'Estimated arrival',
 };
 
 const Map<String, String> kRu = {
@@ -326,6 +330,10 @@ const Map<String, String> kRu = {
   'editCancelClosed': 'Изменение и отмена для этой даты доставки уже закрыты.',
   'changesSentForApproval': 'Изменения отправлены на одобрение',
   'namePhoneNeedApproval': 'Изменение имени и телефона требует одобрения администратора.',
+  'messageDeleted': 'Сообщение удалено',
+  'deleteMessage': 'Удалить',
+  'holdToRecord': 'Удерживайте для записи, отпустите для отправки',
+  'estimatedArrival': 'Прибытие примерно',
 };
 
 const Map<String, String> kDe = {
@@ -425,6 +433,10 @@ const Map<String, String> kDe = {
   'editCancelClosed': 'Bearbeiten und Stornieren sind für dieses Lieferdatum geschlossen.',
   'changesSentForApproval': 'Änderungen zur Freigabe gesendet',
   'namePhoneNeedApproval': 'Namen- und Telefonänderungen müssen vom Admin freigegeben werden.',
+  'messageDeleted': 'Nachricht gelöscht',
+  'deleteMessage': 'Löschen',
+  'holdToRecord': 'Halten zum Aufnehmen, loslassen zum Senden',
+  'estimatedArrival': 'Voraussichtliche Ankunft',
 };
 
 const Map<String, String> kTr = {
@@ -483,6 +495,10 @@ const Map<String, String> kTr = {
   'editCancelClosed': 'Bu teslimat tarihi için düzenleme ve iptal kapalı.',
   'changesSentForApproval': 'Değişiklikler onaya gönderildi',
   'namePhoneNeedApproval': 'Ad ve telefon değişiklikleri yönetici onayı gerektirir.',
+  'messageDeleted': 'Mesaj silindi',
+  'deleteMessage': 'Sil',
+  'holdToRecord': 'Kaydetmek için basılı tutun, göndermek için bırakın',
+  'estimatedArrival': 'Tahmini varış',
 };
 
 const Map<String, String> kHy = {
@@ -541,4 +557,8 @@ const Map<String, String> kHy = {
   'editCancelClosed': 'Այս առաքման օրվա համար փոփոխումն ու չեղարկումը փակ են։',
   'changesSentForApproval': 'Փոփոխությունն ուղարկվեց հաստատման',
   'namePhoneNeedApproval': 'Անունի և հեռախոսի փոփոխությունը պահանջում է ադմինի հաստատում։',
+  'messageDeleted': 'Հաղորդագրությունը ջնջված է',
+  'deleteMessage': 'Ջնջել',
+  'holdToRecord': 'Պահեք ձայնագրելու համար, բաց թողեք ուղարկելու համար',
+  'estimatedArrival': 'Մոտավոր ժամանումը',
 };

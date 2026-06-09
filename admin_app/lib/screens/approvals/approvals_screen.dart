@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/admin_localizations.dart';
 import '../../models/approval_model.dart';
 import '../../models/order_model.dart';
 import '../../services/approval_service.dart';
@@ -18,16 +19,17 @@ class ApprovalsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AdminLocalizations.of(context);
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
-          const TabBar(
+          TabBar(
             labelColor: AppColors.primary,
             indicatorColor: AppColors.primary,
             tabs: [
-              Tab(text: 'Новые заказы'),
-              Tab(text: 'Профиль'),
+              Tab(text: t.t('apNewOrders')),
+              Tab(text: t.t('apProfile')),
             ],
           ),
           Expanded(

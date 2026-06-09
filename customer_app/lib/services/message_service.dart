@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,6 +29,36 @@ class MessageService {
     final ref = _storage.ref().child('chat/$topicId/$name.$ext');
     await ref.putData(bytes, SettableMetadata(contentType: contentType));
     return ref.getDownloadURL();
+  }
+
+  /// Uploads a media file by path (streamed — used for large videos so the
+  /// whole file isn't held in memory).
+  Future<String> uploadChatFile(
+    String topicId,
+    String path, {
+    required String ext,
+    required String contentType,
+  }) async {
+    final name = _msgs(topicId).doc().id;
+    final ref = _storage.ref().child('chat/$topicId/$name.$ext');
+    await ref.putFile(File(path), SettableMetadata(contentType: contentType));
+    return ref.getDownloadURL();
+  }
+
+  /// Soft-deletes a message ("message deleted" placeholder for both sides).
+  Future<void> deleteMessage(String topicId, String msgId) async {
+    try {
+      await _msgs(topicId).doc(msgId).update({
+        'deleted': true,
+        'text': '',
+        'mediaUrl': '',
+        'mediaUrls': <String>[],
+        'waveform': <int>[],
+        'orderId': '',
+        'type': 'text',
+        'uploading': false,
+      });
+    } catch (_) {}
   }
 
   Stream<List<MessageModel>> messagesStream(String topicId) {

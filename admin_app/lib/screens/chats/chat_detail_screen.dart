@@ -53,6 +53,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   bool _uploading = false;
   bool _recording = false;
   int _recSeconds = 0;
+  double _recDrag = 0; // slide-to-cancel offset during hold-to-record
   Timer? _recTimer;
 
   List<MessageModel> _msgs = const [];
@@ -340,8 +341,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Future<void> _pickAndSendVideo() async {
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
-    final bytes = await picked.readAsBytes();
-    if (bytes.length > 50 * 1024 * 1024) {
+    final size = await picked.length();
+    if (size > 50 * 1024 * 1024) {
       Fluttertoast.showToast(msg: 'Видео слишком большое (макс 50 МБ)');
       return;
     }
@@ -356,10 +357,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         isFromAdmin: true,
         type: 'video',
         mediaUrl: '',
-        sizeBytes: bytes.length,
+        sizeBytes: size,
         uploading: true,
       );
-      final url = await ms.uploadChatMedia(widget.topicId, bytes,
+      final url = await ms.uploadChatFile(widget.topicId, picked.path,
           ext: 'mp4', contentType: 'video/mp4');
       await ms.patchMessage(
           widget.topicId, id, {'mediaUrl': url, 'uploading': false});
@@ -447,6 +448,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 setState(() => _replyTo = m);
               },
             ),
+            if (!m.deleted)
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_outline, color: AppColors.error),
+                title: const Text('Удалить',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  MessageService.instance.deleteMessage(widget.topicId, m.id);
+                },
+              ),
           ],
         ),
       ),
@@ -837,6 +849,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Widget _bubbleContent(MessageModel m, bool mine, String time) {
     final textColor = mine ? Colors.white : AppColors.textPrimary;
 
+    if (m.deleted) {
+      final muted = mine ? Colors.white70 : AppColors.textMuted;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.block, size: 14, color: muted),
+          const SizedBox(width: 6),
+          Text('Сообщение удалено',
+              style: TextStyle(
+                  fontStyle: FontStyle.italic, color: muted, fontSize: 13)),
+          const SizedBox(width: 8),
+          ..._metaInline(m, mine, time),
+        ],
+      );
+    }
+
     if (m.isOrder) return _orderCard(m, mine, time, textColor);
 
     if (m.isVideo) {
@@ -1089,56 +1117,73 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Widget _inputBar() {
-    if (_recording) return _recordingBar();
     final hasText = _controller.text.trim().isNotEmpty;
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Row(children: [
-          IconButton(
-            onPressed: _showAttachSheet,
-            icon: const Icon(Icons.attach_file, color: AppColors.primary),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _inputFocus,
-              style: AppTextStyles.body,
-              minLines: 1,
-              maxLines: 4,
-              decoration: const InputDecoration(hintText: 'Сообщение...'),
+          if (_recording)
+            Expanded(child: _recordingStrip())
+          else ...[
+            IconButton(
+              onPressed: _showAttachSheet,
+              icon: const Icon(Icons.attach_file, color: AppColors.primary),
             ),
-          ),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                focusNode: _inputFocus,
+                style: AppTextStyles.body,
+                minLines: 1,
+                maxLines: 4,
+                decoration: const InputDecoration(hintText: 'Сообщение...'),
+              ),
+            ),
+          ],
           const SizedBox(width: 8),
-          _circleBtn(
-            icon: hasText ? Icons.send : Icons.mic,
-            onTap: hasText ? _send : _startRecording,
-          ),
+          if (hasText && !_recording)
+            _circleBtn(icon: Icons.send, onTap: _send)
+          else
+            // Hold to record, release to send, slide left to cancel.
+            Listener(
+              onPointerDown: (_) {
+                _recDrag = 0;
+                _startRecording();
+              },
+              onPointerMove: (e) {
+                _recDrag += e.delta.dx;
+                if (_recDrag < -90 && _recording) _cancelRecording();
+              },
+              onPointerUp: (_) {
+                if (_recording) _stopAndSendVoice();
+              },
+              onPointerCancel: (_) {
+                if (_recording) _cancelRecording();
+              },
+              child: _circleBtn(
+                  icon: _recording ? Icons.send : Icons.mic, onTap: null),
+            ),
         ]),
       ),
     );
   }
 
-  Widget _recordingBar() {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(children: [
-          IconButton(
-            onPressed: _cancelRecording,
-            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+  Widget _recordingStrip() {
+    return Row(
+      children: [
+        const _RecDot(),
+        const SizedBox(width: 8),
+        Text(_fmtSeconds(_recSeconds), style: AppTextStyles.bodyBold),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            _recDrag < -40 ? 'Отпустите — отмена' : '← сдвиньте для отмены',
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption.copyWith(color: AppColors.error),
           ),
-          const _RecDot(),
-          const SizedBox(width: 8),
-          Text(_fmtSeconds(_recSeconds), style: AppTextStyles.bodyBold),
-          const Spacer(),
-          Text('Запись…', style: AppTextStyles.caption),
-          const SizedBox(width: 8),
-          _circleBtn(icon: Icons.send, onTap: _stopAndSendVoice),
-        ]),
-      ),
+        ),
+      ],
     );
   }
 

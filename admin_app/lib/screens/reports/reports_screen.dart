@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -42,6 +43,7 @@ class _ReportsScreenState extends State<ReportsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs = TabController(length: 2, vsync: this);
   _Period _period = _Period.month;
+  String _statusFilter = ''; // '' all | delivered | active
 
   @override
   void dispose() {
@@ -89,24 +91,42 @@ class _ReportsScreenState extends State<ReportsScreen>
           return const Center(child: CircularProgressIndicator());
         }
         // Income = everything that wasn't cancelled.
-        final orders = (snap.data ?? [])
+        final all = (snap.data ?? [])
             .where((o) => o.status != AppConstants.statusCancelled)
             .toList();
+        List<OrderModel> orders = all;
+        if (_statusFilter == 'delivered') {
+          orders = all
+              .where((o) => o.status == AppConstants.statusDelivered)
+              .toList();
+        } else if (_statusFilter == 'active') {
+          orders = all
+              .where((o) => o.status != AppConstants.statusDelivered)
+              .toList();
+        }
+
         final buckets = _bucketize(orders);
         final grand = orders.fold(0.0, (s, o) => s + o.totalPrice);
         final delivered = orders
             .where((o) => o.status == AppConstants.statusDelivered)
             .fold(0.0, (s, o) => s + o.totalPrice);
+        final discount = orders.fold(0.0, (s, o) => s + o.discount);
+        final avg = orders.isEmpty ? 0.0 : grand / orders.length;
+        final recent = [...orders]
+          ..sort((a, b) => (b.createdAt ?? b.shiftDate)
+              .compareTo(a.createdAt ?? a.shiftDate));
 
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
             _periodSelector(),
+            const SizedBox(height: 12),
+            _statusChips(),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                    child: _totalCard('Всего (без отмен)', grand, orders.length,
+                    child: _totalCard('Выручка', grand, orders.length,
                         AppColors.primary)),
                 const SizedBox(width: 12),
                 Expanded(
@@ -114,6 +134,22 @@ class _ReportsScreenState extends State<ReportsScreen>
                         AppColors.success)),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                    child: _totalCard('Средний чек', avg, null,
+                        AppColors.textSecondary)),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _totalCard('Скидки', discount, null,
+                        AppColors.error)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text('График выручки', style: AppTextStyles.headingM),
+            const SizedBox(height: 12),
+            _incomeChart(buckets),
             const SizedBox(height: 20),
             Text('Разбивка', style: AppTextStyles.headingM),
             const SizedBox(height: 12),
@@ -123,9 +159,139 @@ class _ReportsScreenState extends State<ReportsScreen>
               )
             else
               ...buckets.map(_bucketRow),
+            const SizedBox(height: 20),
+            Text('Заказы', style: AppTextStyles.headingM),
+            const SizedBox(height: 12),
+            if (recent.isEmpty)
+              GlassCard(child: Text('Нет заказов', style: AppTextStyles.caption))
+            else
+              ...recent.take(60).map((o) => _orderRow(o)),
           ],
         );
       },
+    );
+  }
+
+  Widget _statusChips() {
+    Widget chip(String label, String value) {
+      final sel = _statusFilter == value;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: sel,
+          selectedColor: AppColors.primary.withOpacity(0.2),
+          onSelected: (_) => setState(() => _statusFilter = value),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          chip('Все', ''),
+          chip('Доставленные', 'delivered'),
+          chip('Активные', 'active'),
+        ],
+      ),
+    );
+  }
+
+  /// Uber-style earnings bar chart for the most recent buckets.
+  Widget _incomeChart(List<_Bucket> buckets) {
+    if (buckets.isEmpty) {
+      return GlassCard(child: Text('Нет данных', style: AppTextStyles.caption));
+    }
+    final chrono = buckets.reversed.toList();
+    final shown =
+        chrono.length > 8 ? chrono.sublist(chrono.length - 8) : chrono;
+    final maxV =
+        shown.map((b) => b.total).fold(0.0, (a, b) => a > b ? a : b);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 14, 8, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: shown.map((b) {
+          final frac = maxV <= 0 ? 0.0 : b.total / maxV;
+          final short = b.label.split(RegExp(r'[ –]')).first;
+          return Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text('€${b.total.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                        fontSize: 9, color: AppColors.textSecondary)),
+                const SizedBox(height: 4),
+                Container(
+                  height: (frac * 120).clamp(4.0, 120.0),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: const BoxDecoration(
+                    gradient: AppColors.goldGradient,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
+                  ),
+                )
+                    .animate()
+                    .scaleY(
+                        begin: 0,
+                        end: 1,
+                        alignment: Alignment.bottomCenter,
+                        duration: 450.ms,
+                        curve: Curves.easeOut),
+                const SizedBox(height: 6),
+                Text(short,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 9, color: AppColors.textMuted)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _orderRow(OrderModel o) {
+    final d = DateFormat('dd.MM.yyyy').format(o.createdAt ?? o.shiftDate);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ListTile(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: o.id)),
+        ),
+        title: Text(o.userName.isEmpty ? o.userPhone : o.userName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyBold),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$d • ${o.itemCount} тов. • ${AppConstants.statusLabel(o.status)}',
+                style: AppTextStyles.caption),
+            if (o.discount > 0)
+              Text(
+                  'Скидка €${o.discount.toStringAsFixed(2)}'
+                  '${o.couponCode.isNotEmpty ? ' (${o.couponCode})' : ''}',
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.primary)),
+          ],
+        ),
+        trailing: Text('€${o.totalPrice.toStringAsFixed(2)}',
+            style: AppTextStyles.price),
+      ),
     );
   }
 
