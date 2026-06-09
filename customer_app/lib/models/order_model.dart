@@ -22,6 +22,12 @@ class OrderModel {
   final double totalPrice;
   final String status;
   final String adminNote;
+  // Denormalized from the shift at order time: how many days before delivery
+  // the customer may still cancel / edit.
+  final int cancelDaysBefore;
+  final int editDaysBefore;
+  // New orders wait for admin acceptance unless auto-accept is on.
+  final bool pendingApproval;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -45,6 +51,9 @@ class OrderModel {
     required this.totalPrice,
     this.status = 'pending',
     this.adminNote = '',
+    this.cancelDaysBefore = 3,
+    this.editDaysBefore = 4,
+    this.pendingApproval = false,
     this.createdAt,
     this.updatedAt,
   }) : subtotal = subtotal ?? totalPrice;
@@ -56,6 +65,24 @@ class OrderModel {
 
   String get itemsSummary =>
       items.map((i) => '${i.name} x${i.qty}').join(', ');
+
+  /// Whole days from today until the delivery date.
+  int get daysUntilDelivery {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final d = DateTime(shiftDate.year, shiftDate.month, shiftDate.day);
+    return d.difference(today).inDays;
+  }
+
+  bool get _isActive => status == 'pending' || status == 'confirmed';
+
+  /// Customer may cancel while the order is active and still outside the
+  /// cancellation cut-off window.
+  bool get canCancel => _isActive && daysUntilDelivery >= cancelDaysBefore;
+
+  /// Customer may edit while active and outside the (usually larger) edit
+  /// cut-off window.
+  bool get canEdit => _isActive && daysUntilDelivery >= editDaysBefore;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'];
@@ -89,6 +116,9 @@ class OrderModel {
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
       adminNote: json['adminNote'] as String? ?? '',
+      cancelDaysBefore: (json['cancelDaysBefore'] as num?)?.toInt() ?? 3,
+      editDaysBefore: (json['editDaysBefore'] as num?)?.toInt() ?? 4,
+      pendingApproval: json['pendingApproval'] as bool? ?? false,
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
@@ -118,6 +148,9 @@ class OrderModel {
         'totalPrice': totalPrice,
         'status': status,
         'adminNote': adminNote,
+        'cancelDaysBefore': cancelDaysBefore,
+        'editDaysBefore': editDaysBefore,
+        'pendingApproval': pendingApproval,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),

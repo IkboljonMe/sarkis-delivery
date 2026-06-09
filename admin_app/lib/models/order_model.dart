@@ -22,6 +22,7 @@ class OrderModel {
   final double totalPrice;
   final String status;
   final String adminNote;
+  final bool pendingApproval; // awaiting admin acceptance
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -45,6 +46,7 @@ class OrderModel {
     required this.totalPrice,
     this.status = 'pending',
     this.adminNote = '',
+    this.pendingApproval = false,
     this.createdAt,
     this.updatedAt,
   }) : subtotal = subtotal ?? totalPrice;
@@ -89,6 +91,7 @@ class OrderModel {
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
       adminNote: json['adminNote'] as String? ?? '',
+      pendingApproval: json['pendingApproval'] as bool? ?? false,
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
@@ -118,6 +121,7 @@ class OrderModel {
         'totalPrice': totalPrice,
         'status': status,
         'adminNote': adminNote,
+        'pendingApproval': pendingApproval,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),

@@ -48,10 +48,42 @@ const STATUS_TEXT = {
 
 const pick = (map, lang) => (map && (map[lang] || map.en)) || "";
 
-/** Sends a notification to a set of tokens, pruning obvious empties. */
+// Google Cloud Translate key (same key the apps use for in-chat translation).
+const TRANSLATE_KEY = "AIzaSyCJBefvwd9C4uKc2wCp8m_n2ZZ0AmyDGRw";
+
+/**
+ * Translates [text] into [target] (ISO code). Returns the original text on any
+ * failure so a push is never lost just because translation hiccuped.
+ */
+async function translate(text, target) {
+  if (!text || !target) return text;
+  try {
+    const res = await fetch(
+        `https://translation.googleapis.com/language/translate/v2?key=${TRANSLATE_KEY}`,
+        {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({q: text, target, format: "text"}),
+        },
+    );
+    if (!res.ok) return text;
+    const data = await res.json();
+    const out = data && data.data && data.data.translations &&
+      data.data.translations[0] && data.data.translations[0].translatedText;
+    return out || text;
+  } catch (e) {
+    logger.warn("translate failed", {error: String(e)});
+    return text;
+  }
+}
+
+/**
+ * Sends a notification to a set of tokens, pruning obvious empties.
+ * Returns the number of successful deliveries.
+ */
 async function sendToTokens(tokens, title, body, data, tag) {
   const list = [...new Set((tokens || []).filter((t) => t && t.length > 10))];
-  if (list.length === 0) return;
+  if (list.length === 0) return 0;
   const res = await getMessaging().sendEachForMulticast({
     tokens: list,
     notification: {title, body},
@@ -66,6 +98,7 @@ async function sendToTokens(tokens, title, body, data, tag) {
     apns: {payload: {aps: {sound: "default"}}},
   });
   logger.info(`sent ${res.successCount}/${list.length}`, {title});
+  return res.successCount;
 }
 
 /** Tokens of every admin user. */
@@ -97,23 +130,29 @@ exports.onChatMessageCreated = onDocumentCreated(
         // Admin -> the customer who owns this topic.
         const user = await db.collection("users").doc(topicId).get();
         if (!user.exists) return;
-        await sendToTokens(
+        // Deliver the push already translated into the customer's language.
+        const lang = user.get("language") || "en";
+        const body = await translate(preview, lang);
+        const ok = await sendToTokens(
             [user.get("fcmToken")],
             "Sarkis Bread",
-            preview,
+            body,
             {type: "chat", topicId, senderName: "Sarkis Bread"},
             `chat_${topicId}`,
         );
+        if (ok > 0) await event.data.ref.update({delivered: true}).catch(() => {});
       } else {
-        // Customer -> all admins.
+        // Customer -> all admins (admins read in Russian).
         const name = (msg.senderName || "").toString().trim() || "Клиент";
-        await sendToTokens(
+        const body = await translate(preview, "ru");
+        const ok = await sendToTokens(
             await adminTokens(),
             `New message from ${name}`,
-            preview,
+            body,
             {type: "chat", topicId, senderName: name},
             `chat_${topicId}`,
         );
+        if (ok > 0) await event.data.ref.update({delivered: true}).catch(() => {});
       }
     },
 );
@@ -145,5 +184,38 @@ exports.onOrderStatusChanged = onDocumentUpdated(
           {type: "order", orderId: event.params.orderId, status: after.status},
           `order_${event.params.orderId}`,
       );
+    },
+);
+
+// ---- New order placed -> notify admins (+ optional auto-accept) ------------
+exports.onOrderCreated = onDocumentCreated(
+    "orders/{orderId}",
+    async (event) => {
+      const o = event.data && event.data.data();
+      if (!o) return;
+      const orderId = event.params.orderId;
+      const name = (o.userName || "Клиент").toString();
+      const total = Number(o.totalPrice || 0).toFixed(2);
+
+      // Tell every admin a new order arrived.
+      await sendToTokens(
+          await adminTokens(),
+          "Новый заказ",
+          `${name} — €${total}`,
+          {type: "order", orderId},
+          `neworder_${orderId}`,
+      );
+
+      // Auto-accept new orders when enabled in settings/config.
+      try {
+        const cfg = await db.collection("settings").doc("config").get();
+        const auto = cfg.exists && cfg.get("autoAcceptOrders") === true;
+        if (auto && o.pendingApproval === true) {
+          await event.data.ref.update(
+              {pendingApproval: false, status: "confirmed"});
+        }
+      } catch (e) {
+        logger.warn("auto-accept failed", {error: String(e)});
+      }
     },
 );

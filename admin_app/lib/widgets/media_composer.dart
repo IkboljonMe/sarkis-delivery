@@ -50,6 +50,8 @@ class _MediaComposerState extends State<MediaComposer> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      // Keep the caption field pinned directly above the keyboard.
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text('${_files.length} фото'),
         actions: [
@@ -58,40 +60,47 @@ class _MediaComposerState extends State<MediaComposer> {
               icon: const Icon(Icons.add_photo_alternate_outlined)),
         ],
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-        ),
-        itemCount: _files.length,
-        itemBuilder: (context, i) => _tile(i),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _caption,
-                  style: AppTextStyles.body,
-                  minLines: 1,
-                  maxLines: 3,
-                  decoration: const InputDecoration(hintText: 'Подпись…'),
-                ),
+      body: Column(
+        children: [
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(12),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
               ),
-              const SizedBox(width: 8),
-              GoldenButton(
-                label: 'Отправить',
-                height: 48,
-                onPressed: () => Navigator.pop(
-                    context, MediaComposerResult(_files, _caption.text.trim())),
-              ),
-            ],
+              itemCount: _files.length,
+              itemBuilder: (context, i) => _tile(i),
+            ),
           ),
-        ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _caption,
+                      style: AppTextStyles.body,
+                      minLines: 1,
+                      maxLines: 3,
+                      decoration: const InputDecoration(hintText: 'Подпись…'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GoldenButton(
+                    label: 'Отправить',
+                    height: 48,
+                    onPressed: () => Navigator.pop(context,
+                        MediaComposerResult(_files, _caption.text.trim())),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -65,23 +65,41 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (ok != true) return;
     await OrderService.instance.updateStatus(o.id, status);
 
-    // Post a status update into the customer's chat thread.
-    final statusMsg =
-        '📦 Заказ #${o.shortId}: ${AppConstants.statusLabel(status)}';
+    // Post a friendly status update as an order attachment ("View order")
+    // into the customer's chat thread.
     final admin = context.read<AdminAuthProvider>();
     await MessageService.instance.ensureTopic(
         topicId: o.userId, userName: o.userName, userGroup: o.userGroup);
     await MessageService.instance.sendMessage(
       topicId: o.userId,
-      text: statusMsg,
+      text: _orderStatusMessage(status),
       senderId: admin.uid ?? 'admin',
-      senderName: 'Admin',
+      senderName: 'Sarkis',
       isFromAdmin: true,
+      type: 'order',
+      orderId: o.id,
       silent: true, // push handled by the order-status Cloud Function
     );
     // The push is sent server-side by onOrderStatusChanged when the order
     // document's status field updates.
     Fluttertoast.showToast(msg: 'Статус обновлён');
+  }
+
+  /// Customer-facing message (in Russian; auto-translated in their chat).
+  String _orderStatusMessage(String status) {
+    switch (status) {
+      case 'confirmed':
+        return 'Спасибо за заказ! Мы подтвердили ваш заказ. '
+            'Откройте его, чтобы посмотреть детали 🧾';
+      case 'on_the_way':
+        return 'Ваш заказ уже в пути 🚚';
+      case 'delivered':
+        return 'Ваш заказ доставлен. Приятного аппетита! 🥖';
+      case 'cancelled':
+        return 'Ваш заказ отменён. Если это ошибка — напишите нам.';
+      default:
+        return 'Ваш заказ получен.';
+    }
   }
 
   Future<void> _send(OrderModel o) async {

@@ -1,20 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/order_model.dart';
+import '../../models/shift_model.dart';
+import '../../providers/cart_provider.dart';
 import '../../services/order_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/dark_card.dart';
 import '../../widgets/glass_card.dart';
-import 'order_status_badge.dart';
+import '../products/categories_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final String orderId;
   const OrderDetailScreen({super.key, required this.orderId});
 
   static const _steps = ['pending', 'confirmed', 'on_the_way', 'delivered'];
+
+  Future<void> _cancel(BuildContext context, OrderModel order) async {
+    final t = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.t('cancelOrder')),
+        content: Text(t.t('cancelOrderConfirm')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t.noGoBack)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(t.t('cancelOrder'),
+                  style: const TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await OrderService.instance.updateStatus(order.id, 'cancelled');
+    Fluttertoast.showToast(msg: t.t('orderCancelledMsg'));
+  }
+
+  void _edit(BuildContext context, OrderModel order) {
+    final shift = ShiftModel(
+      id: order.shiftId,
+      group: order.userGroup,
+      date: order.shiftDate,
+      label: order.shiftLabel,
+      cancelDaysBefore: order.cancelDaysBefore,
+      editDaysBefore: order.editDaysBefore,
+    );
+    context.read<CartProvider>().loadFromOrder(order, shift);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,10 +145,66 @@ class OrderDetailScreen extends StatelessWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: 24),
+              _actions(context, order, t),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _actions(BuildContext context, OrderModel order, AppLocalizations t) {
+    if (!order.canEdit && !order.canCancel) {
+      // Active orders past the cut-off explain why actions are unavailable.
+      if (order.status == 'pending' || order.status == 'confirmed') {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.lock_clock,
+                size: 16, color: AppColors.textMuted),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                t.t('editCancelClosed'),
+                style: AppTextStyles.caption,
+              ),
+            ),
+          ],
+        );
+      }
+      return const SizedBox.shrink();
+    }
+    return Row(
+      children: [
+        if (order.canEdit)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _edit(context, order),
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(t.t('editOrder')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        if (order.canEdit && order.canCancel) const SizedBox(width: 12),
+        if (order.canCancel)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _cancel(context, order),
+              icon: const Icon(Icons.cancel_outlined),
+              label: Text(t.t('cancelOrder')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

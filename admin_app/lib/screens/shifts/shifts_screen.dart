@@ -24,6 +24,8 @@ class ShiftsScreen extends StatelessWidget {
     String selectedGroup =
         AppConstants.isAllGroups(group) ? AppConstants.groups.first : group;
     bool isOpen = true;
+    int cancelDays = 3; // customer can cancel up to N days before delivery
+    int editDays = 4; // customer can edit up to N days before delivery
 
     await showModalBottomSheet(
       context: context,
@@ -82,6 +84,16 @@ class ShiftsScreen extends StatelessWidget {
                 value: isOpen,
                 onChanged: (v) => setSheet(() => isOpen = v),
               ),
+              _dayStepper(
+                'Отмена заказа (дней до доставки)',
+                cancelDays,
+                (v) => setSheet(() => cancelDays = v),
+              ),
+              _dayStepper(
+                'Изменение заказа (дней до доставки)',
+                editDays,
+                (v) => setSheet(() => editDays = v),
+              ),
               const SizedBox(height: 12),
               GoldenButton(
                 label: 'Создать смену',
@@ -92,6 +104,8 @@ class ShiftsScreen extends StatelessWidget {
                     date: date,
                     label: ShiftModel.labelFor(date),
                     isOpen: isOpen,
+                    cancelDaysBefore: cancelDays,
+                    editDaysBefore: editDays,
                   ));
                   if (ctx.mounted) Navigator.pop(ctx);
                 },
@@ -99,6 +113,32 @@ class ShiftsScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _dayStepper(String label, int value, ValueChanged<int> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: AppTextStyles.body)),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline,
+                color: AppColors.primary),
+            onPressed: value > 0 ? () => onChanged(value - 1) : null,
+          ),
+          SizedBox(
+            width: 24,
+            child: Text('$value',
+                textAlign: TextAlign.center, style: AppTextStyles.bodyBold),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline,
+                color: AppColors.primary),
+            onPressed: value < 30 ? () => onChanged(value + 1) : null,
+          ),
+        ],
       ),
     );
   }

@@ -39,7 +39,7 @@ class MessageService {
             .toList());
   }
 
-  Future<void> sendMessage({
+  Future<String> sendMessage({
     required String topicId,
     required String text,
     required String senderId,
@@ -52,9 +52,14 @@ class MessageService {
     String mediaUrl = '',
     List<String> mediaUrls = const [],
     int durationMs = 0,
+    String orderId = '',
+    List<int> waveform = const [],
+    int sizeBytes = 0,
+    bool uploading = false,
+    int uploadCount = 0,
   }) async {
+    final ref = _msgs(topicId).doc();
     try {
-      final ref = _msgs(topicId).doc();
       await ref.set({
         'id': ref.id,
         'senderId': senderId,
@@ -62,6 +67,7 @@ class MessageService {
         'text': text,
         'isFromAdmin': isFromAdmin,
         'isRead': false,
+        'delivered': false,
         'replyToId': replyToId,
         'replyToText': replyToText,
         'replyToSender': replyToSender,
@@ -70,11 +76,35 @@ class MessageService {
         'mediaUrl': mediaUrl,
         'mediaUrls': mediaUrls,
         'durationMs': durationMs,
+        'orderId': orderId,
+        'waveform': waveform,
+        'sizeBytes': sizeBytes,
+        'uploading': uploading,
+        'uploadCount': uploadCount,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      return ref.id;
     } catch (e) {
       throw Exception('Failed to send message: $e');
     }
+  }
+
+  /// Patches fields of an existing message (used to fill in media URLs once
+  /// an optimistic upload completes).
+  Future<void> patchMessage(
+      String topicId, String msgId, Map<String, dynamic> data) async {
+    try {
+      await _msgs(topicId).doc(msgId).update(data);
+    } catch (_) {}
+  }
+
+  /// Appends one uploaded photo URL to an album message (optimistic send).
+  Future<void> appendMediaUrl(String topicId, String msgId, String url) async {
+    try {
+      await _msgs(topicId).doc(msgId).update({
+        'mediaUrls': FieldValue.arrayUnion([url]),
+      });
+    } catch (_) {}
   }
 
   /// Toggles an emoji reaction by [userId] on a message.

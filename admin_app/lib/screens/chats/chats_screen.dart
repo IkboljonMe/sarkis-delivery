@@ -148,7 +148,24 @@ class _ChatsScreenState extends State<ChatsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(time, style: AppTextStyles.label),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (t.lastFromAdmin) ...[
+                  Icon(
+                    t.lastRead || t.lastDelivered
+                        ? Icons.done_all
+                        : Icons.done,
+                    size: 14,
+                    color: t.lastRead
+                        ? const Color(0xFF4FC3F7)
+                        : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 3),
+                ],
+                Text(time, style: AppTextStyles.label),
+              ],
+            ),
             if (t.unread > 0) ...[
               const SizedBox(height: 4),
               Container(

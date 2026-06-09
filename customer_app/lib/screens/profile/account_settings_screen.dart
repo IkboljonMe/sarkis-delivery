@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/approval_service.dart';
+import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/app_input_field.dart';
 import '../../widgets/dark_card.dart';
@@ -19,6 +21,7 @@ class AccountSettingsScreen extends StatefulWidget {
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   final _name = TextEditingController();
+  final _phone = TextEditingController();
   final _address = TextEditingController();
   final _city = TextEditingController();
   bool _saving = false;
@@ -28,6 +31,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     super.initState();
     final u = context.read<AuthProvider>().user;
     _name.text = u?.name ?? '';
+    _phone.text = u?.phone ?? '';
     _address.text = u?.address ?? '';
     _city.text = u?.city ?? '';
   }
@@ -35,21 +39,44 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _phone.dispose();
     _address.dispose();
     _city.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
+    final t = AppLocalizations.of(context);
+    final auth = context.read<AuthProvider>();
+    final u = auth.user;
     setState(() => _saving = true);
-    await context.read<AuthProvider>().updateFields({
-      'name': _name.text.trim(),
+
+    // Address / city apply immediately.
+    await auth.updateFields({
       'address': _address.text.trim(),
       'city': _city.text.trim(),
     });
+
+    // Name / phone changes need admin approval.
+    final changes = <String, dynamic>{};
+    if (_name.text.trim() != (u?.name ?? '')) {
+      changes['name'] = _name.text.trim();
+    }
+    if (_phone.text.trim() != (u?.phone ?? '')) {
+      changes['phone'] = _phone.text.trim();
+    }
+    if (changes.isNotEmpty && u != null) {
+      await ApprovalService.instance.requestProfileChange(
+        userId: u.id,
+        userName: u.fullName.isEmpty ? u.name : u.fullName,
+        changes: changes,
+      );
+    }
+
     if (!mounted) return;
     setState(() => _saving = false);
-    Fluttertoast.showToast(msg: AppLocalizations.of(context).save);
+    Fluttertoast.showToast(
+        msg: changes.isEmpty ? t.save : t.t('changesSentForApproval'));
     Navigator.pop(context);
   }
 
@@ -73,10 +100,22 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     prefixIcon: Icons.person_outline),
                 const SizedBox(height: 12),
                 AppInputField(
+                    controller: _phone,
                     label: t.phone,
-                    hint: u?.phone ?? '',
-                    enabled: false,
+                    keyboardType: TextInputType.phone,
                     prefixIcon: Icons.phone_outlined),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline,
+                        size: 13, color: AppColors.textMuted),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(t.t('namePhoneNeedApproval'),
+                          style: AppTextStyles.label),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 AppInputField(
                     controller: _address,

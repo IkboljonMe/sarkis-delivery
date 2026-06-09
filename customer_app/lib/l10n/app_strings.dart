@@ -151,6 +151,18 @@ const Map<String, String> kEn = {
   'showOriginal': 'Show original',
   'translateLanguage': 'Translation language',
   'translateLanguageHint': 'Incoming messages are translated to this language',
+  'supportTitle': 'Support',
+  'supportOnline': 'online',
+  'chatSettings': 'Chat settings',
+  'autoTranslate': 'Auto-translate messages',
+  'viewOrder': 'View order',
+  'editOrder': 'Edit order',
+  'cancelOrder': 'Cancel order',
+  'cancelOrderConfirm': 'Are you sure you want to cancel this order?',
+  'orderCancelledMsg': 'Order cancelled',
+  'editCancelClosed': 'Editing and cancellation are closed for this delivery date.',
+  'changesSentForApproval': 'Changes sent for approval',
+  'namePhoneNeedApproval': 'Name and phone changes require admin approval.',
 };
 
 const Map<String, String> kRu = {
@@ -302,6 +314,18 @@ const Map<String, String> kRu = {
   'showOriginal': 'Показать оригинал',
   'translateLanguage': 'Язык перевода',
   'translateLanguageHint': 'Входящие сообщения переводятся на этот язык',
+  'supportTitle': 'Поддержка',
+  'supportOnline': 'на связи',
+  'chatSettings': 'Настройки чата',
+  'autoTranslate': 'Авто-перевод сообщений',
+  'viewOrder': 'Открыть заказ',
+  'editOrder': 'Изменить заказ',
+  'cancelOrder': 'Отменить заказ',
+  'cancelOrderConfirm': 'Вы уверены, что хотите отменить этот заказ?',
+  'orderCancelledMsg': 'Заказ отменён',
+  'editCancelClosed': 'Изменение и отмена для этой даты доставки уже закрыты.',
+  'changesSentForApproval': 'Изменения отправлены на одобрение',
+  'namePhoneNeedApproval': 'Изменение имени и телефона требует одобрения администратора.',
 };
 
 const Map<String, String> kDe = {
@@ -389,6 +413,18 @@ const Map<String, String> kDe = {
   'showOriginal': 'Original anzeigen',
   'translateLanguage': 'Übersetzungssprache',
   'translateLanguageHint': 'Eingehende Nachrichten werden in diese Sprache übersetzt',
+  'supportTitle': 'Support',
+  'supportOnline': 'online',
+  'chatSettings': 'Chat-Einstellungen',
+  'autoTranslate': 'Nachrichten automatisch übersetzen',
+  'viewOrder': 'Bestellung ansehen',
+  'editOrder': 'Bestellung bearbeiten',
+  'cancelOrder': 'Bestellung stornieren',
+  'cancelOrderConfirm': 'Möchtest du diese Bestellung wirklich stornieren?',
+  'orderCancelledMsg': 'Bestellung storniert',
+  'editCancelClosed': 'Bearbeiten und Stornieren sind für dieses Lieferdatum geschlossen.',
+  'changesSentForApproval': 'Änderungen zur Freigabe gesendet',
+  'namePhoneNeedApproval': 'Namen- und Telefonänderungen müssen vom Admin freigegeben werden.',
 };
 
 const Map<String, String> kTr = {
@@ -435,6 +471,18 @@ const Map<String, String> kTr = {
   'showOriginal': 'Orijinali göster',
   'translateLanguage': 'Çeviri dili',
   'translateLanguageHint': 'Gelen mesajlar bu dile çevrilir',
+  'supportTitle': 'Destek',
+  'supportOnline': 'çevrimiçi',
+  'chatSettings': 'Sohbet ayarları',
+  'autoTranslate': 'Mesajları otomatik çevir',
+  'viewOrder': 'Siparişi gör',
+  'editOrder': 'Siparişi düzenle',
+  'cancelOrder': 'Siparişi iptal et',
+  'cancelOrderConfirm': 'Bu siparişi iptal etmek istediğinize emin misiniz?',
+  'orderCancelledMsg': 'Sipariş iptal edildi',
+  'editCancelClosed': 'Bu teslimat tarihi için düzenleme ve iptal kapalı.',
+  'changesSentForApproval': 'Değişiklikler onaya gönderildi',
+  'namePhoneNeedApproval': 'Ad ve telefon değişiklikleri yönetici onayı gerektirir.',
 };
 
 const Map<String, String> kHy = {
@@ -481,4 +529,16 @@ const Map<String, String> kHy = {
   'showOriginal': 'Ցույց տալ բնօրինակը',
   'translateLanguage': 'Թարգմանության լեզու',
   'translateLanguageHint': 'Մուտքային հաղորդագրությունները թարգմանվում են այս լեզվով',
+  'supportTitle': 'Աջակցություն',
+  'supportOnline': 'կապի մեջ',
+  'chatSettings': 'Զրույցի կարգավորումներ',
+  'autoTranslate': 'Ավտոմատ թարգմանել հաղորդագրությունները',
+  'viewOrder': 'Տեսնել պատվերը',
+  'editOrder': 'Փոփոխել պատվերը',
+  'cancelOrder': 'Չեղարկել պատվերը',
+  'cancelOrderConfirm': 'Վստա՞հ եք, որ ուզում եք չեղարկել այս պատվերը։',
+  'orderCancelledMsg': 'Պատվերը չեղարկվեց',
+  'editCancelClosed': 'Այս առաքման օրվա համար փոփոխումն ու չեղարկումը փակ են։',
+  'changesSentForApproval': 'Փոփոխությունն ուղարկվեց հաստատման',
+  'namePhoneNeedApproval': 'Անունի և հեռախոսի փոփոխությունը պահանջում է ադմինի հաստատում։',
 };

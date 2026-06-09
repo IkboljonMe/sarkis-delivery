@@ -8,6 +8,7 @@ class MessageModel {
   final String text;
   final bool isFromAdmin;
   final bool isRead;
+  final bool delivered; // recipient's device was notified (set server-side)
   final DateTime? createdAt;
   // Reply (quote) of another message.
   final String replyToId;
@@ -15,11 +16,16 @@ class MessageModel {
   final String replyToSender;
   // Emoji reactions: userId -> emoji.
   final Map<String, String> reactions;
-  // Media: type is 'text' | 'image' | 'voice'.
+  // Media: type is 'text' | 'image' | 'voice' | 'order'.
   final String type;
   final String mediaUrl; // single (voice / legacy image)
   final List<String> mediaUrls; // album: multiple photos in one message
   final int durationMs; // voice length
+  final String orderId; // attached order ('order' type) -> "View order" card
+  final List<int> waveform; // voice amplitude bars (0-100), for the player UI
+  final int sizeBytes; // media size, shown on voice bubbles
+  final bool uploading; // media still uploading (optimistic send)
+  final int uploadCount; // expected number of album photos while uploading
 
   MessageModel({
     required this.id,
@@ -28,6 +34,7 @@ class MessageModel {
     required this.text,
     required this.isFromAdmin,
     this.isRead = false,
+    this.delivered = false,
     this.createdAt,
     this.replyToId = '',
     this.replyToText = '',
@@ -37,12 +44,18 @@ class MessageModel {
     this.mediaUrl = '',
     this.mediaUrls = const [],
     this.durationMs = 0,
+    this.orderId = '',
+    this.waveform = const [],
+    this.sizeBytes = 0,
+    this.uploading = false,
+    this.uploadCount = 0,
   });
 
   bool get hasReply => replyToId.isNotEmpty;
   bool get isImage => type == 'image';
   bool get isVoice => type == 'voice';
   bool get isVideo => type == 'video';
+  bool get isOrder => type == 'order';
 
   /// All image urls for an image message (album-aware, legacy-compatible).
   List<String> get images => mediaUrls.isNotEmpty
@@ -55,6 +68,7 @@ class MessageModel {
     if (isImage) return '📷 Фото';
     if (isVoice) return '🎤 Голосовое';
     if (isVideo) return '🎥 Видео';
+    if (isOrder) return '📦 Заказ';
     return '';
   }
 
@@ -84,6 +98,7 @@ class MessageModel {
       text: json['text'] as String? ?? '',
       isFromAdmin: json['isFromAdmin'] as bool? ?? false,
       isRead: json['isRead'] as bool? ?? false,
+      delivered: json['delivered'] as bool? ?? false,
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
@@ -99,6 +114,14 @@ class MessageModel {
               .toList() ??
           const [],
       durationMs: (json['durationMs'] as num?)?.toInt() ?? 0,
+      orderId: json['orderId'] as String? ?? '',
+      waveform: (json['waveform'] as List?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [],
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+      uploading: json['uploading'] as bool? ?? false,
+      uploadCount: (json['uploadCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -109,6 +132,7 @@ class MessageModel {
         'text': text,
         'isFromAdmin': isFromAdmin,
         'isRead': isRead,
+        'delivered': delivered,
         'replyToId': replyToId,
         'replyToText': replyToText,
         'replyToSender': replyToSender,
@@ -117,18 +141,24 @@ class MessageModel {
         'mediaUrl': mediaUrl,
         'mediaUrls': mediaUrls,
         'durationMs': durationMs,
+        'orderId': orderId,
+        'waveform': waveform,
+        'sizeBytes': sizeBytes,
+        'uploading': uploading,
+        'uploadCount': uploadCount,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),
       };
 
-  MessageModel copyWith({bool? isRead}) => MessageModel(
+  MessageModel copyWith({bool? isRead, bool? delivered}) => MessageModel(
         id: id,
         senderId: senderId,
         senderName: senderName,
         text: text,
         isFromAdmin: isFromAdmin,
         isRead: isRead ?? this.isRead,
+        delivered: delivered ?? this.delivered,
         createdAt: createdAt,
         replyToId: replyToId,
         replyToText: replyToText,

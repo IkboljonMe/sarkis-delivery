@@ -1,4 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
@@ -18,6 +22,24 @@ import 'translate_language_screen.dart';
 /// Customer settings menu — row-format submenus grouped into sections.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _pickAvatar(BuildContext context) async {
+    final x = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 600);
+    if (x == null || !context.mounted) return;
+    final auth = context.read<AuthProvider>();
+    final uid = auth.user?.id;
+    if (uid == null) return;
+    Fluttertoast.showToast(msg: 'Загрузка фото…');
+    try {
+      final bytes = await x.readAsBytes();
+      final url = await UserService.instance.uploadAvatar(uid, bytes);
+      await auth.updateFields({'photoUrl': url});
+      Fluttertoast.showToast(msg: 'Фото обновлено');
+    } catch (_) {
+      Fluttertoast.showToast(msg: 'Не удалось загрузить фото');
+    }
+  }
 
   Future<void> _whatsApp() async {
     final uri = Uri.parse('https://wa.me/${AppConstants.adminWhatsappNumber}');
@@ -80,15 +102,50 @@ class SettingsScreen extends StatelessWidget {
           // Header
           Row(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                    shape: BoxShape.circle, gradient: AppColors.goldGradient),
-                child: Center(
-                  child: Text(initials,
-                      style: AppTextStyles.headingL
-                          .copyWith(color: Colors.white)),
+              GestureDetector(
+                onTap: () => _pickAvatar(context),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: (user?.photoUrl ?? '').isEmpty
+                              ? AppColors.goldGradient
+                              : null),
+                      clipBehavior: Clip.antiAlias,
+                      child: (user?.photoUrl ?? '').isEmpty
+                          ? Center(
+                              child: Text(initials,
+                                  style: AppTextStyles.headingL
+                                      .copyWith(color: Colors.white)),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: user!.photoUrl,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Center(
+                                  child: Text(initials,
+                                      style: AppTextStyles.headingL
+                                          .copyWith(color: Colors.white))),
+                            ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          border:
+                              Border.all(color: AppColors.background, width: 2),
+                        ),
+                        child: const Icon(Icons.camera_alt,
+                            size: 12, color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 16),

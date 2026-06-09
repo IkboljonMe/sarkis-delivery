@@ -13,6 +13,7 @@ class UserModel {
   final double? lng;
   final String language; // en | hy | ru | tr | de
   final String fcmToken;
+  final String photoUrl;
   final bool isAdmin;
   final DateTime? createdAt;
 
@@ -29,6 +30,7 @@ class UserModel {
     this.lng,
     required this.language,
     this.fcmToken = '',
+    this.photoUrl = '',
     this.isAdmin = false,
     this.createdAt,
   });
@@ -50,6 +52,7 @@ class UserModel {
       lng: (json['lng'] as num?)?.toDouble(),
       language: json['language'] as String? ?? 'en',
       fcmToken: json['fcmToken'] as String? ?? '',
+      photoUrl: json['photoUrl'] as String? ?? '',
       isAdmin: json['isAdmin'] as bool? ?? false,
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
@@ -71,6 +74,7 @@ class UserModel {
       'lng': lng,
       'language': language,
       'fcmToken': fcmToken,
+      'photoUrl': photoUrl,
       'isAdmin': isAdmin,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
@@ -91,6 +95,7 @@ class UserModel {
     double? lng,
     String? language,
     String? fcmToken,
+    String? photoUrl,
     bool? isAdmin,
     DateTime? createdAt,
   }) {
@@ -107,6 +112,7 @@ class UserModel {
       lng: lng ?? this.lng,
       language: language ?? this.language,
       fcmToken: fcmToken ?? this.fcmToken,
+      photoUrl: photoUrl ?? this.photoUrl,
       isAdmin: isAdmin ?? this.isAdmin,
       createdAt: createdAt ?? this.createdAt,
     );

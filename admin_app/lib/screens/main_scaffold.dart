@@ -11,6 +11,7 @@ import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/constants.dart';
 import '../widgets/brand_logo.dart';
+import 'approvals/approvals_screen.dart';
 import 'auth/login_screen.dart';
 import 'chats/chats_screen.dart';
 import 'coupons/coupons_screen.dart';
@@ -61,6 +62,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   static const _titles = [
     'Главная',
     'Заказы',
+    'Заявки',
     'Товары',
     'Купоны',
     'Чаты',
@@ -73,6 +75,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   static const _icons = [
     Icons.dashboard_outlined,
     Icons.receipt_long_outlined,
+    Icons.fact_check_outlined,
     Icons.storefront_outlined,
     Icons.local_offer_outlined,
     Icons.chat_bubble_outline,
@@ -85,6 +88,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   List<Widget> get _pages => const [
         DashboardScreen(),
         OrdersScreen(),
+        ApprovalsScreen(),
         ProductsScreen(),
         CouponsScreen(),
         ChatsScreen(),

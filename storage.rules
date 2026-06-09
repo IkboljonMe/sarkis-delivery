@@ -18,13 +18,23 @@ service firebase.storage {
     match /chat/{topicId}/{fileName} {
       // Either party in the conversation can view the media.
       allow read: if isSignedIn();
-      // Only the topic owner (customer) or an admin can upload, capped at 15 MB
-      // and limited to images / audio.
+      // Only the topic owner (customer) or an admin can upload, capped at 50 MB
+      // and limited to images / audio / video.
       allow write: if isSignedIn()
         && (request.auth.uid == topicId || isAdmin())
-        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.size < 50 * 1024 * 1024
         && (request.resource.contentType.matches('image/.*')
-            || request.resource.contentType.matches('audio/.*'));
+            || request.resource.contentType.matches('audio/.*')
+            || request.resource.contentType.matches('video/.*'));
+    }
+
+    // Profile avatars: a user manages their own; capped at 5 MB, images only.
+    match /avatars/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn()
+        && (request.auth.uid == userId || isAdmin())
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
     }
 
     // Everything else denied.

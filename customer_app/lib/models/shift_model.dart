@@ -8,6 +8,9 @@ class ShiftModel {
   final DateTime date;
   final String label; // e.g. "05.06"
   final bool isOpen;
+  // How many days before the delivery date a customer may still cancel / edit.
+  final int cancelDaysBefore;
+  final int editDaysBefore;
   final DateTime? createdAt;
 
   ShiftModel({
@@ -16,6 +19,8 @@ class ShiftModel {
     required this.date,
     required this.label,
     this.isOpen = true,
+    this.cancelDaysBefore = 3,
+    this.editDaysBefore = 4,
     this.createdAt,
   });
 
@@ -33,6 +38,8 @@ class ShiftModel {
           ? json['label'] as String
           : labelFor(date),
       isOpen: json['isOpen'] as bool? ?? false,
+      cancelDaysBefore: (json['cancelDaysBefore'] as num?)?.toInt() ?? 3,
+      editDaysBefore: (json['editDaysBefore'] as num?)?.toInt() ?? 4,
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
@@ -45,6 +52,8 @@ class ShiftModel {
         'date': Timestamp.fromDate(date),
         'label': label,
         'isOpen': isOpen,
+        'cancelDaysBefore': cancelDaysBefore,
+        'editDaysBefore': editDaysBefore,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),
@@ -56,6 +65,8 @@ class ShiftModel {
     DateTime? date,
     String? label,
     bool? isOpen,
+    int? cancelDaysBefore,
+    int? editDaysBefore,
     DateTime? createdAt,
   }) {
     return ShiftModel(
@@ -64,6 +75,8 @@ class ShiftModel {
       date: date ?? this.date,
       label: label ?? this.label,
       isOpen: isOpen ?? this.isOpen,
+      cancelDaysBefore: cancelDaysBefore ?? this.cancelDaysBefore,
+      editDaysBefore: editDaysBefore ?? this.editDaysBefore,
       createdAt: createdAt ?? this.createdAt,
     );
   }

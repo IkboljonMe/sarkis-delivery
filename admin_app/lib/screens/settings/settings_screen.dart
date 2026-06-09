@@ -24,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _maxQty = TextEditingController();
   final _whatsapp = TextEditingController();
   final _phone = TextEditingController();
+  bool _autoAccept = false;
   bool _loading = true;
 
   @override
@@ -48,6 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _maxQty.text = '${s['maxQty'] ?? 10}';
     _whatsapp.text = '${s['adminWhatsapp'] ?? ''}';
     _phone.text = '${s['adminPhone'] ?? ''}';
+    _autoAccept = s['autoAcceptOrders'] == true;
     setState(() => _loading = false);
   }
 
@@ -57,6 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'maxQty': int.tryParse(_maxQty.text) ?? 10,
       'adminWhatsapp': _whatsapp.text.trim(),
       'adminPhone': _phone.text.trim(),
+      'autoAcceptOrders': _autoAccept,
     });
     Fluttertoast.showToast(msg: 'Сохранено');
   }
@@ -94,6 +97,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: 'Макс. количество',
                   keyboardType: TextInputType.number),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text('Заказы — приём', style: AppTextStyles.headingM),
+        const SizedBox(height: 8),
+        DarkCard(
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.primary,
+            value: _autoAccept,
+            title: Text('Авто-приём заказов', style: AppTextStyles.body),
+            subtitle: Text(
+                'Новые заказы подтверждаются автоматически. Иначе их нужно '
+                'принять во вкладке «Заявки».',
+                style: AppTextStyles.caption),
+            onChanged: (v) => setState(() => _autoAccept = v),
           ),
         ),
         const SizedBox(height: 16),

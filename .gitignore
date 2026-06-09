@@ -1,2 +1,5 @@
 .env
 icon_out/
+
+# build artifacts
+SarkisBread-*.apk

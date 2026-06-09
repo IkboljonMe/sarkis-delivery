@@ -10,8 +10,10 @@ import '../models/product_model.dart';
 import '../models/shift_model.dart';
 import '../models/user_model.dart';
 import '../services/coupon_service.dart';
+import '../services/message_service.dart';
 import '../services/order_service.dart';
 import '../utils/constants.dart';
+import '../utils/order_messages.dart';
 
 /// In-memory + persisted cart. Stores qty per productId and the chosen shift.
 class CartProvider extends ChangeNotifier {
@@ -20,6 +22,7 @@ class CartProvider extends ChangeNotifier {
   final Map<String, int> _qty = {}; // productId -> qty
   ShiftModel? _shift;
   CouponModel? _coupon;
+  String? _editingOrderId; // non-null while editing an existing order
   int _minQty = AppConstants.defaultMinQty;
   int _maxQty = AppConstants.defaultMaxQty;
   bool _placing = false;
@@ -27,6 +30,26 @@ class CartProvider extends ChangeNotifier {
   Map<String, int> get quantities => Map.unmodifiable(_qty);
   ShiftModel? get shift => _shift;
   CouponModel? get coupon => _coupon;
+  String? get editingOrderId => _editingOrderId;
+  bool get isEditing => _editingOrderId != null;
+
+  /// Loads an existing order into the cart so the customer can amend it.
+  void loadFromOrder(OrderModel o, ShiftModel shift) {
+    _qty.clear();
+    for (final it in o.items) {
+      if (it.qty > 0) _qty[it.productId] = it.qty;
+    }
+    _shift = shift;
+    _coupon = null;
+    _editingOrderId = o.id;
+    notifyListeners();
+    _persist();
+  }
+
+  void cancelEdit() {
+    _editingOrderId = null;
+    notifyListeners();
+  }
   int get minQty => _minQty;
   int get maxQty => _maxQty;
   bool get placing => _placing;
@@ -41,6 +64,8 @@ class CartProvider extends ChangeNotifier {
   }
 
   void setShift(ShiftModel shift) {
+    // Choosing a delivery starts a fresh order — never an edit of an old one.
+    _editingOrderId = null;
     _shift = shift;
     notifyListeners();
     _persist();
@@ -99,6 +124,7 @@ class CartProvider extends ChangeNotifier {
   void clear() {
     _qty.clear();
     _coupon = null;
+    _editingOrderId = null;
     notifyListeners();
     _persist();
   }
@@ -161,6 +187,26 @@ class CartProvider extends ChangeNotifier {
       final subtotal = items.fold(0.0, (s, i) => s + i.subtotal);
       final discount = coupon?.discountFor(subtotal) ?? 0;
       final grandTotal = (subtotal - discount).clamp(0, subtotal).toDouble();
+
+      // Editing an existing order: update in place, no new thank-you message.
+      if (_editingOrderId != null) {
+        final editedId = _editingOrderId!;
+        await OrderService.instance.updateOrder(editedId, {
+          'items': items.map((e) => e.toJson()).toList(),
+          'subtotal': subtotal,
+          'discount': discount,
+          'couponCode': discount > 0 ? (coupon?.code ?? '') : '',
+          'totalPrice': grandTotal,
+        });
+        if (discount > 0 && coupon != null) {
+          await CouponService.instance.incrementUsage(coupon.id);
+        }
+        clear();
+        _placing = false;
+        notifyListeners();
+        return editedId;
+      }
+
       final order = OrderModel(
         id: '',
         userId: user.id,
@@ -180,12 +226,29 @@ class CartProvider extends ChangeNotifier {
         couponCode: discount > 0 ? (coupon?.code ?? '') : '',
         totalPrice: grandTotal,
         status: AppConstants.statusPending,
+        cancelDaysBefore: _shift!.cancelDaysBefore,
+        editDaysBefore: _shift!.editDaysBefore,
+        pendingApproval: true,
       );
       final id = await OrderService.instance.createOrder(order);
       // Best-effort: bump the coupon's redemption counter.
       if (discount > 0 && coupon != null) {
         await CouponService.instance.incrementUsage(coupon.id);
       }
+      // Greet with an order-confirmation card from the admin (Sarkis).
+      try {
+        await MessageService.instance.ensureTopic(
+            topicId: user.id, userName: user.fullName, userGroup: user.group);
+        await MessageService.instance.sendMessage(
+          topicId: user.id,
+          text: OrderMessages.thankYou(user.language),
+          senderId: AppConstants.adminUid,
+          senderName: 'Sarkis',
+          isFromAdmin: true,
+          type: 'order',
+          orderId: id,
+        );
+      } catch (_) {}
       clear();
       _placing = false;
       notifyListeners();

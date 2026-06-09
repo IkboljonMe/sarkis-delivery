@@ -1,22 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/message_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/admin_auth_provider.dart';
 import '../../services/message_service.dart';
+import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/translate_service.dart';
 import '../../utils/voice_recorder.dart';
 import '../../widgets/chat_album.dart';
 import '../../widgets/media_composer.dart';
+import '../../widgets/video_bubble.dart';
 import '../../widgets/voice_bubble.dart';
+import '../customers/customer_profile_screen.dart';
+import '../orders/order_detail_screen.dart';
 
 const _kReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -86,6 +93,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     _ensureTranslations();
   }
 
+  int _lastCount = 0;
+  bool _pendingScrollToEnd = false;
+  UserModel? _customer; // loaded for the call button + profile
+
   @override
   void initState() {
     super.initState();
@@ -94,35 +105,39 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       _controller.text = widget.initialText!;
     }
     _controller.addListener(_onTextChanged);
-    // Keyboard: when the composer is focused, bring the latest message above it.
-    _inputFocus.addListener(() {
-      if (_inputFocus.hasFocus) _scrollLastIntoView(delayMs: 250);
+    UserService.instance.getUser(widget.topicId).then((u) {
+      if (mounted) setState(() => _customer = u);
     });
   }
 
-  /// Keeps the newest message above the keyboard as it animates open.
+  /// When the keyboard opens, only follow to the bottom if already there.
   @override
   void didChangeMetrics() {
-    if (_inputFocus.hasFocus) _scrollLastIntoView();
-  }
-
-  void _scrollLastIntoView({int delayMs = 0}) {
-    void run() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _itemScroll.isAttached && _msgs.isNotEmpty) {
-          _itemScroll.scrollTo(
-              index: _msgs.length - 1,
-              duration: const Duration(milliseconds: 200));
-        }
-      });
-    }
-
-    if (delayMs == 0) {
-      run();
-    } else {
-      Future.delayed(Duration(milliseconds: delayMs), run);
+    if (_inputFocus.hasFocus && _atBottom()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
     }
   }
+
+  bool _atBottom() {
+    final positions = _positions.itemPositions.value;
+    if (positions.isEmpty || _msgs.isEmpty) return true;
+    final lastVisible = positions
+        .where((p) => p.itemTrailingEdge > 0)
+        .map((p) => p.index)
+        .fold(0, (a, b) => a > b ? a : b);
+    return lastVisible >= _msgs.length - 2;
+  }
+
+  void _scrollToEnd({bool animated = true}) {
+    if (!_itemScroll.isAttached || _msgs.isEmpty) return;
+    _itemScroll.scrollTo(
+        index: _msgs.length - 1,
+        alignment: 0,
+        duration: Duration(milliseconds: animated ? 220 : 1),
+        curve: Curves.easeOut);
+  }
+
+  void _dismissKeyboard() => FocusScope.of(context).unfocus();
 
   void _flashMessage(String id) {
     setState(() => _highlightedId = id);
@@ -135,20 +150,40 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   /// On first data: capture the unread boundary, jump to it (or to bottom),
   /// then mark as read so the divider persists.
   void _onMessages(List<MessageModel> msgs) {
+    final wasAtBottom = _atBottom();
+    final grew = msgs.length > _lastCount;
+    _lastCount = msgs.length;
+    if (msgs.isEmpty) {
+      _msgs = msgs;
+      return;
+    }
+    // While the chat is open, keep marking incoming customer messages read so
+    // the customer sees the blue ticks update in real time.
+    final hasUnreadIncoming = msgs.any((m) => !m.isFromAdmin && !m.isRead);
+    if (_initialized && hasUnreadIncoming) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        MessageService.instance.markRead(widget.topicId, readingAsAdmin: true);
+      });
+    }
     _msgs = msgs;
-    if (_initialized || msgs.isEmpty) return;
-    _initialized = true;
-    final firstUnread =
-        msgs.indexWhere((m) => !m.isFromAdmin && !m.isRead);
-    final target = firstUnread >= 0 ? firstUnread : msgs.length - 1;
-    if (firstUnread >= 0) _unreadAnchorId = msgs[firstUnread].id;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_itemScroll.isAttached) {
-        _itemScroll.jumpTo(
-            index: target, alignment: firstUnread >= 0 ? 0.3 : 0.0);
-      }
-      MessageService.instance.markRead(widget.topicId, readingAsAdmin: true);
-    });
+    if (!_initialized) {
+      _initialized = true;
+      final firstUnread = msgs.indexWhere((m) => !m.isFromAdmin && !m.isRead);
+      final target = firstUnread >= 0 ? firstUnread : msgs.length - 1;
+      if (firstUnread >= 0) _unreadAnchorId = msgs[firstUnread].id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_itemScroll.isAttached) {
+          _itemScroll.jumpTo(
+              index: target, alignment: firstUnread >= 0 ? 0.3 : 0.0);
+        }
+        MessageService.instance.markRead(widget.topicId, readingAsAdmin: true);
+      });
+      return;
+    }
+    if (grew && (wasAtBottom || _pendingScrollToEnd)) {
+      _pendingScrollToEnd = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
+    }
   }
 
   int _indexOfMessage(String id) => _msgs.indexWhere((m) => m.id == id);
@@ -187,6 +222,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     super.dispose();
   }
 
+  static const int _maxVoiceSeconds = 300; // 5-minute cap
+
   Future<void> _startRecording() async {
     final ok = await _recorder.hasPermission();
     if (!ok) {
@@ -198,8 +235,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       _recording = true;
       _recSeconds = 0;
     });
-    _recTimer = Timer.periodic(
-        const Duration(seconds: 1), (_) => setState(() => _recSeconds++));
+    _recTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _recSeconds++);
+      if (_recSeconds >= _maxVoiceSeconds) _stopAndSendVoice();
+    });
   }
 
   Future<void> _cancelRecording() async {
@@ -209,29 +249,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Future<void> _stopAndSendVoice() async {
+    if (!_recording) return;
     _recTimer?.cancel();
     setState(() => _recording = false);
+    final ms = MessageService.instance;
     try {
       final rec = await _recorder.stop();
       if (rec == null || rec.durationMs < 500) return;
-      setState(() => _uploading = true);
-      final url = await MessageService.instance.uploadChatMedia(
-          widget.topicId, rec.bytes,
-          ext: rec.ext, contentType: rec.contentType);
-      await MessageService.instance.sendMessage(
+      _pendingScrollToEnd = true;
+      final id = await ms.sendMessage(
         topicId: widget.topicId,
         text: '',
         senderId: _uid,
         senderName: 'Admin',
         isFromAdmin: true,
         type: 'voice',
-        mediaUrl: url,
+        mediaUrl: '',
         durationMs: rec.durationMs,
+        waveform: rec.waveform,
+        sizeBytes: rec.sizeBytes,
+        uploading: true,
       );
+      final url = await ms.uploadChatMedia(widget.topicId, rec.bytes,
+          ext: rec.ext, contentType: rec.contentType);
+      await ms.patchMessage(
+          widget.topicId, id, {'mediaUrl': url, 'uploading': false});
     } catch (_) {
       Fluttertoast.showToast(msg: 'Не удалось отправить голосовое');
-    } finally {
-      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -241,6 +285,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
+    _pendingScrollToEnd = true;
     final reply = _replyTo;
     setState(() => _replyTo = null);
     await MessageService.instance.sendMessage(
@@ -256,6 +301,73 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     // The push to the customer is sent server-side by onChatMessageCreated.
   }
 
+  void _showAttachSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined,
+                  color: AppColors.primary),
+              title: const Text('Фото'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndSendImages();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined,
+                  color: AppColors.primary),
+              title: const Text('Видео'),
+              subtitle: const Text('до 50 МБ'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndSendVideo();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndSendVideo() async {
+    final picked = await _picker.pickVideo(source: ImageSource.gallery);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    if (bytes.length > 50 * 1024 * 1024) {
+      Fluttertoast.showToast(msg: 'Видео слишком большое (макс 50 МБ)');
+      return;
+    }
+    final ms = MessageService.instance;
+    _pendingScrollToEnd = true;
+    try {
+      final id = await ms.sendMessage(
+        topicId: widget.topicId,
+        text: '',
+        senderId: _uid,
+        senderName: 'Admin',
+        isFromAdmin: true,
+        type: 'video',
+        mediaUrl: '',
+        sizeBytes: bytes.length,
+        uploading: true,
+      );
+      final url = await ms.uploadChatMedia(widget.topicId, bytes,
+          ext: 'mp4', contentType: 'video/mp4');
+      await ms.patchMessage(
+          widget.topicId, id, {'mediaUrl': url, 'uploading': false});
+    } catch (_) {
+      Fluttertoast.showToast(msg: 'Не удалось отправить видео');
+    }
+  }
+
   Future<void> _pickAndSendImages() async {
     if (_uploading) return;
     final picked =
@@ -266,33 +378,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       MaterialPageRoute(builder: (_) => MediaComposer(initial: picked)),
     );
     if (result == null || result.files.isEmpty) return;
-    setState(() => _uploading = true);
+    _pendingScrollToEnd = true;
+    final n = result.files.length;
+    final ms = MessageService.instance;
     try {
-      // Upload all, then send ONE album message (Telegram-style group).
-      final urls = <String>[];
-      for (final f in result.files) {
-        final bytes = await f.readAsBytes();
-        final ext = f.name.split('.').last.toLowerCase();
-        urls.add(await MessageService.instance.uploadChatMedia(
-          widget.topicId,
-          bytes,
-          ext: ext == 'png' ? 'png' : 'jpg',
-          contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
-        ));
-      }
-      await MessageService.instance.sendMessage(
+      // 1) Post the album immediately with per-photo spinners.
+      final id = await ms.sendMessage(
         topicId: widget.topicId,
         text: result.caption,
         senderId: _uid,
         senderName: 'Admin',
         isFromAdmin: true,
         type: 'image',
-        mediaUrls: urls,
+        mediaUrls: const [],
+        uploading: true,
+        uploadCount: n,
       );
+      // 2) Upload each photo, revealing it as it lands.
+      for (final f in result.files) {
+        final bytes = await f.readAsBytes();
+        final ext = f.name.split('.').last.toLowerCase();
+        final url = await ms.uploadChatMedia(
+          widget.topicId,
+          bytes,
+          ext: ext == 'png' ? 'png' : 'jpg',
+          contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
+        );
+        await ms.appendMediaUrl(widget.topicId, id, url);
+      }
+      await ms.patchMessage(widget.topicId, id, {'uploading': false});
     } catch (e) {
       Fluttertoast.showToast(msg: 'Не удалось отправить фото');
-    } finally {
-      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -341,15 +457,50 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.userName),
+        toolbarHeight: 64,
+        titleSpacing: 0,
+        title: InkWell(
+          onTap: _openProfile,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primary.withOpacity(0.2),
+                child: Text(
+                    widget.userName.isNotEmpty
+                        ? widget.userName[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(color: AppColors.primary)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.userName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.headingM),
+                    Text('Открыть профиль →',
+                        style: AppTextStyles.label
+                            .copyWith(color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           IconButton(
-            tooltip: _showTranslated ? 'Показать оригинал' : 'Перевести',
-            onPressed: _toggleTranslate,
-            icon: Icon(Icons.translate,
-                color: _showTranslated
-                    ? AppColors.primary
-                    : AppColors.textSecondary),
+            tooltip: 'Позвонить',
+            onPressed: _callCustomer,
+            icon: const Icon(Icons.call, color: AppColors.primary),
+          ),
+          IconButton(
+            tooltip: 'Настройки чата',
+            onPressed: _showChatSettings,
+            icon: const Icon(Icons.settings_outlined, color: AppColors.primary),
           ),
         ],
       ),
@@ -367,17 +518,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                       child:
                           Text('Нет сообщений', style: AppTextStyles.caption));
                 }
-                return Stack(
-                  children: [
-                    ScrollablePositionedList.builder(
-                      itemScrollController: _itemScroll,
-                      itemPositionsListener: _positions,
-                      padding: const EdgeInsets.all(12),
-                      itemCount: msgs.length,
-                      itemBuilder: (context, i) => _item(msgs, i),
+                return GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _dismissKeyboard,
+                  child: NotificationListener<UserScrollNotification>(
+                    onNotification: (n) {
+                      if (n.direction != ScrollDirection.idle &&
+                          _inputFocus.hasFocus) {
+                        _dismissKeyboard();
+                      }
+                      return false;
+                    },
+                    child: Stack(
+                      children: [
+                        ScrollablePositionedList.builder(
+                          itemScrollController: _itemScroll,
+                          itemPositionsListener: _positions,
+                          padding: const EdgeInsets.all(12),
+                          itemCount: msgs.length,
+                          itemBuilder: (context, i) => _item(msgs, i),
+                        ),
+                        _scrollDownButton(msgs),
+                      ],
                     ),
-                    _scrollDownButton(msgs),
-                  ],
+                  ),
                 );
               },
             ),
@@ -385,6 +549,76 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           if (_replyTo != null) _replyBanner(),
           _inputBar(),
         ],
+      ),
+    );
+  }
+
+  void _openProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CustomerProfileScreen(
+            userId: widget.topicId, fallbackName: widget.userName),
+      ),
+    );
+  }
+
+  Future<void> _callCustomer() async {
+    final phone = _customer?.phone ?? '';
+    if (phone.isEmpty) {
+      Fluttertoast.showToast(msg: 'Нет номера телефона');
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      Fluttertoast.showToast(msg: 'Не удалось позвонить');
+    }
+  }
+
+  void _showChatSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+              child: Text('Настройки чата', style: AppTextStyles.headingM),
+            ),
+            StatefulBuilder(
+              builder: (ctx, setSheet) => SwitchListTile(
+                value: _showTranslated,
+                activeColor: AppColors.primary,
+                title: const Text('Авто-перевод на русский'),
+                subtitle: Text('Сообщения клиента переводятся на русский',
+                    style: AppTextStyles.caption),
+                onChanged: (v) {
+                  setSheet(() {});
+                  setState(() => _showTranslated = v);
+                  _ensureTranslations();
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline,
+                  color: AppColors.primary),
+              title: const Text('Профиль клиента'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openProfile();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -537,7 +771,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               color: mine ? Colors.white70 : AppColors.textMuted)),
       if (mine) ...[
         const SizedBox(width: 4),
-        Icon(m.isRead ? Icons.done_all : Icons.done,
+        Icon(m.isRead || m.delivered ? Icons.done_all : Icons.done,
             size: 14,
             color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white70),
       ],
@@ -558,7 +792,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
               style: const TextStyle(fontSize: 10, color: Colors.white)),
           if (mine) ...[
             const SizedBox(width: 4),
-            Icon(m.isRead ? Icons.done_all : Icons.done,
+            Icon(m.isRead || m.delivered ? Icons.done_all : Icons.done,
                 size: 14,
                 color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white),
           ],
@@ -603,6 +837,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   Widget _bubbleContent(MessageModel m, bool mine, String time) {
     final textColor = mine ? Colors.white : AppColors.textPrimary;
 
+    if (m.isOrder) return _orderCard(m, mine, time, textColor);
+
+    if (m.isVideo) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (m.hasReply)
+            Padding(
+                padding: const EdgeInsets.fromLTRB(6, 2, 6, 4),
+                child: _replyQuote(m, mine)),
+          Stack(
+            children: [
+              VideoBubble(
+                  url: m.mediaUrl,
+                  sizeBytes: m.sizeBytes,
+                  uploading: m.uploading),
+              Positioned(
+                  right: 8, bottom: 8, child: _metaChip(m, mine, time)),
+            ],
+          ),
+          if (m.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
+              child: _translatedAwareText(m, textColor, mine),
+            ),
+        ],
+      );
+    }
+
     if (m.isImage) {
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -614,7 +878,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 child: _replyQuote(m, mine)),
           Stack(
             children: [
-              ChatAlbum(urls: m.images),
+              ChatAlbum(
+                urls: m.images,
+                pendingCount: m.uploading
+                    ? (m.uploadCount - m.images.length).clamp(0, 20)
+                    : 0,
+              ),
               Positioned(
                   right: 8, bottom: 8, child: _metaChip(m, mine, time)),
             ],
@@ -634,7 +903,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (m.hasReply) _replyQuote(m, mine),
-          VoiceBubble(url: m.mediaUrl, durationMs: m.durationMs, mine: mine),
+          VoiceBubble(
+            url: m.mediaUrl,
+            durationMs: m.durationMs,
+            mine: mine,
+            waveform: m.waveform,
+            sizeBytes: m.sizeBytes,
+            uploading: m.uploading,
+          ),
           const SizedBox(height: 2),
           SizedBox(
             width: 190,
@@ -663,6 +939,62 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// Order attachment card linking to the order detail screen.
+  Widget _orderCard(MessageModel m, bool mine, String time, Color textColor) {
+    final accent = mine ? Colors.white : AppColors.primary;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.receipt_long, size: 18, color: accent),
+            const SizedBox(width: 6),
+            Text('Заказ',
+                style: AppTextStyles.bodyBold.copyWith(color: textColor)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        if (m.text.isNotEmpty) _translatedAwareText(m, textColor, mine),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: m.orderId.isEmpty
+              ? null
+              : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            OrderDetailScreen(orderId: m.orderId)),
+                  ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: (mine ? Colors.white : AppColors.primary)
+                  .withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accent.withOpacity(0.5)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Открыть заказ',
+                    style: AppTextStyles.bodyBold.copyWith(color: accent)),
+                const SizedBox(width: 4),
+                Icon(Icons.arrow_forward, size: 16, color: accent),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _metaInline(m, mine, time),
+        ),
+      ],
     );
   }
 
@@ -765,7 +1097,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
         padding: const EdgeInsets.all(8),
         child: Row(children: [
           IconButton(
-            onPressed: _uploading ? null : _pickAndSendImages,
+            onPressed: _showAttachSheet,
             icon: const Icon(Icons.attach_file, color: AppColors.primary),
           ),
           Expanded(
@@ -780,13 +1112,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ),
           const SizedBox(width: 8),
           _circleBtn(
-            icon: _uploading
-                ? null
-                : (hasText ? Icons.send : Icons.mic),
-            loading: _uploading,
-            onTap: _uploading
-                ? null
-                : (hasText ? _send : _startRecording),
+            icon: hasText ? Icons.send : Icons.mic,
+            onTap: hasText ? _send : _startRecording,
           ),
         ]),
       ),
