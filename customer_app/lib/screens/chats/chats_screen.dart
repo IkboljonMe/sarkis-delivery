@@ -6,15 +6,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../providers/message_provider.dart';
 import '../../services/translate_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/constants.dart';
 import '../../utils/voice_recorder.dart';
 import '../../widgets/chat_album.dart';
 import '../../widgets/empty_state.dart';
@@ -30,7 +33,8 @@ class ChatsScreen extends StatefulWidget {
   State<ChatsScreen> createState() => _ChatsScreenState();
 }
 
-class _ChatsScreenState extends State<ChatsScreen> {
+class _ChatsScreenState extends State<ChatsScreen>
+    with WidgetsBindingObserver {
   final _controller = TextEditingController();
   final _picker = ImagePicker();
   final _recorder = VoiceRecorder();
@@ -50,13 +54,25 @@ class _ChatsScreenState extends State<ChatsScreen> {
   Timer? _flashTimer;
   final Map<String, String> _translations = {};
   final Set<String> _translating = {};
+  // Auto-translate incoming (admin) messages into the customer's language.
+  bool _showTranslated = true;
 
-  Future<void> _translate(MessageModel m, String target) async {
-    if (_translations.containsKey(m.id)) {
-      setState(() => _translations.remove(m.id));
-      return;
+  /// Lazily translates every incoming admin message that isn't cached yet.
+  void _ensureTranslations() {
+    if (!_showTranslated || _msgs.isEmpty) return;
+    final target = context.read<LocaleProvider>().translateLang;
+    for (final m in _msgs) {
+      if (m.isFromAdmin &&
+          m.text.trim().isNotEmpty &&
+          !_translations.containsKey(m.id) &&
+          !_translating.contains(m.id)) {
+        _translateMsg(m, target);
+      }
     }
-    setState(() => _translating.add(m.id));
+  }
+
+  Future<void> _translateMsg(MessageModel m, String target) async {
+    _translating.add(m.id);
     final out = await TranslateService.translate(m.text, target);
     if (!mounted) return;
     setState(() {
@@ -68,18 +84,40 @@ class _ChatsScreenState extends State<ChatsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_onTextChanged);
     _inputFocus.addListener(() {
-      if (_inputFocus.hasFocus) {
-        Future.delayed(const Duration(milliseconds: 250), () {
-          if (mounted && _itemScroll.isAttached && _msgs.isNotEmpty) {
-            _itemScroll.scrollTo(
-                index: _msgs.length - 1,
-                duration: const Duration(milliseconds: 200));
-          }
-        });
-      }
+      if (_inputFocus.hasFocus) _scrollLastIntoView(delayMs: 250);
     });
+  }
+
+  /// Keeps the newest message above the keyboard as it animates open.
+  @override
+  void didChangeMetrics() {
+    if (_inputFocus.hasFocus) _scrollLastIntoView();
+  }
+
+  void _scrollLastIntoView({int delayMs = 0}) {
+    void run() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _itemScroll.isAttached && _msgs.isNotEmpty) {
+          _itemScroll.scrollTo(
+              index: _msgs.length - 1,
+              duration: const Duration(milliseconds: 200));
+        }
+      });
+    }
+
+    if (delayMs == 0) {
+      run();
+    } else {
+      Future.delayed(Duration(milliseconds: delayMs), run);
+    }
+  }
+
+  void _toggleTranslate() {
+    setState(() => _showTranslated = !_showTranslated);
+    _ensureTranslations();
   }
 
   void _onTextChanged() => setState(() {});
@@ -134,6 +172,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     _inputFocus.dispose();
@@ -141,6 +180,72 @@ class _ChatsScreenState extends State<ChatsScreen> {
     _flashTimer?.cancel();
     _recorder.dispose();
     super.dispose();
+  }
+
+  // --- Contact admin (WhatsApp / phone call) ---
+
+  void _showContactAdmin(AppLocalizations t) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: Row(children: [
+                Text(t.t('callAdmin'), style: AppTextStyles.headingM),
+              ]),
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat, color: Color(0xFF25D366)),
+              title: Text(t.t('chatViaWhatsApp')),
+              subtitle: Text(AppConstants.adminPhoneNumber,
+                  style: AppTextStyles.caption),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openWhatsApp();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.call, color: AppColors.primary),
+              title: Text(t.t('callViaPhone')),
+              subtitle: Text(AppConstants.adminPhoneNumber,
+                  style: AppTextStyles.caption),
+              onTap: () {
+                Navigator.pop(ctx);
+                _callAdmin();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openWhatsApp() async {
+    final uri = Uri.parse('https://wa.me/${AppConstants.adminPhoneDigits}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      Fluttertoast.showToast(msg: 'WhatsApp недоступен');
+    }
+  }
+
+  Future<void> _callAdmin() async {
+    final uri = Uri(
+        scheme: 'tel',
+        path: AppConstants.adminPhoneNumber.replaceAll(' ', ''));
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      Fluttertoast.showToast(msg: 'Не удалось позвонить');
+    }
   }
 
   Future<void> _startRecording() async {
@@ -293,17 +398,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 setState(() => _replyTo = m);
               },
             ),
-            if (m.text.trim().isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.translate, color: AppColors.primary),
-                title: Text(_translations.containsKey(m.id)
-                    ? 'Оригинал'
-                    : 'Перевести'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _translate(m, user.language);
-                },
-              ),
           ],
         ),
       ),
@@ -335,6 +429,21 @@ class _ChatsScreenState extends State<ChatsScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: _showTranslated ? t.t('showOriginal') : t.t('translate'),
+            onPressed: _toggleTranslate,
+            icon: Icon(Icons.translate,
+                color: _showTranslated
+                    ? AppColors.primary
+                    : AppColors.textSecondary),
+          ),
+          IconButton(
+            tooltip: t.t('callAdmin'),
+            onPressed: () => _showContactAdmin(t),
+            icon: const Icon(Icons.call, color: AppColors.primary),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -344,6 +453,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
               builder: (context, snap) {
                 final msgs = snap.data ?? [];
                 _onMessages(user, msgs);
+                _ensureTranslations();
                 if (msgs.isEmpty) {
                   return EmptyState(
                       icon: Icons.chat_bubble_outline,
@@ -568,37 +678,36 @@ class _ChatsScreenState extends State<ChatsScreen> {
         ),
       );
 
-  Widget _maybeTranslation(MessageModel m, Color textColor, bool mine) {
-    if (_translating.contains(m.id)) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text('Перевод…',
-            style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: mine ? Colors.white70 : AppColors.textSecondary)),
-      );
-    }
-    final tr = _translations[m.id];
-    if (tr == null) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: (mine ? Colors.white : AppColors.primary).withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Перевод',
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: mine ? Colors.white70 : AppColors.primary)),
-          Text(tr, style: TextStyle(color: textColor)),
-        ],
-      ),
+  /// Renders the message text, swapping in the translation for incoming
+  /// (admin) messages while the global translate toggle is on.
+  Widget _translatedAwareText(MessageModel m, Color textColor, bool mine) {
+    final incoming = !mine;
+    final translated = _translations[m.id];
+    final showT = _showTranslated && incoming && translated != null;
+    final translating =
+        _showTranslated && incoming && _translating.contains(m.id);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(showT ? translated : m.text, style: TextStyle(color: textColor)),
+        if (showT)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.translate,
+                size: 11,
+                color: mine ? Colors.white70 : AppColors.textMuted),
+          ),
+        if (translating)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text('Перевод…',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: mine ? Colors.white70 : AppColors.textSecondary)),
+          ),
+      ],
     );
   }
 
@@ -628,13 +737,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
           if (m.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(m.text, style: TextStyle(color: textColor)),
-                  _maybeTranslation(m, textColor, mine),
-                ],
-              ),
+              child: _translatedAwareText(m, textColor, mine),
             ),
         ],
       );
@@ -667,8 +770,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         children: [
           if (!mine) _adminLabel(),
           if (m.hasReply) _replyQuote(m, mine),
-          Text(m.text, style: TextStyle(color: textColor)),
-          _maybeTranslation(m, textColor, mine),
+          _translatedAwareText(m, textColor, mine),
           const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.max,

@@ -34,7 +34,8 @@ class ChatDetailScreen extends StatefulWidget {
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen> {
+class _ChatDetailScreenState extends State<ChatDetailScreen>
+    with WidgetsBindingObserver {
   final _controller = TextEditingController();
   final _picker = ImagePicker();
   final _recorder = VoiceRecorder();
@@ -54,13 +55,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Timer? _flashTimer;
   final Map<String, String> _translations = {}; // msgId -> translated text
   final Set<String> _translating = {};
+  // Auto-translate incoming (customer) messages into Russian for the admin.
+  bool _showTranslated = true;
 
-  Future<void> _translate(MessageModel m) async {
-    if (_translations.containsKey(m.id)) {
-      setState(() => _translations.remove(m.id)); // toggle off
-      return;
+  /// Lazily translates every incoming customer message that isn't cached yet.
+  void _ensureTranslations() {
+    if (!_showTranslated || _msgs.isEmpty) return;
+    for (final m in _msgs) {
+      if (!m.isFromAdmin &&
+          m.text.trim().isNotEmpty &&
+          !_translations.containsKey(m.id) &&
+          !_translating.contains(m.id)) {
+        _translateMsg(m);
+      }
     }
-    setState(() => _translating.add(m.id));
+  }
+
+  Future<void> _translateMsg(MessageModel m) async {
+    _translating.add(m.id);
     final out = await TranslateService.translate(m.text, 'ru');
     if (!mounted) return;
     setState(() {
@@ -69,25 +81,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     });
   }
 
+  void _toggleTranslate() {
+    setState(() => _showTranslated = !_showTranslated);
+    _ensureTranslations();
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.initialText != null && widget.initialText!.isNotEmpty) {
       _controller.text = widget.initialText!;
     }
     _controller.addListener(_onTextChanged);
     // Keyboard: when the composer is focused, bring the latest message above it.
     _inputFocus.addListener(() {
-      if (_inputFocus.hasFocus) {
-        Future.delayed(const Duration(milliseconds: 250), () {
-          if (mounted && _itemScroll.isAttached && _msgs.isNotEmpty) {
-            _itemScroll.scrollTo(
-                index: _msgs.length - 1,
-                duration: const Duration(milliseconds: 200));
-          }
-        });
-      }
+      if (_inputFocus.hasFocus) _scrollLastIntoView(delayMs: 250);
     });
+  }
+
+  /// Keeps the newest message above the keyboard as it animates open.
+  @override
+  void didChangeMetrics() {
+    if (_inputFocus.hasFocus) _scrollLastIntoView();
+  }
+
+  void _scrollLastIntoView({int delayMs = 0}) {
+    void run() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _itemScroll.isAttached && _msgs.isNotEmpty) {
+          _itemScroll.scrollTo(
+              index: _msgs.length - 1,
+              duration: const Duration(milliseconds: 200));
+        }
+      });
+    }
+
+    if (delayMs == 0) {
+      run();
+    } else {
+      Future.delayed(Duration(milliseconds: delayMs), run);
+    }
   }
 
   void _flashMessage(String id) {
@@ -143,6 +177,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     _inputFocus.dispose();
@@ -296,17 +331,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 setState(() => _replyTo = m);
               },
             ),
-            if (m.text.trim().isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.translate, color: AppColors.primary),
-                title: Text(_translations.containsKey(m.id)
-                    ? 'Показать оригинал'
-                    : 'Перевести'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _translate(m);
-                },
-              ),
           ],
         ),
       ),
@@ -316,7 +340,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.userName)),
+      appBar: AppBar(
+        title: Text(widget.userName),
+        actions: [
+          IconButton(
+            tooltip: _showTranslated ? 'Показать оригинал' : 'Перевести',
+            onPressed: _toggleTranslate,
+            icon: Icon(Icons.translate,
+                color: _showTranslated
+                    ? AppColors.primary
+                    : AppColors.textSecondary),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -325,6 +361,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               builder: (context, snap) {
                 final msgs = snap.data ?? [];
                 _onMessages(msgs);
+                _ensureTranslations();
                 if (msgs.isEmpty) {
                   return Center(
                       child:
@@ -530,37 +567,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _maybeTranslation(MessageModel m, Color textColor, bool mine) {
-    if (_translating.contains(m.id)) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text('Перевод…',
-            style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: mine ? Colors.white70 : AppColors.textSecondary)),
-      );
-    }
-    final tr = _translations[m.id];
-    if (tr == null) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: (mine ? Colors.white : AppColors.primary).withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Перевод',
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: mine ? Colors.white70 : AppColors.primary)),
-          Text(tr, style: TextStyle(color: textColor)),
-        ],
-      ),
+  /// Renders the message text, swapping in the Russian translation for
+  /// incoming (customer) messages while the global translate toggle is on.
+  Widget _translatedAwareText(MessageModel m, Color textColor, bool mine) {
+    final incoming = !mine;
+    final translated = _translations[m.id];
+    final showT = _showTranslated && incoming && translated != null;
+    final translating =
+        _showTranslated && incoming && _translating.contains(m.id);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(showT ? translated : m.text, style: TextStyle(color: textColor)),
+        if (showT)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.translate,
+                size: 11,
+                color: mine ? Colors.white70 : AppColors.textMuted),
+          ),
+        if (translating)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text('Перевод…',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: mine ? Colors.white70 : AppColors.textSecondary)),
+          ),
+      ],
     );
   }
 
@@ -586,13 +622,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           if (m.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(m.text, style: TextStyle(color: textColor)),
-                  _maybeTranslation(m, textColor, mine),
-                ],
-              ),
+              child: _translatedAwareText(m, textColor, mine),
             ),
         ],
       );
@@ -624,8 +654,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (m.hasReply) _replyQuote(m, mine),
-          Text(m.text, style: TextStyle(color: textColor)),
-          _maybeTranslation(m, textColor, mine),
+          _translatedAwareText(m, textColor, mine),
           const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.max,

@@ -13,6 +13,7 @@ import '../orders/my_orders_screen.dart';
 import 'account_settings_screen.dart';
 import 'info_page.dart';
 import 'language_settings_screen.dart';
+import 'translate_language_screen.dart';
 
 /// Customer settings menu — row-format submenus grouped into sections.
 class SettingsScreen extends StatelessWidget {
@@ -58,6 +59,9 @@ class SettingsScreen extends StatelessWidget {
     final locale = context.watch<LocaleProvider>();
     final langName = AppConstants.languages.firstWhere(
         (l) => l['code'] == locale.locale.languageCode,
+        orElse: () => AppConstants.languages.first)['native'];
+    final translateLangName = AppConstants.languages.firstWhere(
+        (l) => l['code'] == locale.translateLang,
         orElse: () => AppConstants.languages.first)['native'];
 
     final initials =
@@ -112,6 +116,9 @@ class SettingsScreen extends StatelessWidget {
             _row(context, Icons.language, t.language,
                 () => _push(context, const LanguageSettingsScreen()),
                 trailingText: langName),
+            _row(context, Icons.translate, t.t('translateLanguage'),
+                () => _push(context, const TranslateLanguageScreen()),
+                trailingText: translateLangName),
           ]),
 
           const SizedBox(height: 16),

@@ -7,7 +7,16 @@ class AppConstants {
   AppConstants._();
 
   // --- External keys / accounts (replace for production) ---
-  static const String adminWhatsappNumber = 'YOUR_NUMBER_HERE';
+  /// Admin contact number in international format. REPLACE before release.
+  /// Used for both the WhatsApp link and the direct phone call.
+  static const String adminPhoneNumber = '+48 600 516 406';
+
+  /// Digits-only form for wa.me links (no '+', spaces or symbols).
+  static String get adminPhoneDigits =>
+      adminPhoneNumber.replaceAll(RegExp(r'\D'), '');
+
+  /// Back-compat alias used by the settings WhatsApp shortcut.
+  static String get adminWhatsappNumber => adminPhoneDigits;
   static const String adminUid = 'HjygD2zQpKZ0zakT0JZWFvc3GcA3';
 
   /// Google Geocoding + Static Maps API key, loaded from the bundled .env.

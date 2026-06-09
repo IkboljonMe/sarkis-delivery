@@ -291,6 +291,11 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _recentOrder(OrderModel o, AppLocalizations t) {
+    final active = o.status != 'delivered' && o.status != 'cancelled';
+    final deliverDate = DateFormat('d MMM').format(o.shiftDate);
+    final summary = o.itemsSummary.isNotEmpty
+        ? o.itemsSummary
+        : '${o.itemCount} • ${t.products}';
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
       padding: const EdgeInsets.all(14),
@@ -300,18 +305,49 @@ class HomeScreen extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('#${o.shortId}', style: AppTextStyles.bodyBold),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(t.t('orderDetails'),
+                          style: AppTextStyles.bodyBold),
+                    ),
+                    Text('€${o.totalPrice.toStringAsFixed(2)}',
+                        style: AppTextStyles.bodyBold
+                            .copyWith(color: AppColors.primary)),
+                  ],
+                ),
                 const SizedBox(height: 4),
-                Text('${o.shiftLabel} • €${o.totalPrice.toStringAsFixed(2)}',
+                Text(summary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.caption),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.local_shipping_outlined,
+                        size: 14, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        active
+                            ? '${t.t('awaitingDelivery')} • $deliverDate'
+                            : deliverDate,
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           OrderStatusBadge(status: o.status),
         ],
       ),

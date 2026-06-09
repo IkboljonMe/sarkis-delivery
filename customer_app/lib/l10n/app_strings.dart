@@ -142,6 +142,15 @@ const Map<String, String> kEn = {
   'account': 'Account',
   'termsBody': 'By using Sarkis Bread you agree to order for cash on delivery within the Berlin and Hamburg delivery zones. Orders are prepared per the selected delivery date. Prices are in EUR and may change. We may contact you about your order via the app or phone.',
   'privacyBody': 'We collect your name, phone number and delivery address solely to fulfill your orders and contact you about them. Your data is stored securely in Firebase and is never sold. You can request deletion of your account at any time via WhatsApp.',
+  'orderDetails': 'Order details',
+  'awaitingDelivery': 'Awaiting delivery',
+  'callAdmin': 'Contact admin',
+  'callViaPhone': 'Call',
+  'chatViaWhatsApp': 'WhatsApp',
+  'translate': 'Translate',
+  'showOriginal': 'Show original',
+  'translateLanguage': 'Translation language',
+  'translateLanguageHint': 'Incoming messages are translated to this language',
 };
 
 const Map<String, String> kRu = {
@@ -284,6 +293,15 @@ const Map<String, String> kRu = {
   'account': 'Аккаунт',
   'termsBody': 'Используя Sarkis Bread, вы соглашаетесь заказывать с оплатой наличными при доставке в зонах Берлина и Гамбурга. Заказы готовятся к выбранной дате доставки. Цены указаны в евро и могут меняться. Мы можем связаться с вами по поводу заказа через приложение или телефон.',
   'privacyBody': 'Мы собираем ваше имя, номер телефона и адрес доставки только для выполнения заказов и связи по ним. Данные надёжно хранятся в Firebase и никогда не продаются. Вы можете запросить удаление аккаунта в любой момент через WhatsApp.',
+  'orderDetails': 'Детали заказа',
+  'awaitingDelivery': 'Ожидает доставки',
+  'callAdmin': 'Связаться с админом',
+  'callViaPhone': 'Позвонить',
+  'chatViaWhatsApp': 'WhatsApp',
+  'translate': 'Перевести',
+  'showOriginal': 'Показать оригинал',
+  'translateLanguage': 'Язык перевода',
+  'translateLanguageHint': 'Входящие сообщения переводятся на этот язык',
 };
 
 const Map<String, String> kDe = {
@@ -362,6 +380,15 @@ const Map<String, String> kDe = {
   'goodMorning': 'Guten Morgen',
   'goodAfternoon': 'Guten Tag',
   'goodEvening': 'Guten Abend',
+  'orderDetails': 'Bestelldetails',
+  'awaitingDelivery': 'Wartet auf Lieferung',
+  'callAdmin': 'Admin kontaktieren',
+  'callViaPhone': 'Anrufen',
+  'chatViaWhatsApp': 'WhatsApp',
+  'translate': 'Übersetzen',
+  'showOriginal': 'Original anzeigen',
+  'translateLanguage': 'Übersetzungssprache',
+  'translateLanguageHint': 'Eingehende Nachrichten werden in diese Sprache übersetzt',
 };
 
 const Map<String, String> kTr = {
@@ -399,6 +426,15 @@ const Map<String, String> kTr = {
   'retry': 'Tekrar dene',
   'home': 'Ana Sayfa',
   'goodMorning': 'Günaydın',
+  'orderDetails': 'Sipariş detayları',
+  'awaitingDelivery': 'Teslimat bekleniyor',
+  'callAdmin': 'Yöneticiye ulaş',
+  'callViaPhone': 'Ara',
+  'chatViaWhatsApp': 'WhatsApp',
+  'translate': 'Çevir',
+  'showOriginal': 'Orijinali göster',
+  'translateLanguage': 'Çeviri dili',
+  'translateLanguageHint': 'Gelen mesajlar bu dile çevrilir',
 };
 
 const Map<String, String> kHy = {
@@ -436,4 +472,13 @@ const Map<String, String> kHy = {
   'retry': 'Կրկնել',
   'home': 'Գլխավոր',
   'goodMorning': 'Բարի լույս',
+  'orderDetails': 'Պատվերի մանրամասներ',
+  'awaitingDelivery': 'Սպասում է առաքման',
+  'callAdmin': 'Կապ ադմինի հետ',
+  'callViaPhone': 'Զանգահարել',
+  'chatViaWhatsApp': 'WhatsApp',
+  'translate': 'Թարգմանել',
+  'showOriginal': 'Ցույց տալ բնօրինակը',
+  'translateLanguage': 'Թարգմանության լեզու',
+  'translateLanguageHint': 'Մուտքային հաղորդագրությունները թարգմանվում են այս լեզվով',
 };

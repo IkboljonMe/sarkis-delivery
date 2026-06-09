@@ -154,6 +154,31 @@ class MessageService {
     });
   }
 
+  /// Sends the one-time admin welcome message to a freshly registered user.
+  /// No-op if the topic already has any messages (avoids duplicates).
+  Future<void> sendWelcomeIfNew({
+    required String topicId,
+    required String userName,
+    required String userGroup,
+    required String text,
+    required String adminUid,
+    required String senderName,
+  }) async {
+    try {
+      final existing = await _msgs(topicId).limit(1).get();
+      if (existing.docs.isNotEmpty) return;
+      await ensureTopic(
+          topicId: topicId, userName: userName, userGroup: userGroup);
+      await sendMessage(
+        topicId: topicId,
+        text: text,
+        senderId: adminUid,
+        senderName: senderName,
+        isFromAdmin: true,
+      );
+    } catch (_) {}
+  }
+
   /// Ensures a topic doc exists with denormalized user info for the admin list.
   Future<void> ensureTopic({
     required String topicId,

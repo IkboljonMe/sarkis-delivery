@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
+import '../services/message_service.dart';
 import '../services/user_service.dart';
+import '../utils/constants.dart';
+import '../utils/welcome_message.dart';
 
 enum AuthStatus { unknown, codeSent, authenticated, error }
 
@@ -135,6 +138,15 @@ class AuthProvider extends ChangeNotifier {
       await _users.saveUser(user);
       _user = user;
       await FcmService.instance.init(id);
+      // Greet the new customer with an automated admin message in their language.
+      await MessageService.instance.sendWelcomeIfNew(
+        topicId: id,
+        userName: user.fullName.isEmpty ? user.name : user.fullName,
+        userGroup: group,
+        text: WelcomeMessage.forLang(language),
+        adminUid: AppConstants.adminUid,
+        senderName: WelcomeMessage.senderName,
+      );
       _setBusy(false);
       return true;
     } catch (e) {
