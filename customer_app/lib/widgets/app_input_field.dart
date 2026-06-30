@@ -19,6 +19,9 @@ class AppInputField extends StatelessWidget {
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
   final TextCapitalization textCapitalization;
+  final String? errorText;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   const AppInputField({
     super.key,
@@ -35,10 +38,14 @@ class AppInputField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.textCapitalization = TextCapitalization.none,
+    this.errorText,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasError = errorText != null && errorText!.isNotEmpty;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -48,14 +55,20 @@ class AppInputField extends StatelessWidget {
       inputFormatters: inputFormatters,
       validator: validator,
       onChanged: onChanged,
+      onFieldSubmitted: onSubmitted,
+      textInputAction: textInputAction,
       textCapitalization: textCapitalization,
       style: AppTextStyles.body,
       cursorColor: AppColors.primary,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        errorText: hasError ? errorText : null,
+        errorStyle: const TextStyle(color: AppColors.error),
+        errorMaxLines: 2,
         prefixIcon: prefixIcon != null
-            ? Icon(prefixIcon, color: AppColors.primary, size: 20)
+            ? Icon(prefixIcon,
+                color: hasError ? AppColors.error : AppColors.primary, size: 20)
             : null,
         suffixIcon: suffix,
       ),

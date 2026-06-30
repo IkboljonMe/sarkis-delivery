@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import '../services/message_service.dart';
+import '../services/region_group_service.dart';
 import '../services/user_service.dart';
 import '../utils/constants.dart';
 import '../utils/welcome_message.dart';
@@ -73,38 +76,53 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> startPhoneVerification(String phoneNumber) async {
+  /// Starts phone verification and completes ONLY when the SMS code has been
+  /// sent (or verification finished/failed). The Future from `verifyPhoneNumber`
+  /// resolves before the `codeSent` callback fires, so we drive completion off
+  /// the callbacks via a Completer — otherwise the caller would see a stale
+  /// status and need a second tap to navigate.
+  Future<bool> startPhoneVerification(String phoneNumber) {
     _setBusy(true);
     _error = null;
-    try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        forceResendingToken: _resendToken,
-        codeSent: (vid, token) {
-          _verificationId = vid;
-          _resendToken = token;
-          _status = AuthStatus.codeSent;
-          _setBusy(false);
-        },
-        verificationCompleted: (cred) async {
-          try {
-            await _auth.signInWithCredential(cred);
-            _status = AuthStatus.authenticated;
-          } catch (_) {}
-          _setBusy(false);
-        },
-        verificationFailed: (e) {
-          _error = e.message ?? 'Verification failed';
-          _status = AuthStatus.error;
-          _setBusy(false);
-        },
-        codeAutoRetrievalTimeout: (vid) => _verificationId = vid,
-      );
-    } catch (e) {
+    _status = AuthStatus.unknown;
+    final completer = Completer<bool>();
+    void finish(bool ok) {
+      _setBusy(false);
+      if (!completer.isCompleted) completer.complete(ok);
+    }
+
+    _auth
+        .verifyPhoneNumber(
+          phoneNumber: phoneNumber,
+          forceResendingToken: _resendToken,
+          codeSent: (vid, token) {
+            _verificationId = vid;
+            _resendToken = token;
+            _status = AuthStatus.codeSent;
+            finish(true);
+          },
+          verificationCompleted: (cred) async {
+            // Instant verification (some Android devices): sign in directly.
+            try {
+              await _auth.signInWithCredential(cred);
+              _status = AuthStatus.authenticated;
+              await loadCurrentUser();
+            } catch (_) {}
+            finish(true);
+          },
+          verificationFailed: (e) {
+            _error = e.message ?? 'Verification failed';
+            _status = AuthStatus.error;
+            finish(false);
+          },
+          codeAutoRetrievalTimeout: (vid) => _verificationId = vid,
+        )
+        .catchError((e) {
       _error = e.toString();
       _status = AuthStatus.error;
-      _setBusy(false);
-    }
+      finish(false);
+    });
+    return completer.future;
   }
 
   Future<bool> verifyOtp(String smsCode) async {
@@ -178,18 +196,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Saves the collected [draft] once the phone is verified. Returns false if
-  /// there's no draft or no signed-in uid.
+  /// Saves the collected [draft] once the phone is verified. The delivery
+  /// group is resolved here (now that we're authenticated and may read
+  /// `regionGroups`) from the geocoded point; empty means out of coverage.
+  /// Returns false if there's no draft or no signed-in uid.
   Future<bool> completeRegistration() async {
     final d = draft;
     if (d == null) return false;
+    var group = d.group;
+    if (group.isEmpty && d.lat != null && d.lng != null) {
+      try {
+        group = await RegionGroupService.instance
+                .resolveGroupName(d.lat!, d.lng!) ??
+            '';
+      } catch (_) {
+        group = '';
+      }
+    }
     final ok = await saveProfile(
       name: d.name,
       lastName: d.lastName,
       address: d.address,
       city: d.city,
       postalCode: d.postalCode,
-      group: d.group,
+      group: group,
       lat: d.lat,
       lng: d.lng,
       language: d.language,

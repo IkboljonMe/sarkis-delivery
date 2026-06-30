@@ -23,10 +23,59 @@ class GeoResult {
   });
 }
 
+/// A single address suggestion from Google Places Autocomplete.
+class AddressSuggestion {
+  final String description; // full, human-readable address
+  final String mainText; // first line (street)
+  final String secondaryText; // city / region line
+
+  const AddressSuggestion({
+    required this.description,
+    required this.mainText,
+    required this.secondaryText,
+  });
+}
+
 /// Thin wrapper over the Google Geocoding API.
 class GeocodingService {
   GeocodingService._();
   static final GeocodingService instance = GeocodingService._();
+
+  /// Returns up to [limit] address suggestions for what the user has typed so
+  /// far, biased to Germany (Google Places Autocomplete). Empty on any error
+  /// (e.g. the Places API isn't enabled for the key).
+  Future<List<AddressSuggestion>> autocomplete(String input,
+      {int limit = 3}) async {
+    final key = AppConstants.googleApiKey;
+    if (key.isEmpty || input.trim().length < 3) return const [];
+    final uri = Uri.https(
+        'maps.googleapis.com', '/maps/api/place/autocomplete/json', {
+      'input': input.trim(),
+      'components': 'country:de',
+      'language': 'de',
+      'types': 'address',
+      'key': key,
+    });
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return const [];
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final status = body['status'];
+      if (status != 'OK') return const [];
+      final preds = (body['predictions'] as List?) ?? const [];
+      return preds.take(limit).map((p) {
+        final m = p as Map<String, dynamic>;
+        final fmt = (m['structured_formatting'] as Map<String, dynamic>?);
+        return AddressSuggestion(
+          description: m['description'] as String? ?? '',
+          mainText: fmt?['main_text'] as String? ?? '',
+          secondaryText: fmt?['secondary_text'] as String? ?? '',
+        );
+      }).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   /// Geocodes a free-form address (biased to Germany). Returns null when the
   /// address can't be resolved or the API key is missing.

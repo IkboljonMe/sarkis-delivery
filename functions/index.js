@@ -10,6 +10,7 @@
  */
 const {onDocumentCreated, onDocumentUpdated} =
   require("firebase-functions/v2/firestore");
+const {onCall} = require("firebase-functions/v2/https");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
@@ -17,6 +18,22 @@ const logger = require("firebase-functions/logger");
 
 initializeApp();
 const db = getFirestore();
+
+// ---- Pre-registration phone check ------------------------------------------
+// Callable (works unauthenticated): returns whether an E.164 phone number
+// already belongs to a registered customer, so the register screen can offer
+// "log in" instead of creating a duplicate. Reads run with admin privileges,
+// so no user-facing rule needs to expose other people's numbers.
+exports.phoneExists = onCall(async (request) => {
+  const phone = ((request.data && request.data.phone) || "").toString().trim();
+  if (!phone) return {exists: false};
+  const snap = await db
+      .collection("users")
+      .where("phone", "==", phone)
+      .limit(1)
+      .get();
+  return {exists: !snap.empty};
+});
 
 // ---- Localized order-status copy -------------------------------------------
 const STATUS_TEXT = {

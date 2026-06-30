@@ -34,12 +34,19 @@ class _PhoneScreenState extends State<PhoneScreen> {
       Fluttertoast.showToast(msg: 'Enter your phone number');
       return;
     }
+    FocusScope.of(context).unfocus();
     final number = AuthProvider.buildE164(_code, _controller.text);
     final auth = context.read<AuthProvider>();
     await auth.startPhoneVerification(number);
     if (!mounted) return;
     if (auth.status == AuthStatus.codeSent) {
       Navigator.pushNamed(context, '/otp', arguments: number);
+    } else if (auth.status == AuthStatus.authenticated) {
+      // Instant verification — skip the code screen and route by profile.
+      final user = auth.user ?? await auth.loadCurrentUser();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+          context, user == null ? '/register' : '/main', (r) => false);
     } else if (auth.error != null) {
       Fluttertoast.showToast(msg: auth.error!);
       auth.resetError();

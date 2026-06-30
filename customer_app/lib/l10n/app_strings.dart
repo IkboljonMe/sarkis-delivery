@@ -3,6 +3,16 @@
 // These maps mirror the lib/l10n/app_*.arb deliverables.
 
 const Map<String, String> kEn = {
+  'checkingNumber': 'Checking number…',
+  'numberAlreadyRegistered': 'This number is already registered. Log in, or enter another number.',
+  'yourPhoneNumber': 'Your phone number',
+  'fillAllAddress': 'Please fill in all address fields',
+  'errNameRequired': 'Please enter your name',
+  'errLastNameRequired': 'Please enter your surname',
+  'errTooShort': 'Use at least 3 letters',
+  'errTooLong': 'Use no more than 15 letters',
+  'errNoEmoji': 'Letters only — no emojis',
+  'errPhoneRequired': 'Please enter your phone number',
   'register': 'Register',
   'login': 'Log in',
   'welcomeSubtitle': 'Fresh Armenian bread, delivered.',
@@ -183,6 +193,16 @@ const Map<String, String> kEn = {
 };
 
 const Map<String, String> kRu = {
+  'checkingNumber': 'Проверяем номер…',
+  'numberAlreadyRegistered': 'Этот номер уже зарегистрирован. Войдите или введите другой номер.',
+  'yourPhoneNumber': 'Ваш номер телефона',
+  'fillAllAddress': 'Заполните все поля адреса',
+  'errNameRequired': 'Введите имя',
+  'errLastNameRequired': 'Введите фамилию',
+  'errTooShort': 'Минимум 3 буквы',
+  'errTooLong': 'Не более 15 букв',
+  'errNoEmoji': 'Только буквы — без эмодзи',
+  'errPhoneRequired': 'Введите номер телефона',
   'register': 'Регистрация',
   'login': 'Войти',
   'welcomeSubtitle': 'Свежий армянский хлеб с доставкой.',
@@ -363,6 +383,16 @@ const Map<String, String> kRu = {
 };
 
 const Map<String, String> kDe = {
+  'checkingNumber': 'Nummer wird geprüft…',
+  'numberAlreadyRegistered': 'Diese Nummer ist bereits registriert. Melden Sie sich an oder geben Sie eine andere Nummer ein.',
+  'yourPhoneNumber': 'Ihre Telefonnummer',
+  'fillAllAddress': 'Bitte alle Adressfelder ausfüllen',
+  'errNameRequired': 'Bitte Namen eingeben',
+  'errLastNameRequired': 'Bitte Nachnamen eingeben',
+  'errTooShort': 'Mindestens 3 Buchstaben',
+  'errTooLong': 'Höchstens 15 Buchstaben',
+  'errNoEmoji': 'Nur Buchstaben — keine Emojis',
+  'errPhoneRequired': 'Bitte Telefonnummer eingeben',
   'register': 'Registrieren',
   'login': 'Anmelden',
   'welcomeSubtitle': 'Frisches armenisches Brot, geliefert.',
