@@ -14,44 +14,12 @@ class AppConstants {
   static String get firebaseProjectId =>
       DemoFirebaseOptions.current.projectId;
 
-  static const String groupAll = 'all'; // pseudo-group: every region
-  static const String groupBerlin = 'Berlin';
-  static const String groupHamburg = 'Hamburg';
-  static const String groupFrankfurt = 'Frankfurt';
-  static const String groupMunich = 'München';
-  static const List<String> groups = [
-    groupBerlin,
-    groupHamburg,
-    groupFrankfurt,
-    groupMunich,
-  ];
-
-  /// Groups including the "All" option, for the admin region switcher.
-  static const List<String> groupsWithAll = [
-    groupAll,
-    groupBerlin,
-    groupHamburg,
-    groupFrankfurt,
-    groupMunich,
-  ];
+  // Groups are now admin-defined map regions (see RegionGroupService /
+  // GroupProvider). A group's identifier is its name, so labels are identity.
+  // The only fixed pseudo-group is "all" (every region).
+  static const String groupAll = 'all';
 
   static bool isAllGroups(String g) => g == groupAll;
-
-  /// Postal-code ranges per group (German PLZ leading digits).
-  static const Map<String, List<List<int>>> groupPostalRanges = {
-    groupBerlin: [
-      [10000, 14199]
-    ],
-    groupHamburg: [
-      [20000, 22999]
-    ],
-    groupFrankfurt: [
-      [60000, 65999]
-    ],
-    groupMunich: [
-      [80000, 85999]
-    ],
-  };
 
   static const List<String> languageCodes = ['en', 'hy', 'ru', 'tr', 'de'];
   static const Map<String, String> languageLabels = {
@@ -78,14 +46,8 @@ class AppConstants {
     statusCancelled: 'Отменён',
   };
 
-  static const Map<String, String> groupRu = {
-    groupAll: 'Все',
-    groupBerlin: 'Берлин',
-    groupHamburg: 'Гамбург',
-    groupFrankfurt: 'Франкфурт',
-    groupMunich: 'Мюнхен',
-  };
-
-  static String groupLabel(String g) => groupRu[g] ?? g;
+  /// A group's display label. "all" is localized to "Все"; every other group
+  /// id is already its human-readable name, so it is shown verbatim.
+  static String groupLabel(String g) => g == groupAll ? 'Все' : g;
   static String statusLabel(String s) => statusRu[s] ?? s;
 }

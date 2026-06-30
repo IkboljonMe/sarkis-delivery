@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -44,14 +43,6 @@ class _PhoneScreenState extends State<PhoneScreen> {
     } else if (auth.error != null) {
       Fluttertoast.showToast(msg: auth.error!);
       auth.resetError();
-    }
-  }
-
-  Future<void> _whatsApp() async {
-    final uri =
-        Uri.parse('https://wa.me/?text=I+want+to+register+on+Sarkis+Bread');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -120,13 +111,6 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 icon: Icons.sms_outlined,
                 loading: auth.busy,
                 onPressed: _continue,
-              ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: _whatsApp,
-                icon: const Icon(Icons.chat, color: AppColors.primary),
-                label: Text(t.contactWhatsApp,
-                    style: const TextStyle(color: AppColors.primary)),
               ),
             ],
           ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),

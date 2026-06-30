@@ -1,3 +1,30 @@
+/// One product photo with a per-language title/caption. The first entry in a
+/// product's [ProductModel.photos] is the main image.
+class ProductPhoto {
+  final String url;
+  final Map<String, String> title; // {en, hy, ru, tr, de}
+
+  const ProductPhoto({required this.url, this.title = const {}});
+
+  String titleFor(String lang) {
+    if (title[lang]?.isNotEmpty ?? false) return title[lang]!;
+    if (title['en']?.isNotEmpty ?? false) return title['en']!;
+    return title.values.firstWhere((v) => v.isNotEmpty, orElse: () => '');
+  }
+
+  factory ProductPhoto.fromJson(Map<String, dynamic> json) {
+    final t = <String, String>{};
+    final raw = json['title'];
+    if (raw is Map) raw.forEach((k, v) => t[k.toString()] = v?.toString() ?? '');
+    return ProductPhoto(url: json['url'] as String? ?? '', title: t);
+  }
+
+  Map<String, dynamic> toJson() => {'url': url, 'title': title};
+
+  ProductPhoto copyWith({String? url, Map<String, String>? title}) =>
+      ProductPhoto(url: url ?? this.url, title: title ?? this.title);
+}
+
 class ProductModel {
   final String id;
   final String categoryId;
@@ -8,6 +35,7 @@ class ProductModel {
   final int maxQty;
   final String imageUrl;
   final List<String> images; // gallery (2-3 photos); imageUrl is the primary
+  final List<ProductPhoto> photos; // structured photos w/ per-language titles
   final bool isActive;
   final int sortOrder;
   final String discountType; // 'none' | 'percent' | 'fixed'
@@ -23,6 +51,7 @@ class ProductModel {
     this.maxQty = 10,
     this.imageUrl = '',
     this.images = const [],
+    this.photos = const [],
     this.isActive = true,
     this.sortOrder = 0,
     this.discountType = 'none',
@@ -45,12 +74,19 @@ class ProductModel {
   bool get hasDiscount =>
       discountType != 'none' && discountValue > 0 && discountedPrice < price;
 
-  /// Discount as a percentage off, for badge display (e.g. "-20%").
+  /// Discount percentage label (rounded) for the customer "-N%" badge.
   int get discountPercentLabel =>
       price <= 0 ? 0 : (((price - discountedPrice) / price) * 100).round();
 
   /// All gallery images (falls back to imageUrl). De-duplicated, non-empty.
   List<String> get gallery {
+    if (photos.isNotEmpty) {
+      return photos
+          .map((p) => p.url)
+          .where((e) => e.isNotEmpty)
+          .toSet()
+          .toList();
+    }
     final all = <String>[if (imageUrl.isNotEmpty) imageUrl, ...images];
     return all.where((e) => e.isNotEmpty).toSet().toList();
   }
@@ -73,6 +109,26 @@ class ProductModel {
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final imageUrl = json['imageUrl'] as String? ?? '';
+    final images = (json['images'] as List?)
+            ?.map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList() ??
+        const <String>[];
+    // Prefer the structured photo list; fall back to migrating the legacy
+    // imageUrl + images so existing products keep working.
+    var photos = (json['photos'] as List?)
+            ?.whereType<Map>()
+            .map((e) => ProductPhoto.fromJson(Map<String, dynamic>.from(e)))
+            .where((p) => p.url.isNotEmpty)
+            .toList() ??
+        const <ProductPhoto>[];
+    if (photos.isEmpty) {
+      photos = [
+        if (imageUrl.isNotEmpty) ProductPhoto(url: imageUrl),
+        for (final u in images) ProductPhoto(url: u),
+      ];
+    }
     return ProductModel(
       id: json['id'] as String? ?? '',
       categoryId: json['categoryId'] as String? ?? '',
@@ -81,12 +137,9 @@ class ProductModel {
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] as String? ?? 'piece',
       maxQty: (json['maxQty'] as num?)?.toInt() ?? 10,
-      imageUrl: json['imageUrl'] as String? ?? '',
-      images: (json['images'] as List?)
-              ?.map((e) => e.toString())
-              .where((e) => e.isNotEmpty)
-              .toList() ??
-          const [],
+      imageUrl: imageUrl,
+      images: images,
+      photos: photos,
       isActive: json['isActive'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
       discountType: json['discountType'] as String? ?? 'none',
@@ -94,7 +147,14 @@ class ProductModel {
     );
   }
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() {
+    // Keep the legacy imageUrl/images mirrored from photos so the customer app
+    // (which reads them) stays in sync without any migration.
+    final effectiveMain = photos.isNotEmpty ? photos.first.url : imageUrl;
+    final effectiveImages = photos.isNotEmpty
+        ? photos.skip(1).map((p) => p.url).where((u) => u.isNotEmpty).toList()
+        : images;
+    return {
         'id': id,
         'categoryId': categoryId,
         'name': name,
@@ -102,13 +162,15 @@ class ProductModel {
         'price': price,
         'unit': unit,
         'maxQty': maxQty,
-        'imageUrl': imageUrl,
-        'images': images,
+        'imageUrl': effectiveMain,
+        'images': effectiveImages,
+        'photos': photos.map((p) => p.toJson()).toList(),
         'isActive': isActive,
         'sortOrder': sortOrder,
         'discountType': discountType,
         'discountValue': discountValue,
       };
+  }
 
   ProductModel copyWith({
     String? id,
@@ -120,6 +182,7 @@ class ProductModel {
     int? maxQty,
     String? imageUrl,
     List<String>? images,
+    List<ProductPhoto>? photos,
     bool? isActive,
     int? sortOrder,
     String? discountType,
@@ -135,6 +198,7 @@ class ProductModel {
       maxQty: maxQty ?? this.maxQty,
       imageUrl: imageUrl ?? this.imageUrl,
       images: images ?? this.images,
+      photos: photos ?? this.photos,
       isActive: isActive ?? this.isActive,
       sortOrder: sortOrder ?? this.sortOrder,
       discountType: discountType ?? this.discountType,

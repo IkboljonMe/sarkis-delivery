@@ -95,6 +95,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ),
                         ),
+                      // Localized caption for the current photo, if set.
+                      if (_page < p.photos.length &&
+                          p.photos[_page].titleFor(lang).isNotEmpty)
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 28,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              p.photos[_page].titleFor(lang),
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.caption
+                                  .copyWith(color: Colors.white),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
           ),

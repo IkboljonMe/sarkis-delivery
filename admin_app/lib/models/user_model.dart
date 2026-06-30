@@ -15,6 +15,8 @@ class UserModel {
   final String fcmToken;
   final String photoUrl;
   final bool isAdmin;
+  final bool isVerified;
+  final String referredBy; // optional: who referred this customer
   final DateTime? createdAt;
 
   UserModel({
@@ -32,6 +34,8 @@ class UserModel {
     this.fcmToken = '',
     this.photoUrl = '',
     this.isAdmin = false,
+    this.isVerified = false,
+    this.referredBy = '',
     this.createdAt,
   });
 
@@ -54,6 +58,8 @@ class UserModel {
       fcmToken: json['fcmToken'] as String? ?? '',
       photoUrl: json['photoUrl'] as String? ?? '',
       isAdmin: json['isAdmin'] as bool? ?? false,
+      isVerified: json['isVerified'] as bool? ?? false,
+      referredBy: json['referredBy'] as String? ?? '',
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
@@ -76,6 +82,8 @@ class UserModel {
       'fcmToken': fcmToken,
       'photoUrl': photoUrl,
       'isAdmin': isAdmin,
+      'isVerified': isVerified,
+      'referredBy': referredBy,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -97,6 +105,8 @@ class UserModel {
     String? fcmToken,
     String? photoUrl,
     bool? isAdmin,
+    bool? isVerified,
+    String? referredBy,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -114,6 +124,8 @@ class UserModel {
       fcmToken: fcmToken ?? this.fcmToken,
       photoUrl: photoUrl ?? this.photoUrl,
       isAdmin: isAdmin ?? this.isAdmin,
+      isVerified: isVerified ?? this.isVerified,
+      referredBy: referredBy ?? this.referredBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

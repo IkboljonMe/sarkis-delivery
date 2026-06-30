@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
@@ -11,6 +10,21 @@ import '../utils/welcome_message.dart';
 
 enum AuthStatus { unknown, codeSent, authenticated, error }
 
+/// Profile details collected during the new 3-step registration BEFORE the
+/// phone is verified. Saved once phone verification yields a uid.
+class RegistrationDraft {
+  String name = '';
+  String lastName = '';
+  String referredBy = '';
+  String address = '';
+  String city = '';
+  String postalCode = '';
+  String group = '';
+  double? lat;
+  double? lng;
+  String language = 'en';
+}
+
 class AuthProvider extends ChangeNotifier {
   final AuthService _auth = AuthService.instance;
   final UserService _users = UserService.instance;
@@ -21,6 +35,12 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus _status = AuthStatus.unknown;
   String? _error;
   bool _busy = false;
+
+  // 'login' or 'register' — set before opening the phone screen so the OTP
+  // screen knows what to do on success.
+  String authMode = 'login';
+  // Pending profile during a registration (phone verified last).
+  RegistrationDraft? draft;
 
   UserModel? get user => _user;
   String? get verificationId => _verificationId;
@@ -116,6 +136,7 @@ class AuthProvider extends ChangeNotifier {
     double? lat,
     double? lng,
     required String language,
+    String referredBy = '',
   }) async {
     final id = _auth.uid;
     if (id == null) return false;
@@ -134,6 +155,7 @@ class AuthProvider extends ChangeNotifier {
         lng: lng,
         language: language,
         isAdmin: false,
+        referredBy: referredBy,
       );
       await _users.saveUser(user);
       _user = user;
@@ -154,6 +176,27 @@ class AuthProvider extends ChangeNotifier {
       _setBusy(false);
       return false;
     }
+  }
+
+  /// Saves the collected [draft] once the phone is verified. Returns false if
+  /// there's no draft or no signed-in uid.
+  Future<bool> completeRegistration() async {
+    final d = draft;
+    if (d == null) return false;
+    final ok = await saveProfile(
+      name: d.name,
+      lastName: d.lastName,
+      address: d.address,
+      city: d.city,
+      postalCode: d.postalCode,
+      group: d.group,
+      lat: d.lat,
+      lng: d.lng,
+      language: d.language,
+      referredBy: d.referredBy,
+    );
+    if (ok) draft = null;
+    return ok;
   }
 
   Future<void> updateFields(Map<String, dynamic> data) async {

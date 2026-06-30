@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/group_provider.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../services/message_service.dart';
@@ -11,6 +15,7 @@ import '../../utils/constants.dart';
 import '../../widgets/app_input_field.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/golden_button.dart';
+import '../../widgets/verified_badge.dart';
 import 'chat_detail_screen.dart';
 
 class ChatsScreen extends StatefulWidget {
@@ -24,6 +29,24 @@ class _ChatsScreenState extends State<ChatsScreen> {
   String _search = '';
   String _groupFilter = '';
   int _streamKey = 0; // bump to force the topics stream to re-subscribe
+  Set<String> _verified = {};
+  StreamSubscription? _usersSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _usersSub = UserService.instance.usersStream().listen((users) {
+      if (!mounted) return;
+      setState(() => _verified =
+          users.where((u) => u.isVerified).map((u) => u.id).toSet());
+    });
+  }
+
+  @override
+  void dispose() {
+    _usersSub?.cancel();
+    super.dispose();
+  }
 
   Future<void> _refresh() async {
     setState(() => _streamKey++);
@@ -55,7 +78,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
                 _chip('Все', ''),
-                ...AppConstants.groups
+                ...context.watch<GroupProvider>().groupNames
                     .map((g) => _chip(AppConstants.groupLabel(g), g)),
               ],
             ),
@@ -139,7 +162,13 @@ class _ChatsScreenState extends State<ChatsScreen> {
               t.userName.isNotEmpty ? t.userName[0].toUpperCase() : '?',
               style: const TextStyle(color: AppColors.primary)),
         ),
-        title: Text(t.userName, style: AppTextStyles.bodyBold),
+        title: Row(
+          children: [
+            Flexible(
+                child: Text(t.userName, style: AppTextStyles.bodyBold)),
+            VerifiedBadge(verified: _verified.contains(t.topicId)),
+          ],
+        ),
         subtitle: Text(t.lastMessage,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

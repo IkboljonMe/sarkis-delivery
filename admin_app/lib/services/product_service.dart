@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/category_model.dart';
 import '../models/product_model.dart';
@@ -8,6 +11,7 @@ class ProductService {
   static final ProductService instance = ProductService._();
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   CollectionReference<Map<String, dynamic>> get _categories =>
       _db.collection('categories');
   CollectionReference<Map<String, dynamic>> get _products =>
@@ -107,4 +111,26 @@ class ProductService {
       _products.doc(id).update({'isActive': active});
 
   Future<void> deleteProduct(String id) => _products.doc(id).delete();
+
+  /// Uploads a product photo to Storage under `products/...` and returns its
+  /// download URL.
+  Future<String> uploadProductImage(
+    Uint8List bytes, {
+    String ext = 'jpg',
+    String contentType = 'image/jpeg',
+  }) async {
+    final name = _products.doc().id;
+    final ref = _storage.ref().child('products/$name.$ext');
+    await ref.putData(bytes, SettableMetadata(contentType: contentType));
+    return ref.getDownloadURL();
+  }
+
+  /// Best-effort deletion of a previously uploaded product photo by URL. Older
+  /// products may reference images we don't own (manual URLs) — ignore those.
+  Future<void> deleteImageByUrl(String url) async {
+    if (!url.contains('/products%2F') && !url.contains('/products/')) return;
+    try {
+      await _storage.refFromURL(url).delete();
+    } catch (_) {}
+  }
 }

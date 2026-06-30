@@ -4,7 +4,9 @@ import 'package:http/http.dart' as http;
 
 import '../utils/constants.dart';
 
-/// Resolved geocoding result for an address the customer typed.
+/// Resolved geocoding result for an address the customer typed. The delivery
+/// group is no longer derived here — it is resolved by point-in-polygon
+/// against the admin-drawn map groups (see [RegionGroupService]).
 class GeoResult {
   final double lat;
   final double lng;
@@ -19,9 +21,6 @@ class GeoResult {
     required this.postalCode,
     required this.city,
   });
-
-  /// Delivery group derived from the postal code, or null if out of coverage.
-  String? get group => AppConstants.groupForPostalCode(postalCode);
 }
 
 /// Thin wrapper over the Google Geocoding API.

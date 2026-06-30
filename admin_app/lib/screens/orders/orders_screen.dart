@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,11 +8,13 @@ import '../../models/order_model.dart';
 import '../../providers/group_provider.dart';
 import '../../services/navigation_service.dart';
 import '../../services/order_service.dart';
+import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/gold_badge.dart';
+import '../../widgets/verified_badge.dart';
 import 'order_detail_screen.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -23,6 +27,25 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   String _status = '';
   DateTime? _date;
+  // userIds of verified customers, for the inline check next to names.
+  Set<String> _verified = {};
+  StreamSubscription? _usersSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _usersSub = UserService.instance.usersStream().listen((users) {
+      if (!mounted) return;
+      setState(() => _verified =
+          users.where((u) => u.isVerified).map((u) => u.id).toSet());
+    });
+  }
+
+  @override
+  void dispose() {
+    _usersSub?.cancel();
+    super.dispose();
+  }
 
   static const _filters = [
     {'label': 'Все', 'status': ''},
@@ -148,7 +171,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
               const Icon(Icons.person_outline,
                   size: 16, color: AppColors.textSecondary),
               const SizedBox(width: 6),
-              Expanded(child: Text(o.userName, style: AppTextStyles.body)),
+              Flexible(child: Text(o.userName, style: AppTextStyles.body)),
+              VerifiedBadge(verified: _verified.contains(o.userId)),
+              const Spacer(),
               GestureDetector(
                 onTap: () =>
                     NavigationService.instance.callPhone(o.userPhone),
@@ -182,8 +207,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Text('${o.shiftLabel} • ${o.itemCount} шт.',
-                  style: AppTextStyles.caption),
+              Text(
+                  '${o.awaitingSchedule ? 'Дата не назначена' : o.shiftLabel} • ${o.itemCount} шт.',
+                  style: AppTextStyles.caption.copyWith(
+                      color: o.awaitingSchedule
+                          ? AppColors.warning
+                          : AppColors.textSecondary)),
               const Spacer(),
               Text('€${o.totalPrice.toStringAsFixed(2)}',
                   style: AppTextStyles.price),

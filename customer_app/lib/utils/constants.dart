@@ -31,35 +31,11 @@ class AppConstants {
   static String get firebaseProjectId =>
       DemoFirebaseOptions.current.projectId;
 
-  // --- Groups (Germany split into 4 big delivery regions) ---
-  static const String groupBerlin = 'Berlin';
-  static const String groupHamburg = 'Hamburg';
-  static const String groupFrankfurt = 'Frankfurt';
-  static const String groupMunich = 'München';
-  static const List<String> groups = [
-    groupBerlin,
-    groupHamburg,
-    groupFrankfurt,
-    groupMunich,
-  ];
+  // --- Groups ---
+  // Delivery groups are now admin-drawn map regions (collection
+  // `regionGroups`), resolved by point-in-polygon. A group's id is its name.
 
-  /// Postal-code ranges per group (German PLZ leading digits).
-  static const Map<String, List<List<int>>> groupPostalRanges = {
-    groupBerlin: [
-      [10000, 14199]
-    ],
-    groupHamburg: [
-      [20000, 22999]
-    ],
-    groupFrankfurt: [
-      [60000, 65999]
-    ],
-    groupMunich: [
-      [80000, 85999]
-    ],
-  };
-
-  /// Display label for a group (currently the city name itself).
+  /// Display label for a group (the group name itself).
   static String groupLabel(String g) => g;
 
   static const int defaultMinQty = 1;
@@ -75,18 +51,6 @@ class AppConstants {
   static const String statusCancelled = 'cancelled';
 
   static const String appVersion = '2.0.0';
-
-  /// Maps a German postal code to a delivery group, or null if outside ranges.
-  static String? groupForPostalCode(String postalCode) {
-    final code = int.tryParse(postalCode.trim());
-    if (code == null) return null;
-    for (final entry in groupPostalRanges.entries) {
-      for (final range in entry.value) {
-        if (code >= range[0] && code <= range[1]) return entry.key;
-      }
-    }
-    return null;
-  }
 
   static const List<Map<String, String>> countryCodes = [
     {'code': '+49', 'flag': '🇩🇪', 'name': 'DE'},

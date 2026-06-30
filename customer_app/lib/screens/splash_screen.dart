@@ -28,12 +28,10 @@ class _SplashScreenState extends State<SplashScreen> {
     final auth = context.read<AuthProvider>();
     final locale = context.read<LocaleProvider>();
 
-    if (!locale.hasChosenLanguage) {
-      Navigator.pushReplacementNamed(context, '/language');
-      return;
-    }
+    // Default to the phone's language until the user changes it in settings.
+    locale.initFromDevice();
     if (!auth.isLoggedIn) {
-      Navigator.pushReplacementNamed(context, '/phone');
+      Navigator.pushReplacementNamed(context, '/welcome');
       return;
     }
     final user = await auth.loadCurrentUser();

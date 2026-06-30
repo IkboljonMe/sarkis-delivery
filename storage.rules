@@ -37,6 +37,16 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // Product photos: anyone signed in can view; only admins upload/replace.
+    // Capped at 10 MB, images only.
+    match /products/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+
     // Everything else denied.
     match /{allPaths=**} {
       allow read, write: if false;

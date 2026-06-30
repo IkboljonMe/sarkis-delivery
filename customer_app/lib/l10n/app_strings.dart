@@ -3,6 +3,15 @@
 // These maps mirror the lib/l10n/app_*.arb deliverables.
 
 const Map<String, String> kEn = {
+  'register': 'Register',
+  'login': 'Log in',
+  'welcomeSubtitle': 'Fresh Armenian bread, delivered.',
+  'referredByOptional': 'Referred by a friend (optional)',
+  'noAccountRegister': 'No account found. Please register.',
+  'alreadyRegisteredTitle': 'Already registered',
+  'alreadyRegisteredBody':
+      'This phone number is already in our system. Would you like to log in, or use another number?',
+  'useAnotherNumber': 'Use another number',
   'appName': 'Sarkis Bread',
   'welcome': 'Welcome to Sarkis Bread',
   'chooseLanguage': 'Choose your language',
@@ -122,6 +131,10 @@ const Map<String, String> kEn = {
   'checkOnMap': 'Check address on map',
   'confirmAddressQuestion': 'Is this the right place?',
   'outsideDelivery': "Sorry, we don't deliver to this area yet.",
+  'outsideDeliveryOrderAnyway':
+      "We don't deliver to this area yet, but you can still place an order and we'll contact you about delivery.",
+  'weWillScheduleDelivery':
+      "We'll arrange a delivery date and let you know.",
   'deliveryArea': 'Delivery area',
   'addressNotFound': "Couldn't find that address. Please check it.",
   'personalInfo': 'Personal Info',
@@ -170,6 +183,15 @@ const Map<String, String> kEn = {
 };
 
 const Map<String, String> kRu = {
+  'register': 'Регистрация',
+  'login': 'Войти',
+  'welcomeSubtitle': 'Свежий армянский хлеб с доставкой.',
+  'referredByOptional': 'Кто вас пригласил (необязательно)',
+  'noAccountRegister': 'Аккаунт не найден. Пожалуйста, зарегистрируйтесь.',
+  'alreadyRegisteredTitle': 'Уже зарегистрирован',
+  'alreadyRegisteredBody':
+      'Этот номер телефона уже есть в нашей системе. Войти или использовать другой номер?',
+  'useAnotherNumber': 'Другой номер',
   'appName': 'Sarkis Bread',
   'welcome': 'Добро пожаловать в Sarkis Bread',
   'chooseLanguage': 'Выберите язык',
@@ -289,6 +311,10 @@ const Map<String, String> kRu = {
   'checkOnMap': 'Проверить адрес на карте',
   'confirmAddressQuestion': 'Это правильное место?',
   'outsideDelivery': 'Извините, мы пока не доставляем в этот район.',
+  'outsideDeliveryOrderAnyway':
+      'Мы пока не доставляем в этот район, но вы можете оформить заказ — мы свяжемся с вами по поводу доставки.',
+  'weWillScheduleDelivery':
+      'Мы согласуем дату доставки и сообщим вам.',
   'deliveryArea': 'Зона доставки',
   'addressNotFound': 'Не удалось найти адрес. Проверьте его.',
   'personalInfo': 'Личные данные',
@@ -337,6 +363,15 @@ const Map<String, String> kRu = {
 };
 
 const Map<String, String> kDe = {
+  'register': 'Registrieren',
+  'login': 'Anmelden',
+  'welcomeSubtitle': 'Frisches armenisches Brot, geliefert.',
+  'referredByOptional': 'Von einem Freund empfohlen (optional)',
+  'noAccountRegister': 'Kein Konto gefunden. Bitte registrieren.',
+  'alreadyRegisteredTitle': 'Bereits registriert',
+  'alreadyRegisteredBody':
+      'Diese Telefonnummer ist bereits in unserem System. Möchten Sie sich anmelden oder eine andere Nummer verwenden?',
+  'useAnotherNumber': 'Andere Nummer verwenden',
   'appName': 'Sarkis Bread',
   'welcome': 'Willkommen bei Sarkis Bread',
   'chooseLanguage': 'Sprache wählen',
@@ -390,6 +425,10 @@ const Map<String, String> kDe = {
   'checkOnMap': 'Adresse auf Karte prüfen',
   'confirmAddressQuestion': 'Ist das der richtige Ort?',
   'outsideDelivery': 'Wir liefern leider noch nicht in dieses Gebiet.',
+  'outsideDeliveryOrderAnyway':
+      'Wir liefern noch nicht in dieses Gebiet, aber Sie können trotzdem bestellen — wir melden uns wegen der Lieferung.',
+  'weWillScheduleDelivery':
+      'Wir vereinbaren einen Liefertermin und melden uns bei Ihnen.',
   'deliveryArea': 'Liefergebiet',
   'addressNotFound': 'Adresse nicht gefunden. Bitte prüfen.',
   'subtotal': 'Zwischensumme',

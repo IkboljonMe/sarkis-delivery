@@ -17,6 +17,7 @@ import 'auth/login_screen.dart';
 import 'chats/chats_screen.dart';
 import 'coupons/coupons_screen.dart';
 import 'dashboard/dashboard_screen.dart';
+import 'groups/groups_screen.dart';
 import 'orders/orders_screen.dart';
 import 'products/products_screen.dart';
 import 'reports/reports_screen.dart';
@@ -69,6 +70,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     'navCoupons',
     'navChats',
     'navShifts',
+    'navGroups',
     'navRoute',
     'navReports',
     'navSettings',
@@ -82,6 +84,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     Icons.local_offer_outlined,
     Icons.chat_bubble_outline,
     Icons.event_note_outlined,
+    Icons.map_outlined,
     Icons.alt_route_outlined,
     Icons.insights_outlined,
     Icons.settings_outlined,
@@ -95,6 +98,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         CouponsScreen(),
         ChatsScreen(),
         ShiftsScreen(),
+        GroupsScreen(),
         RouteScreen(),
         ReportsScreen(),
         SettingsScreen(),
@@ -115,7 +119,7 @@ class _MainScaffoldState extends State<MainScaffold> {
           children: [
             Text('Сменить группу', style: AppTextStyles.headingM),
             const SizedBox(height: 16),
-            ...AppConstants.groupsWithAll.map((g) {
+            ...group.groupsWithAll.map((g) {
               final sel = group.group == g;
               return ListTile(
                 leading: Icon(Icons.location_city,

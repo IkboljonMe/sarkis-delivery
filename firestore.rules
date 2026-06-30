@@ -104,6 +104,14 @@ service cloud.firestore {
             .hasOnly(['usedCount']));
     }
 
+    // regionGroups: admin-drawn map delivery groups --------------------
+    // Any signed-in client may read (customers resolve their zone); only
+    // admins create/update/delete.
+    match /regionGroups/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // default deny ------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;

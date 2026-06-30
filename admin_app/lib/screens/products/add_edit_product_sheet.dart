@@ -8,6 +8,7 @@ import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/app_input_field.dart';
 import '../../widgets/golden_button.dart';
+import 'product_photo_manager.dart';
 
 Future<void> showAddEditProductSheet(
     BuildContext context, ProductModel? product) {
@@ -36,8 +37,7 @@ class _ProductSheetState extends State<_ProductSheet> {
   late final TextEditingController _price;
   late final TextEditingController _unit;
   late final TextEditingController _maxQty;
-  late final TextEditingController _image;
-  late final TextEditingController _images;
+  late List<ProductPhoto> _photos;
   late final TextEditingController _discountValue;
   String _discountType = 'none';
   String? _categoryId;
@@ -58,8 +58,7 @@ class _ProductSheetState extends State<_ProductSheet> {
     _price = TextEditingController(text: p != null ? '${p.price}' : '');
     _unit = TextEditingController(text: p?.unit ?? 'piece');
     _maxQty = TextEditingController(text: '${p?.maxQty ?? 10}');
-    _image = TextEditingController(text: p?.imageUrl ?? '');
-    _images = TextEditingController(text: (p?.images ?? const []).join('\n'));
+    _photos = List<ProductPhoto>.from(p?.photos ?? const []);
     _discountType = p?.discountType ?? 'none';
     _discountValue = TextEditingController(
         text: (p?.discountValue ?? 0) > 0 ? '${p!.discountValue}' : '');
@@ -75,8 +74,6 @@ class _ProductSheetState extends State<_ProductSheet> {
     _price.dispose();
     _unit.dispose();
     _maxQty.dispose();
-    _image.dispose();
-    _images.dispose();
     _discountValue.dispose();
     super.dispose();
   }
@@ -92,12 +89,7 @@ class _ProductSheetState extends State<_ProductSheet> {
       price: double.tryParse(_price.text.replaceAll(',', '.')) ?? 0,
       unit: _unit.text.trim(),
       maxQty: int.tryParse(_maxQty.text) ?? 10,
-      imageUrl: _image.text.trim(),
-      images: _images.text
-          .split('\n')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList(),
+      photos: _photos,
       isActive: _active,
       discountType: _discountType,
       discountValue: _discountType == 'none'
@@ -218,14 +210,12 @@ class _ProductSheetState extends State<_ProductSheet> {
                   ],
                 ],
               ),
-              const SizedBox(height: 12),
-              AppInputField(
-                  controller: _image, label: 'Главное фото (URL)'),
-              const SizedBox(height: 12),
-              AppInputField(
-                  controller: _images,
-                  label: 'Доп. фото (по одному URL на строку)',
-                  maxLines: 3),
+              const SizedBox(height: 16),
+              ProductPhotoManager(
+                photos: _photos,
+                onChanged: (next) => setState(() => _photos = next),
+              ),
+              const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.primary,

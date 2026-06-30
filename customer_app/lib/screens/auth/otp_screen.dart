@@ -67,13 +67,83 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
     setState(() => _verifying = false);
     if (ok) {
-      Navigator.pushNamedAndRemoveUntil(
-          context, auth.user == null ? '/register' : '/main', (r) => false);
+      await _onVerified(auth);
     } else {
       Fluttertoast.showToast(msg: auth.error ?? 'Invalid code');
       auth.resetError();
       // Keep the entered digits so the user can just press Verify again
       // instead of re-typing the whole code.
+    }
+  }
+
+  /// Routes after a successful code verification, depending on whether this is
+  /// a login or the final step of a registration. `verifyOtp` has already
+  /// loaded any existing profile into `auth.user`.
+  Future<void> _onVerified(AuthProvider auth) async {
+    final t = AppLocalizations.of(context);
+    final existing = auth.user != null;
+
+    if (auth.authMode == 'register') {
+      if (existing) {
+        // The phone is already in our database — offer to log in or retry.
+        await _showAlreadyRegistered(auth);
+        return;
+      }
+      final saved = await auth.completeRegistration();
+      if (!mounted) return;
+      if (saved) {
+        Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
+      } else {
+        Fluttertoast.showToast(msg: auth.error ?? 'Failed to save');
+      }
+      return;
+    }
+
+    // Login mode.
+    if (existing) {
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
+    } else {
+      // Verified phone but no account yet — send them to register.
+      Fluttertoast.showToast(msg: t.t('noAccountRegister'));
+      auth.authMode = 'register';
+      Navigator.pushNamedAndRemoveUntil(context, '/register', (r) => false);
+    }
+  }
+
+  Future<void> _showAlreadyRegistered(AuthProvider auth) async {
+    final t = AppLocalizations.of(context);
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        title: Text(t.t('alreadyRegisteredTitle'),
+            style: AppTextStyles.headingM),
+        content: Text(t.t('alreadyRegisteredBody'), style: AppTextStyles.body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'another'),
+            child: Text(t.t('useAnotherNumber'),
+                style: const TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'login'),
+            child: Text(t.t('login'),
+                style: const TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (choice == 'login') {
+      // They're already signed in with this verified number — just open the app.
+      auth.draft = null;
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
+    } else {
+      // Use another number: sign out and return to phone entry.
+      await auth.signOut();
+      if (!mounted) return;
+      auth.authMode = 'register';
+      Navigator.pushNamedAndRemoveUntil(context, '/phone', (r) => false);
     }
   }
 

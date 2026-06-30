@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../utils/app_colors.dart';
 import 'video_player_screen.dart';
 
 /// A video message preview: a dark tile with a play button (or a spinner while

@@ -23,6 +23,9 @@ class OrderModel {
   final String status;
   final String adminNote;
   final bool pendingApproval; // awaiting admin acceptance
+  // True when the customer is outside all delivery groups: the order has no
+  // shift/date yet and the admin will schedule it.
+  final bool awaitingSchedule;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -47,6 +50,7 @@ class OrderModel {
     this.status = 'pending',
     this.adminNote = '',
     this.pendingApproval = false,
+    this.awaitingSchedule = false,
     this.createdAt,
     this.updatedAt,
   }) : subtotal = subtotal ?? totalPrice;
@@ -92,6 +96,7 @@ class OrderModel {
       status: json['status'] as String? ?? 'pending',
       adminNote: json['adminNote'] as String? ?? '',
       pendingApproval: json['pendingApproval'] as bool? ?? false,
+      awaitingSchedule: json['awaitingSchedule'] as bool? ?? false,
       createdAt: json['createdAt'] is Timestamp
           ? (json['createdAt'] as Timestamp).toDate()
           : null,
@@ -122,6 +127,7 @@ class OrderModel {
         'status': status,
         'adminNote': adminNote,
         'pendingApproval': pendingApproval,
+        'awaitingSchedule': awaitingSchedule,
         'createdAt': createdAt != null
             ? Timestamp.fromDate(createdAt!)
             : FieldValue.serverTimestamp(),
@@ -152,6 +158,7 @@ class OrderModel {
       totalPrice: totalPrice ?? this.totalPrice,
       status: status ?? this.status,
       adminNote: adminNote ?? this.adminNote,
+      awaitingSchedule: awaitingSchedule,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

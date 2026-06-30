@@ -89,11 +89,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     });
   }
 
-  void _toggleTranslate() {
-    setState(() => _showTranslated = !_showTranslated);
-    _ensureTranslations();
-  }
-
   int _lastCount = 0;
   bool _pendingScrollToEnd = false;
   UserModel? _customer; // loaded for the call button + profile

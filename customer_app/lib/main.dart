@@ -17,6 +17,7 @@ import 'screens/auth/language_screen.dart';
 import 'screens/auth/otp_screen.dart';
 import 'screens/auth/phone_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/welcome_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/splash_screen.dart';
 import 'utils/app_theme.dart';
@@ -103,6 +104,7 @@ class SarkisApp extends StatelessWidget {
           routes: {
             '/': (_) => const SplashScreen(),
             '/language': (_) => const LanguageScreen(),
+            '/welcome': (_) => const WelcomeScreen(),
             '/phone': (_) => const PhoneScreen(),
             '/otp': (_) => const OtpScreen(),
             '/register': (_) => const RegisterScreen(),

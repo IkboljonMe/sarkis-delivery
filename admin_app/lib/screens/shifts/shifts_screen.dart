@@ -19,10 +19,18 @@ class ShiftsScreen extends StatelessWidget {
   const ShiftsScreen({super.key});
 
   Future<void> _createShift(BuildContext context, String group) async {
+    final names = context.read<GroupProvider>().groupNames;
+    if (names.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Сначала создайте группу во вкладке «Группы».'),
+        backgroundColor: AppColors.surfaceElevated,
+      ));
+      return;
+    }
     DateTime date = DateTime.now().add(const Duration(days: 1));
     // A shift needs a concrete group; default to the first when "All" is active.
     String selectedGroup =
-        AppConstants.isAllGroups(group) ? AppConstants.groups.first : group;
+        AppConstants.isAllGroups(group) ? names.first : group;
     bool isOpen = true;
     int cancelDays = 3; // customer can cancel up to N days before delivery
     int editDays = 4; // customer can edit up to N days before delivery
@@ -46,7 +54,7 @@ class ShiftsScreen extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: AppConstants.groups.map((g) {
+                children: names.map((g) {
                   final sel = selectedGroup == g;
                   return ChoiceChip(
                     label: Text(AppConstants.groupLabel(g)),

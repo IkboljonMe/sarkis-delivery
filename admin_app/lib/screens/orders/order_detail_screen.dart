@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -9,11 +11,13 @@ import '../../providers/admin_auth_provider.dart';
 import '../../services/message_service.dart';
 import '../../services/navigation_service.dart';
 import '../../services/order_service.dart';
+import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/golden_button.dart';
+import '../../widgets/verified_badge.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -26,6 +30,18 @@ class OrderDetailScreen extends StatefulWidget {
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final _message = TextEditingController();
   bool _sending = false;
+  Set<String> _verified = {};
+  StreamSubscription? _usersSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _usersSub = UserService.instance.usersStream().listen((users) {
+      if (!mounted) return;
+      setState(() => _verified =
+          users.where((u) => u.isVerified).map((u) => u.id).toSet());
+    });
+  }
 
   static List<String> _next(String status) {
     switch (status) {
@@ -43,6 +59,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   void dispose() {
     _message.dispose();
+    _usersSub?.cancel();
     super.dispose();
   }
 
@@ -162,7 +179,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(o.userName, style: AppTextStyles.headingM),
+          Row(
+            children: [
+              Flexible(child: Text(o.userName, style: AppTextStyles.headingM)),
+              VerifiedBadge(
+                  verified: _verified.contains(o.userId), size: 18),
+            ],
+          ),
           const SizedBox(height: 8),
           GestureDetector(
             onTap: () => NavigationService.instance.callPhone(o.userPhone),
@@ -208,10 +231,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         children: [
           Row(children: [
-            const Icon(Icons.event, size: 16, color: AppColors.primary),
+            Icon(o.awaitingSchedule ? Icons.schedule : Icons.event,
+                size: 16,
+                color: o.awaitingSchedule
+                    ? AppColors.warning
+                    : AppColors.primary),
             const SizedBox(width: 8),
-            Text(DateFormat('EEEE, d MMM yyyy').format(o.shiftDate),
-                style: AppTextStyles.caption),
+            Text(
+                o.awaitingSchedule
+                    ? 'Дата доставки не назначена'
+                    : DateFormat('EEEE, d MMM yyyy').format(o.shiftDate),
+                style: AppTextStyles.caption.copyWith(
+                    color: o.awaitingSchedule ? AppColors.warning : null)),
           ]),
           const Divider(color: AppColors.border),
           ...o.items.map((i) => Padding(

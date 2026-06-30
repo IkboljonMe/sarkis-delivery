@@ -51,6 +51,18 @@ class LocaleProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// When the user hasn't explicitly picked a language yet, default to the
+  /// phone's language if we support it, otherwise English.
+  void initFromDevice() {
+    if (_chosen) return;
+    final code =
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    _locale = AppConstants.supportedLanguages.contains(code)
+        ? Locale(code)
+        : const Locale('en');
+    notifyListeners();
+  }
+
   Future<void> setLocale(Locale locale) async {
     if (!AppConstants.supportedLanguages.contains(locale.languageCode)) return;
     _locale = locale;

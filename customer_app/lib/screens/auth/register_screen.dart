@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/region_group_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
@@ -27,17 +28,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _step = 0; // 0 = name, 1 = address + map
   final _name = TextEditingController();
   final _lastName = TextEditingController();
+  final _referredBy = TextEditingController();
   final _address = TextEditingController();
   final _city = TextEditingController();
   final _postal = TextEditingController();
 
   GeoResult? _geo;
+  String? _group; // delivery group resolved from the geocoded point
   bool _geocoding = false;
 
   @override
   void dispose() {
     _name.dispose();
     _lastName.dispose();
+    _referredBy.dispose();
     _address.dispose();
     _city.dispose();
     _postal.dispose();
@@ -46,7 +50,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Any address edit invalidates the previous geocode result.
   void _onAddressChanged() {
-    if (_geo != null) setState(() => _geo = null);
+    if (_geo != null || _group != null) {
+      setState(() {
+        _geo = null;
+        _group = null;
+      });
+    }
   }
 
   void _next() {
@@ -76,39 +85,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
         '${_address.text.trim()}, ${_postal.text.trim()} ${_city.text.trim()}, Germany';
     final result = await GeocodingService.instance.geocode(query);
     if (!mounted) return;
+    // Resolve which map group the geocoded point falls inside.
+    String? group;
+    if (result != null) {
+      group = await RegionGroupService.instance
+          .resolveGroupName(result.lat, result.lng);
+    }
+    if (!mounted) return;
     setState(() {
       _geocoding = false;
       _geo = result;
+      _group = group;
     });
     if (result == null) {
       Fluttertoast.showToast(msg: t.t('addressNotFound'));
     }
   }
 
-  Future<void> _finish(AppLocalizations t) async {
+  // Address step complete: stash the collected profile as a draft and move on
+  // to the final step — phone number entry + code verification. If the user is
+  // already signed in (e.g. they logged in but had no profile yet), there is
+  // no phone step to do — just save the profile.
+  Future<void> _continueToPhone(AppLocalizations t) async {
     final geo = _geo;
-    final group = geo?.group;
-    if (geo == null || group == null) return;
+    if (geo == null) return;
+    // An out-of-coverage customer registers with an empty group; the admin
+    // schedules their deliveries manually.
+    final group = _group ?? '';
     final auth = context.read<AuthProvider>();
     final locale = context.read<LocaleProvider>();
-    // Prefer the geocoder's resolved postal/city so the saved group is correct.
-    final ok = await auth.saveProfile(
-      name: _name.text.trim(),
-      lastName: _lastName.text.trim(),
-      address: _address.text.trim(),
-      city: geo.city.isNotEmpty ? geo.city : _city.text.trim(),
-      postalCode: geo.postalCode.isNotEmpty ? geo.postalCode : _postal.text.trim(),
-      group: group,
-      lat: geo.lat,
-      lng: geo.lng,
-      language: locale.locale.languageCode,
-    );
-    if (!mounted) return;
-    if (ok) {
-      Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
-    } else {
-      Fluttertoast.showToast(msg: auth.error ?? 'Failed to save');
+    final draft = RegistrationDraft()
+      ..name = _name.text.trim()
+      ..lastName = _lastName.text.trim()
+      ..referredBy = _referredBy.text.trim()
+      ..address = _address.text.trim()
+      ..city = geo.city.isNotEmpty ? geo.city : _city.text.trim()
+      ..postalCode =
+          geo.postalCode.isNotEmpty ? geo.postalCode : _postal.text.trim()
+      ..group = group
+      ..lat = geo.lat
+      ..lng = geo.lng
+      ..language = locale.locale.languageCode;
+    auth.authMode = 'register';
+    auth.draft = draft;
+    if (auth.isLoggedIn) {
+      final ok = await auth.completeRegistration();
+      if (!mounted) return;
+      if (ok) {
+        Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
+      } else {
+        Fluttertoast.showToast(msg: auth.error ?? 'Failed to save');
+      }
+      return;
     }
+    Navigator.pushNamed(context, '/phone');
   }
 
   @override
@@ -151,14 +181,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_step == 0) {
       return GoldenButton(label: t.continueLabel, onPressed: _next);
     }
-    // Address step: until we have a valid, in-coverage location the primary
-    // action is to (re)check the address on the map.
-    final canFinish = _geo != null && _geo!.group != null;
+    // Address step: a successful geocode is enough to finish. Being outside
+    // every delivery group is allowed — the customer can still order and we
+    // schedule delivery for them afterwards.
+    final canFinish = _geo != null;
     if (canFinish) {
       return GoldenButton(
-        label: t.confirmDetails,
+        label: t.continueLabel,
         loading: busy,
-        onPressed: () => _finish(t),
+        onPressed: () => _continueToPhone(t),
       );
     }
     return GoldenButton(
@@ -171,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _progressDots() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(2, (i) {
+      children: List.generate(3, (i) {
         final active = i <= _step;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
@@ -209,10 +240,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 16),
         AppInputField(
-          label: t.phone,
-          hint: context.read<AuthProvider>().phone ?? '',
-          prefixIcon: Icons.phone_outlined,
-          enabled: false,
+          controller: _referredBy,
+          label: t.t('referredByOptional'),
+          prefixIcon: Icons.group_outlined,
+          textCapitalization: TextCapitalization.words,
         ),
       ],
     ).animate().fadeIn().slideX(begin: 0.1);
@@ -264,7 +295,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _mapPreview(AppLocalizations t, GeoResult geo) {
-    final group = geo.group;
+    final group = _group;
     return DarkCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,21 +319,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ],
             )
           else
+            // Out of coverage: not an error — the customer can still order and
+            // we schedule their delivery afterwards.
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.12),
+                color: AppColors.primary.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline,
-                      color: AppColors.error, size: 18),
+                  const Icon(Icons.info_outline,
+                      color: AppColors.primary, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(t.t('outsideDelivery'),
+                    child: Text(t.t('outsideDeliveryOrderAnyway'),
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.error)),
+                            .copyWith(color: AppColors.primary)),
                   ),
                 ],
               ),

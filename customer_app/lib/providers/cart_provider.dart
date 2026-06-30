@@ -166,7 +166,11 @@ class CartProvider extends ChangeNotifier {
     required UserModel user,
     required List<ProductModel> products,
   }) async {
-    if (_qty.isEmpty || _shift == null) return null;
+    if (_qty.isEmpty) return null;
+    // An in-coverage customer must pick a delivery shift. An out-of-coverage
+    // customer (empty group) orders without one and we schedule it later.
+    final awaiting = _shift == null;
+    if (awaiting && user.group.isNotEmpty) return null;
     final coupon = _coupon;
     _placing = true;
     notifyListeners();
@@ -217,18 +221,19 @@ class CartProvider extends ChangeNotifier {
         userGroup: user.group,
         userLat: user.lat,
         userLng: user.lng,
-        shiftId: _shift!.id,
-        shiftDate: _shift!.date,
-        shiftLabel: _shift!.label,
+        shiftId: _shift?.id ?? '',
+        shiftDate: _shift?.date ?? DateTime.now(),
+        shiftLabel: _shift?.label ?? '',
         items: items,
         subtotal: subtotal,
         discount: discount,
         couponCode: discount > 0 ? (coupon?.code ?? '') : '',
         totalPrice: grandTotal,
         status: AppConstants.statusPending,
-        cancelDaysBefore: _shift!.cancelDaysBefore,
-        editDaysBefore: _shift!.editDaysBefore,
+        cancelDaysBefore: _shift?.cancelDaysBefore ?? 3,
+        editDaysBefore: _shift?.editDaysBefore ?? 4,
         pendingApproval: true,
+        awaitingSchedule: awaiting,
       );
       final id = await OrderService.instance.createOrder(order);
       // Best-effort: bump the coupon's redemption counter.

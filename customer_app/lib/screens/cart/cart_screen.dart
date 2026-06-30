@@ -112,6 +112,22 @@ class _CartScreenState extends State<CartScreen> {
                             GoldBadge(text: shift.group),
                           ],
                         ),
+                      )
+                    else
+                      // No delivery shift (out-of-coverage customer): we will
+                      // arrange the date and let them know.
+                      GlassCard(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.schedule,
+                                color: AppColors.primary, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(t.t('weWillScheduleDelivery'),
+                                  style: AppTextStyles.caption),
+                            ),
+                          ],
+                        ),
                       ),
                     const SizedBox(height: 16),
                     ...inCart.map((p) => _cartItem(context, p, cart, lang)),

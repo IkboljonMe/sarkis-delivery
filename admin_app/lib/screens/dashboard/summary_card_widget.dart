@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/glass_card.dart';
 

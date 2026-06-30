@@ -10,6 +10,7 @@ import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
+import '../../widgets/verified_badge.dart';
 import '../orders/order_detail_screen.dart';
 
 /// Admin-facing customer profile: contact, location and order history.
@@ -46,6 +47,19 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     }
     final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
     if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  Future<void> _toggleVerified(UserModel u) async {
+    final next = !u.isVerified;
+    setState(() => _user = u.copyWith(isVerified: next));
+    try {
+      await UserService.instance.updateFields(u.id, {'isVerified': next});
+      Fluttertoast.showToast(
+          msg: next ? 'Клиент подтверждён' : 'Подтверждение снято');
+    } catch (e) {
+      if (mounted) setState(() => _user = u); // revert on failure
+      Fluttertoast.showToast(msg: 'Ошибка: $e');
+    }
   }
 
   Future<void> _openMap(UserModel u) async {
@@ -122,13 +136,36 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name.isEmpty ? '—' : name, style: AppTextStyles.headingM),
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(name.isEmpty ? '—' : name,
+                        style: AppTextStyles.headingM),
+                  ),
+                  VerifiedBadge(verified: u?.isVerified ?? false, size: 18),
+                ],
+              ),
               if (u != null)
-                Text(AppConstants.groupLabel(u.group),
+                Text(u.group.isEmpty ? 'Без группы' : u.group,
                     style: AppTextStyles.caption),
             ],
           ),
         ),
+        if (u != null)
+          OutlinedButton.icon(
+            onPressed: () => _toggleVerified(u),
+            icon: Icon(u.isVerified ? Icons.verified : Icons.verified_outlined,
+                size: 18,
+                color: u.isVerified ? AppColors.primary : AppColors.textSecondary),
+            label: Text(u.isVerified ? 'Подтверждён' : 'Подтвердить',
+                style: AppTextStyles.caption),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                  color: u.isVerified ? AppColors.primary : AppColors.border),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
       ],
     );
   }
@@ -161,6 +198,15 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             leading: const Icon(Icons.language, color: AppColors.primary),
             title: Text('Язык: ${u.language.toUpperCase()}'),
           ),
+          if (u.referredBy.isNotEmpty) ...[
+            const Divider(height: 1, color: AppColors.border),
+            ListTile(
+              leading:
+                  const Icon(Icons.group_outlined, color: AppColors.primary),
+              title: Text(u.referredBy),
+              subtitle: const Text('Пригласил(а)'),
+            ),
+          ],
         ],
       ),
     );
