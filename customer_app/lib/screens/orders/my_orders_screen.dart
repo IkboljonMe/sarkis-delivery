@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/app_lottie.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_shimmer.dart';
 import 'order_detail_screen.dart';
@@ -86,7 +87,10 @@ class MyOrdersScreen extends StatelessWidget {
 
   Widget _list(List<OrderModel> orders, AppLocalizations t) {
     if (orders.isEmpty) {
-      return EmptyState(icon: Icons.receipt_long, title: t.noOrders);
+      return EmptyState(
+          animation: AppAnim.thumbsUp,
+          icon: Icons.receipt_long,
+          title: t.noOrders);
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),

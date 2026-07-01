@@ -15,6 +15,7 @@ import '../../services/product_service.dart';
 import '../../services/shift_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/app_lottie.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
@@ -104,8 +105,7 @@ class HomeScreen extends StatelessWidget {
                               .toList();
                           if (snap.connectionState ==
                               ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
+                            return const AppLoader();
                           }
                           if (shifts.isEmpty) {
                             return Center(
@@ -196,7 +196,9 @@ class HomeScreen extends StatelessWidget {
                   if (orders.isEmpty) {
                     return SliverToBoxAdapter(
                       child: EmptyState(
-                          icon: Icons.receipt_long, title: t.noOrders),
+                          animation: AppAnim.thumbsUp,
+                          icon: Icons.receipt_long,
+                          title: t.noOrders),
                     );
                   }
                   return SliverList(

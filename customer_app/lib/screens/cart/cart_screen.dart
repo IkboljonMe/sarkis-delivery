@@ -14,6 +14,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/app_input_field.dart';
 import '../../widgets/dark_card.dart';
+import '../../widgets/app_lottie.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/gold_badge.dart';
@@ -85,7 +86,9 @@ class _CartScreenState extends State<CartScreen> {
               all.where((p) => cart.qtyOf(p.id) > 0).toList();
           if (cart.isEmpty || inCart.isEmpty) {
             return EmptyState(
-                icon: Icons.shopping_cart_outlined, title: t.cartEmpty);
+                animation: AppAnim.thumbsUp,
+                icon: Icons.shopping_cart_outlined,
+                title: t.cartEmpty);
           }
           final subtotal = cart.total(all);
           final discount = cart.couponDiscount(subtotal);

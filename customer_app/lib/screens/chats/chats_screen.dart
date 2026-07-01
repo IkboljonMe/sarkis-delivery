@@ -21,6 +21,7 @@ import '../../utils/constants.dart';
 import '../../utils/voice_recorder.dart';
 import '../../widgets/chat/chat_input_bar.dart';
 import '../../widgets/chat/message_bubble.dart';
+import '../../widgets/app_lottie.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/media_composer.dart';
 import '../orders/order_detail_screen.dart';
@@ -595,6 +596,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                 _ensureTranslations();
                 if (msgs.isEmpty) {
                   return EmptyState(
+                      animation: AppAnim.envelope,
                       icon: Icons.chat_bubble_outline,
                       title: t.t('noMessages'));
                 }

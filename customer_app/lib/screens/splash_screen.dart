@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
+import '../widgets/app_lottie.dart';
 import '../widgets/brand_logo.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -62,6 +63,8 @@ class _SplashScreenState extends State<SplashScreen> {
               t.t('welcomeSubtitle'),
               style: AppTextStyles.caption,
             ).animate().fadeIn(delay: 600.ms, duration: 600.ms),
+            const SizedBox(height: 28),
+            const AppLoader(size: 56).animate().fadeIn(delay: 900.ms),
           ],
         ),
       ),

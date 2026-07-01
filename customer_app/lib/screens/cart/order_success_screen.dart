@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../widgets/app_lottie.dart';
 import '../../widgets/golden_button.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
@@ -44,6 +45,13 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
+          // Celebratory burst behind the success card (plays once).
+          Positioned(
+            top: 40,
+            child: IgnorePointer(
+              child: LottieView(AppAnim.success, size: 320, repeat: false),
+            ),
+          ),
           Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
