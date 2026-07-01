@@ -51,58 +51,13 @@ class DashboardScreen extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.5,
-              children: [
-                SummaryCardWidget(
-                    title: 'Новые заказы',
-                    value: pending,
-                    color: AppColors.warning,
-                    pulse: pending > 0),
-                SummaryCardWidget(
-                    title: 'Подтверждено',
-                    value: confirmed,
-                    color: const Color(0xFF42A5F5)),
-                SummaryCardWidget(
-                    title: 'В пути',
-                    value: onWay,
-                    color: const Color(0xFFAB47BC)),
-                SummaryCardWidget(
-                    title: 'Доставлено сегодня',
-                    value: deliveredToday,
-                    color: AppColors.success),
-              ],
-            ),
+            _summaryGrid(
+                pending: pending,
+                confirmed: confirmed,
+                onWay: onWay,
+                deliveredToday: deliveredToday),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  AppColors.primary.withOpacity(0.18),
-                  AppColors.surface,
-                ]),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withOpacity(0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.payments_outlined,
-                      color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text('Доход за месяц', style: AppTextStyles.body),
-                  ),
-                  Text('€${monthIncome.toStringAsFixed(2)}',
-                      style: AppTextStyles.headingL
-                          .copyWith(color: AppColors.primary)),
-                ],
-              ),
-            ),
+            _monthIncomeBanner(monthIncome),
             const SizedBox(height: 20),
             Text('Последние заказы', style: AppTextStyles.headingM),
             const SizedBox(height: 12),
@@ -115,6 +70,65 @@ class DashboardScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _summaryGrid({
+    required int pending,
+    required int confirmed,
+    required int onWay,
+    required int deliveredToday,
+  }) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.5,
+      children: [
+        SummaryCardWidget(
+            title: 'Новые заказы',
+            value: pending,
+            color: AppColors.warning,
+            pulse: pending > 0),
+        SummaryCardWidget(
+            title: 'Подтверждено',
+            value: confirmed,
+            color: const Color(0xFF42A5F5)),
+        SummaryCardWidget(
+            title: 'В пути', value: onWay, color: const Color(0xFFAB47BC)),
+        SummaryCardWidget(
+            title: 'Доставлено сегодня',
+            value: deliveredToday,
+            color: AppColors.success),
+      ],
+    );
+  }
+
+  Widget _monthIncomeBanner(double monthIncome) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [
+          AppColors.primary.withOpacity(0.18),
+          AppColors.surface,
+        ]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.payments_outlined, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text('Доход за месяц', style: AppTextStyles.body),
+          ),
+          Text(AppConstants.price(monthIncome),
+              style: AppTextStyles.headingL
+                  .copyWith(color: AppColors.primary)),
+        ],
+      ),
     );
   }
 
@@ -145,7 +159,7 @@ class DashboardScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('€${o.totalPrice.toStringAsFixed(2)}',
+              Text(AppConstants.price(o.totalPrice),
                   style: AppTextStyles.price),
               Text(AppConstants.statusLabel(o.status),
                   style: TextStyle(

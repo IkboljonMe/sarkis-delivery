@@ -21,22 +21,8 @@ import '../../utils/route_optimizer.dart';
 import '../../widgets/dark_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/golden_button.dart';
+import '../../widgets/route/route_stop_list.dart';
 import '../chats/chat_detail_screen.dart';
-
-/// A delivery stop = an order that has delivery coordinates.
-class _Stop {
-  final OrderModel order;
-  final LatLng pos;
-  _Stop(this.order) : pos = LatLng(order.userLat!, order.userLng!);
-  String get id => order.id;
-}
-
-/// Estimated arrival/departure window for a stop.
-class _Eta {
-  final DateTime arrival;
-  final DateTime departure;
-  const _Eta(this.arrival, this.departure);
-}
 
 class RouteScreen extends StatefulWidget {
   const RouteScreen({super.key});
@@ -57,7 +43,7 @@ class _RouteScreenState extends State<RouteScreen> {
   LatLng? _start; // null => use current location once fetched
   bool _customStart = false;
   String? _startName; // set when a saved address is chosen as start
-  final Map<String, _Stop> _stops = {}; // id -> stop (with coords)
+  final Map<String, RouteStop> _stops = {}; // id -> stop (with coords)
   List<String> _order = []; // visiting order of stop ids
   int _withoutCoords = 0;
 
@@ -72,7 +58,7 @@ class _RouteScreenState extends State<RouteScreen> {
   int _serviceMin = 5; // minutes spent handing over each order
   double _avgSpeedKmh = 28; // assumed average city driving speed
   static const double _detour = 1.3; // straight-line -> road distance factor
-  final Map<String, _Eta> _eta = {}; // stop id -> arrival/departure
+  final Map<String, Eta> _eta = {}; // stop id -> arrival/departure
 
   @override
   void initState() {
@@ -139,9 +125,9 @@ class _RouteScreenState extends State<RouteScreen> {
     _withoutCoords =
         active.where((o) => o.userLat == null || o.userLng == null).length;
 
-    final next = <String, _Stop>{};
+    final next = <String, RouteStop>{};
     for (final o in active) {
-      if (o.userLat != null && o.userLng != null) next[o.id] = _Stop(o);
+      if (o.userLat != null && o.userLng != null) next[o.id] = RouteStop(o);
     }
     // Keep current visiting order for stops still present; append new ones.
     final order = [
@@ -161,8 +147,8 @@ class _RouteScreenState extends State<RouteScreen> {
   }
 
   // ---- Ordering ------------------------------------------------------------
-  List<_Stop> get _orderedStops =>
-      _order.map((id) => _stops[id]).whereType<_Stop>().toList();
+  List<RouteStop> get _orderedStops =>
+      _order.map((id) => _stops[id]).whereType<RouteStop>().toList();
 
   LatLng get _effectiveStart =>
       _start ?? (_orderedStops.isNotEmpty ? _orderedStops.first.pos : _berlin);
@@ -197,18 +183,18 @@ class _RouteScreenState extends State<RouteScreen> {
   void _computeEta() {
     final stops = _orderedStops;
     if (stops.isEmpty) return;
-    final eta = <String, _Eta>{};
-    var t = _routeStart ?? DateTime.now();
-    var prev = _effectiveStart;
-    for (final s in stops) {
-      final km = RouteOptimizer.distanceKm(prev, s.pos) * _detour;
-      final travelMin = _avgSpeedKmh > 0 ? (km / _avgSpeedKmh * 60) : 0.0;
-      final arrival = t.add(Duration(minutes: travelMin.round()));
-      final departure = arrival.add(Duration(minutes: _serviceMin));
-      eta[s.id] = _Eta(arrival, departure);
-      t = departure;
-      prev = s.pos;
-    }
+    final etas = RouteOptimizer.computeEtas(
+      _effectiveStart,
+      stops.map((s) => s.pos).toList(),
+      routeStart: _routeStart ?? DateTime.now(),
+      serviceMin: _serviceMin,
+      avgSpeedKmh: _avgSpeedKmh,
+      detour: _detour,
+    );
+    final eta = <String, Eta>{
+      for (var i = 0; i < stops.length; i++) stops[i].id: etas[i],
+    };
+    final t = etas.last.departure;
     setState(() => _eta
       ..clear()
       ..addAll(eta));
@@ -216,7 +202,7 @@ class _RouteScreenState extends State<RouteScreen> {
         msg: 'Расчёт готов • финиш ~${DateFormat('HH:mm').format(t)}');
   }
 
-  void _openChat(_Stop stop) {
+  void _openChat(RouteStop stop) {
     final o = stop.order;
     // Make sure an ETA exists, then pre-fill an arrival message (±15 min).
     if (!_eta.containsKey(stop.id)) _computeEta();
@@ -689,11 +675,14 @@ class _RouteScreenState extends State<RouteScreen> {
                   ? const EmptyState(
                       icon: Icons.location_off,
                       title: 'Нет адресов с координатами')
-                  : ReorderableListView.builder(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-                      itemCount: stops.length,
+                  : RouteStopList(
+                      stops: stops,
+                      etaFor: (s) => _eta[s.id],
                       onReorder: _reorder,
-                      itemBuilder: (context, i) => _stopTile(i, stops[i]),
+                      onChat: _openChat,
+                      onDelivered: _markDelivered,
+                      onNavigate: (s) => NavigationService.instance
+                          .navigateToPoint(s.pos.latitude, s.pos.longitude),
                     ),
             ),
           ],
@@ -850,105 +839,8 @@ class _RouteScreenState extends State<RouteScreen> {
   }
 
   String _finishLabel() {
-    DateTime? last;
-    for (final e in _eta.values) {
-      if (last == null || e.departure.isAfter(last)) last = e.departure;
-    }
+    final last = RouteOptimizer.latestDeparture(_eta.values);
     return last == null ? '' : DateFormat('HH:mm').format(last);
   }
 
-  Widget _stopTile(int i, _Stop stop) {
-    final o = stop.order;
-    final eta = _eta[stop.id];
-    return Container(
-      key: ValueKey(stop.id),
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.primary,
-            child: Text('${i + 1}',
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          // Arrival / departure clocks (after the number).
-          if (eta != null) ...[
-            const SizedBox(width: 8),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _clock(Icons.login, DateFormat('HH:mm').format(eta.arrival),
-                    AppColors.primary),
-                const SizedBox(height: 2),
-                _clock(Icons.logout, DateFormat('HH:mm').format(eta.departure),
-                    AppColors.textMuted),
-              ],
-            ),
-          ],
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(o.userName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyBold),
-                Text(o.userAddress,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.caption),
-              ],
-            ),
-          ),
-          _miniBtn(Icons.chat_bubble_outline, AppColors.textSecondary,
-              'Сообщение (время прибытия)', () => _openChat(stop)),
-          _miniBtn(Icons.check_circle_outline, AppColors.success, 'Доставлен',
-              () => _markDelivered(o)),
-          _miniBtn(Icons.navigation, AppColors.primary, 'Навигация',
-              () => NavigationService.instance
-                  .navigateToPoint(stop.pos.latitude, stop.pos.longitude)),
-          ReorderableDragStartListener(
-            index: i,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 2),
-              child: Icon(Icons.drag_handle, color: AppColors.textMuted),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _clock(IconData icon, String time, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 11, color: color),
-        const SizedBox(width: 2),
-        Text(time,
-            style: TextStyle(
-                color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
-  Widget _miniBtn(
-      IconData icon, Color color, String tooltip, VoidCallback onTap) {
-    return IconButton(
-      icon: Icon(icon, color: color, size: 20),
-      tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.all(4),
-      constraints: const BoxConstraints(),
-      onPressed: onTap,
-    );
-  }
 }

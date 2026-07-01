@@ -11,26 +11,10 @@ import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
+import '../../utils/reports_aggregator.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import '../orders/order_detail_screen.dart';
-
-const _ruMonths = [
-  'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
-  'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
-];
-
-enum _Period { month, week, shift }
-
-/// A single income bucket (month / week / shift).
-class _Bucket {
-  final String key;
-  final String label;
-  final DateTime sortDate;
-  double total = 0;
-  int count = 0;
-  _Bucket(this.key, this.label, this.sortDate);
-}
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -42,7 +26,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs = TabController(length: 2, vsync: this);
-  _Period _period = _Period.month;
+  ReportPeriod _period = ReportPeriod.month;
   String _statusFilter = ''; // '' all | delivered | active
 
   @override
@@ -105,16 +89,12 @@ class _ReportsScreenState extends State<ReportsScreen>
               .toList();
         }
 
-        final buckets = _bucketize(orders);
-        final grand = orders.fold(0.0, (s, o) => s + o.totalPrice);
-        final delivered = orders
-            .where((o) => o.status == AppConstants.statusDelivered)
-            .fold(0.0, (s, o) => s + o.totalPrice);
-        final discount = orders.fold(0.0, (s, o) => s + o.discount);
-        final avg = orders.isEmpty ? 0.0 : grand / orders.length;
-        final recent = [...orders]
-          ..sort((a, b) => (b.createdAt ?? b.shiftDate)
-              .compareTo(a.createdAt ?? a.shiftDate));
+        final buckets = ReportsAggregator.bucketize(orders, _period);
+        final grand = ReportsAggregator.grandTotal(orders);
+        final delivered = ReportsAggregator.deliveredTotal(orders);
+        final discount = ReportsAggregator.discountTotal(orders);
+        final avg = ReportsAggregator.averageCheck(orders);
+        final recent = ReportsAggregator.recentFirst(orders);
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -200,7 +180,7 @@ class _ReportsScreenState extends State<ReportsScreen>
   }
 
   /// Uber-style earnings bar chart for the most recent buckets.
-  Widget _incomeChart(List<_Bucket> buckets) {
+  Widget _incomeChart(List<IncomeBucket> buckets) {
     if (buckets.isEmpty) {
       return GlassCard(child: Text('Нет данных', style: AppTextStyles.caption));
     }
@@ -225,7 +205,7 @@ class _ReportsScreenState extends State<ReportsScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text('€${b.total.toStringAsFixed(0)}',
+                Text(AppConstants.price(b.total, decimals: 0),
                     style: const TextStyle(
                         fontSize: 9, color: AppColors.textSecondary)),
                 const SizedBox(height: 4),
@@ -289,14 +269,14 @@ class _ReportsScreenState extends State<ReportsScreen>
                       .copyWith(color: AppColors.primary)),
           ],
         ),
-        trailing: Text('€${o.totalPrice.toStringAsFixed(2)}',
+        trailing: Text(AppConstants.price(o.totalPrice),
             style: AppTextStyles.price),
       ),
     );
   }
 
   Widget _periodSelector() {
-    Widget chip(String label, _Period p) {
+    Widget chip(String label, ReportPeriod p) {
       final sel = _period == p;
       return Expanded(
         child: GestureDetector(
@@ -322,50 +302,11 @@ class _ReportsScreenState extends State<ReportsScreen>
 
     return Row(
       children: [
-        chip('По месяцам', _Period.month),
-        chip('По неделям', _Period.week),
-        chip('По сменам', _Period.shift),
+        chip('По месяцам', ReportPeriod.month),
+        chip('По неделям', ReportPeriod.week),
+        chip('По сменам', ReportPeriod.shift),
       ],
     );
-  }
-
-  List<_Bucket> _bucketize(List<OrderModel> orders) {
-    final map = <String, _Bucket>{};
-    for (final o in orders) {
-      final d = o.createdAt ?? o.shiftDate;
-      late String key;
-      late String label;
-      late DateTime sortDate;
-      switch (_period) {
-        case _Period.month:
-          key = DateFormat('yyyy-MM').format(d);
-          label = '${_ruMonths[d.month - 1]} ${d.year}';
-          sortDate = DateTime(d.year, d.month);
-          break;
-        case _Period.week:
-          final monday = d.subtract(Duration(days: d.weekday - 1));
-          final sunday = monday.add(const Duration(days: 6));
-          key = DateFormat('yyyy-MM-dd').format(monday);
-          label =
-              '${DateFormat('dd.MM').format(monday)} – ${DateFormat('dd.MM').format(sunday)}';
-          sortDate = monday;
-          break;
-        case _Period.shift:
-          key = o.shiftId.isEmpty ? 'no-shift' : o.shiftId;
-          final g = AppConstants.groupLabel(o.userGroup);
-          label = o.shiftLabel.isEmpty
-              ? 'Без смены'
-              : '${o.shiftLabel} • $g';
-          sortDate = o.shiftDate;
-          break;
-      }
-      final b = map.putIfAbsent(key, () => _Bucket(key, label, sortDate));
-      b.total += o.totalPrice;
-      b.count += 1;
-    }
-    final list = map.values.toList()
-      ..sort((a, b) => b.sortDate.compareTo(a.sortDate));
-    return list;
   }
 
   Widget _totalCard(String title, double amount, int? count, Color color) {
@@ -381,7 +322,7 @@ class _ReportsScreenState extends State<ReportsScreen>
         children: [
           Text(title, style: AppTextStyles.caption),
           const SizedBox(height: 6),
-          Text('€${amount.toStringAsFixed(2)}',
+          Text(AppConstants.price(amount),
               style: AppTextStyles.headingL.copyWith(color: color)),
           if (count != null)
             Text('$count заказ(ов)', style: AppTextStyles.caption),
@@ -390,7 +331,7 @@ class _ReportsScreenState extends State<ReportsScreen>
     );
   }
 
-  Widget _bucketRow(_Bucket b) {
+  Widget _bucketRow(IncomeBucket b) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -410,7 +351,7 @@ class _ReportsScreenState extends State<ReportsScreen>
               ],
             ),
           ),
-          Text('€${b.total.toStringAsFixed(2)}', style: AppTextStyles.price),
+          Text(AppConstants.price(b.total), style: AppTextStyles.price),
         ],
       ),
     );
@@ -432,18 +373,10 @@ class _ReportsScreenState extends State<ReportsScreen>
           stream: OrderService.instance.ordersStream(group),
           builder: (context, oSnap) {
             final orders = oSnap.data ?? [];
-            final byUser = <String, List<OrderModel>>{};
-            for (final o in orders) {
-              byUser.putIfAbsent(o.userId, () => []).add(o);
-            }
+            final byUser = ReportsAggregator.ordersByUser(orders);
             // Sort users by most recent order first.
-            DateTime lastOf(UserModel u) {
-              final list = byUser[u.id];
-              if (list == null || list.isEmpty) return DateTime(1970);
-              return list
-                  .map((o) => o.createdAt ?? o.shiftDate)
-                  .reduce((a, b) => a.isAfter(b) ? a : b);
-            }
+            DateTime lastOf(UserModel u) =>
+                ReportsAggregator.lastOrderDate(byUser[u.id] ?? const []);
 
             users.sort((a, b) => lastOf(b).compareTo(lastOf(a)));
             final withOrders =
@@ -495,18 +428,11 @@ class _ReportsScreenState extends State<ReportsScreen>
   }
 
   Widget _clientRow(UserModel u, List<OrderModel> orders) {
-    final spent = orders
-        .where((o) => o.status != AppConstants.statusCancelled)
-        .fold(0.0, (s, o) => s + o.totalPrice);
-    DateTime? last;
-    for (final o in orders) {
-      final d = o.createdAt ?? o.shiftDate;
-      if (last == null || d.isAfter(last)) last = d;
-    }
+    final life = ReportsAggregator.clientLifetime(orders);
     final sub = orders.isEmpty
         ? 'Нет заказов'
-        : '${orders.length} заказ(ов) • €${spent.toStringAsFixed(2)} • '
-            'последний ${DateFormat('dd.MM.yyyy').format(last!)}';
+        : '${orders.length} заказ(ов) • ${AppConstants.price(life.spent)} • '
+            'последний ${DateFormat('dd.MM.yyyy').format(life.last!)}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),

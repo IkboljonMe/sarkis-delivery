@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,10 +17,9 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/translate_service.dart';
 import '../../utils/voice_recorder.dart';
-import '../../widgets/chat_album.dart';
+import '../../widgets/chat/chat_input_bar.dart';
+import '../../widgets/chat/message_bubble.dart';
 import '../../widgets/media_composer.dart';
-import '../../widgets/video_bubble.dart';
-import '../../widgets/voice_bubble.dart';
 import '../customers/customer_profile_screen.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -50,7 +48,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   final ItemPositionsListener _positions = ItemPositionsListener.create();
   final FocusNode _inputFocus = FocusNode();
   MessageModel? _replyTo;
-  bool _uploading = false;
+  final bool _uploading = false;
   bool _recording = false;
   int _recSeconds = 0;
   double _recDrag = 0; // slide-to-cancel offset during hold-to-record
@@ -631,7 +629,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Widget _item(List<MessageModel> msgs, int i) {
-    final bubble = _bubble(msgs[i]);
+    final bubble = MessageBubble(
+      message: msgs[i],
+      highlightedId: _highlightedId,
+      showTranslated: _showTranslated,
+      translations: _translations,
+      translating: _translating,
+      onReplySwipe: (m) => setState(() => _replyTo = m),
+      onLongPress: _showReactions,
+      onQuoteTap: _scrollToMessage,
+      onOrderTap: (orderId) => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: orderId)),
+      ),
+    );
     if (msgs[i].id == _unreadAnchorId && i > 0) {
       return Column(children: [_unreadDivider(), bubble]);
     }
@@ -711,371 +723,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     );
   }
 
-  Widget _bubble(MessageModel m) {
-    final mine = m.isFromAdmin;
-    final time =
-        m.createdAt != null ? DateFormat('HH:mm').format(m.createdAt!) : '';
-    final reactions = m.reactionCounts;
-
-    return Dismissible(
-      key: ValueKey(m.id),
-      direction: DismissDirection.startToEnd,
-      dismissThresholds: const {DismissDirection.startToEnd: 0.25},
-      confirmDismiss: (_) async {
-        setState(() => _replyTo = m);
-        return false;
-      },
-      background: const Padding(
-        padding: EdgeInsets.only(left: 20),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Icon(Icons.reply, color: AppColors.primary),
-        ),
-      ),
-      child: GestureDetector(
-        onLongPress: () => _showReactions(m),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          color: m.id == _highlightedId
-              ? AppColors.primary.withOpacity(0.16)
-              : Colors.transparent,
-          child: Align(
-            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment:
-                  mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 3),
-                  padding: m.isImage
-                      ? const EdgeInsets.all(3)
-                      : const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                  constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.72),
-                  decoration: BoxDecoration(
-                    gradient: mine ? AppColors.goldGradient : null,
-                    color: mine ? null : AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: mine ? null : Border.all(color: AppColors.border),
-                  ),
-                  child: _bubbleContent(m, mine, time),
-                ),
-                if (reactions.isNotEmpty) _reactionChips(reactions),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _metaInline(MessageModel m, bool mine, String time) {
-    return [
-      Text(time,
-          style: TextStyle(
-              fontSize: 10,
-              color: mine ? Colors.white70 : AppColors.textMuted)),
-      if (mine) ...[
-        const SizedBox(width: 4),
-        Icon(m.isRead || m.delivered ? Icons.done_all : Icons.done,
-            size: 14,
-            color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white70),
-      ],
-    ];
-  }
-
-  Widget _metaChip(MessageModel m, bool mine, String time) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(time,
-              style: const TextStyle(fontSize: 10, color: Colors.white)),
-          if (mine) ...[
-            const SizedBox(width: 4),
-            Icon(m.isRead || m.delivered ? Icons.done_all : Icons.done,
-                size: 14,
-                color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Renders the message text, swapping in the Russian translation for
-  /// incoming (customer) messages while the global translate toggle is on.
-  Widget _translatedAwareText(MessageModel m, Color textColor, bool mine) {
-    final incoming = !mine;
-    final translated = _translations[m.id];
-    final showT = _showTranslated && incoming && translated != null;
-    final translating =
-        _showTranslated && incoming && _translating.contains(m.id);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(showT ? translated : m.text, style: TextStyle(color: textColor)),
-        if (showT)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.translate,
-                size: 11,
-                color: mine ? Colors.white70 : AppColors.textMuted),
-          ),
-        if (translating)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text('Перевод…',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: mine ? Colors.white70 : AppColors.textSecondary)),
-          ),
-      ],
-    );
-  }
-
-  Widget _bubbleContent(MessageModel m, bool mine, String time) {
-    final textColor = mine ? Colors.white : AppColors.textPrimary;
-
-    if (m.deleted) {
-      final muted = mine ? Colors.white70 : AppColors.textMuted;
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.block, size: 14, color: muted),
-          const SizedBox(width: 6),
-          Text('Сообщение удалено',
-              style: TextStyle(
-                  fontStyle: FontStyle.italic, color: muted, fontSize: 13)),
-          const SizedBox(width: 8),
-          ..._metaInline(m, mine, time),
-        ],
-      );
-    }
-
-    if (m.isOrder) return _orderCard(m, mine, time, textColor);
-
-    if (m.isVideo) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (m.hasReply)
-            Padding(
-                padding: const EdgeInsets.fromLTRB(6, 2, 6, 4),
-                child: _replyQuote(m, mine)),
-          Stack(
-            children: [
-              VideoBubble(
-                  url: m.mediaUrl,
-                  sizeBytes: m.sizeBytes,
-                  uploading: m.uploading),
-              Positioned(
-                  right: 8, bottom: 8, child: _metaChip(m, mine, time)),
-            ],
-          ),
-          if (m.text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
-              child: _translatedAwareText(m, textColor, mine),
-            ),
-        ],
-      );
-    }
-
-    if (m.isImage) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (m.hasReply)
-            Padding(
-                padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
-                child: _replyQuote(m, mine)),
-          Stack(
-            children: [
-              ChatAlbum(
-                urls: m.images,
-                pendingCount: m.uploading
-                    ? (m.uploadCount - m.images.length).clamp(0, 20)
-                    : 0,
-              ),
-              Positioned(
-                  right: 8, bottom: 8, child: _metaChip(m, mine, time)),
-            ],
-          ),
-          if (m.text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(6, 6, 6, 2),
-              child: _translatedAwareText(m, textColor, mine),
-            ),
-        ],
-      );
-    }
-
-    if (m.isVoice) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (m.hasReply) _replyQuote(m, mine),
-          VoiceBubble(
-            url: m.mediaUrl,
-            durationMs: m.durationMs,
-            mine: mine,
-            waveform: m.waveform,
-            sizeBytes: m.sizeBytes,
-            uploading: m.uploading,
-          ),
-          const SizedBox(height: 2),
-          SizedBox(
-            width: 190,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: _metaInline(m, mine, time),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Text message: IntrinsicWidth keeps the time/ticks at the right edge.
-    return IntrinsicWidth(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (m.hasReply) _replyQuote(m, mine),
-          _translatedAwareText(m, textColor, mine),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: _metaInline(m, mine, time),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Order attachment card linking to the order detail screen.
-  Widget _orderCard(MessageModel m, bool mine, String time, Color textColor) {
-    final accent = mine ? Colors.white : AppColors.primary;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.receipt_long, size: 18, color: accent),
-            const SizedBox(width: 6),
-            Text('Заказ',
-                style: AppTextStyles.bodyBold.copyWith(color: textColor)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        if (m.text.isNotEmpty) _translatedAwareText(m, textColor, mine),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: m.orderId.isEmpty
-              ? null
-              : () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            OrderDetailScreen(orderId: m.orderId)),
-                  ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: (mine ? Colors.white : AppColors.primary)
-                  .withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: accent.withOpacity(0.5)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Открыть заказ',
-                    style: AppTextStyles.bodyBold.copyWith(color: accent)),
-                const SizedBox(width: 4),
-                Icon(Icons.arrow_forward, size: 16, color: accent),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: _metaInline(m, mine, time),
-        ),
-      ],
-    );
-  }
-
-  Widget _replyQuote(MessageModel m, bool mine) {
-    return GestureDetector(
-      onTap: () => _scrollToMessage(m.replyToId),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-        decoration: BoxDecoration(
-          color: (mine ? Colors.white : AppColors.primary).withOpacity(0.15),
-          borderRadius: BorderRadius.circular(8),
-          border: Border(
-              left: BorderSide(
-                  color: mine ? Colors.white : AppColors.primary, width: 3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: mine ? Colors.white : AppColors.primary)),
-            Text(m.replyToText.isEmpty ? '📎 вложение' : m.replyToText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: mine ? Colors.white70 : AppColors.textSecondary)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _reactionChips(Map<String, int> reactions) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Wrap(
-        spacing: 4,
-        children: reactions.entries
-            .map((e) => Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text('${e.key} ${e.value}',
-                      style: const TextStyle(fontSize: 12)),
-                ))
-            .toList(),
-      ),
-    );
-  }
-
   Widget _replyBanner() {
     final r = _replyTo!;
     return Container(
@@ -1112,127 +759,28 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Widget _inputBar() {
-    final hasText = _controller.text.trim().isNotEmpty;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(children: [
-          if (_recording)
-            Expanded(child: _recordingStrip())
-          else ...[
-            IconButton(
-              onPressed: _showAttachSheet,
-              icon: const Icon(Icons.attach_file, color: AppColors.primary),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _inputFocus,
-                style: AppTextStyles.body,
-                minLines: 1,
-                maxLines: 4,
-                decoration: const InputDecoration(hintText: 'Сообщение...'),
-              ),
-            ),
-          ],
-          const SizedBox(width: 8),
-          if (hasText && !_recording)
-            _circleBtn(icon: Icons.send, onTap: _send)
-          else
-            // Hold to record, release to send, slide left to cancel.
-            Listener(
-              onPointerDown: (_) {
-                _recDrag = 0;
-                _startRecording();
-              },
-              onPointerMove: (e) {
-                _recDrag += e.delta.dx;
-                if (_recDrag < -90 && _recording) _cancelRecording();
-              },
-              onPointerUp: (_) {
-                if (_recording) _stopAndSendVoice();
-              },
-              onPointerCancel: (_) {
-                if (_recording) _cancelRecording();
-              },
-              child: _circleBtn(
-                  icon: _recording ? Icons.send : Icons.mic, onTap: null),
-            ),
-        ]),
-      ),
-    );
-  }
-
-  Widget _recordingStrip() {
-    return Row(
-      children: [
-        const _RecDot(),
-        const SizedBox(width: 8),
-        Text(_fmtSeconds(_recSeconds), style: AppTextStyles.bodyBold),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            _recDrag < -40 ? 'Отпустите — отмена' : '← сдвиньте для отмены',
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.caption.copyWith(color: AppColors.error),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _fmtSeconds(int s) =>
-      '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
-
-  Widget _circleBtn(
-      {IconData? icon, bool loading = false, VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: const BoxDecoration(
-            gradient: AppColors.goldGradient, shape: BoxShape.circle),
-        child: loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
-            : Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
-}
-
-class _RecDot extends StatefulWidget {
-  const _RecDot();
-  @override
-  State<_RecDot> createState() => _RecDotState();
-}
-
-class _RecDotState extends State<_RecDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 700))
-    ..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _c,
-      child: Container(
-        width: 12,
-        height: 12,
-        decoration:
-            const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
-      ),
+    return ChatInputBar(
+      controller: _controller,
+      inputFocus: _inputFocus,
+      recording: _recording,
+      recSeconds: _recSeconds,
+      recDrag: _recDrag,
+      onAttach: _showAttachSheet,
+      onSend: _send,
+      onRecordStart: () {
+        _recDrag = 0;
+        _startRecording();
+      },
+      onRecordMove: (dx) {
+        _recDrag += dx;
+        if (_recDrag < -90 && _recording) _cancelRecording();
+      },
+      onRecordEnd: () {
+        if (_recording) _stopAndSendVoice();
+      },
+      onRecordCancel: () {
+        if (_recording) _cancelRecording();
+      },
     );
   }
 }

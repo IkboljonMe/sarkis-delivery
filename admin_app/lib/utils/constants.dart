@@ -50,4 +50,9 @@ class AppConstants {
   /// id is already its human-readable name, so it is shown verbatim.
   static String groupLabel(String g) => g == groupAll ? 'Все' : g;
   static String statusLabel(String s) => statusRu[s] ?? s;
+
+  /// Formats a monetary amount for display with the euro sign, e.g. `€12.50`.
+  /// Defaults to two decimals; pass [decimals] for summary figures.
+  static String price(double amount, {int decimals = 2}) =>
+      '€${amount.toStringAsFixed(decimals)}';
 }

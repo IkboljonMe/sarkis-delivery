@@ -9,6 +9,7 @@ import '../../services/approval_service.dart';
 import '../../services/order_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -78,7 +79,7 @@ class ApprovalsScreen extends StatelessWidget {
               Expanded(
                 child: Text(o.userName, style: AppTextStyles.bodyBold),
               ),
-              Text('€${o.totalPrice.toStringAsFixed(2)}',
+              Text(AppConstants.price(o.totalPrice),
                   style: AppTextStyles.bodyBold
                       .copyWith(color: AppColors.primary)),
             ],

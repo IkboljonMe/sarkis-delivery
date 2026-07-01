@@ -2,6 +2,13 @@ import 'dart:math';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+/// Estimated arrival/departure window for a stop.
+class Eta {
+  final DateTime arrival;
+  final DateTime departure;
+  const Eta(this.arrival, this.departure);
+}
+
 /// Free, offline route helpers — no paid Routes API.
 ///
 /// Uses straight-line (haversine) distance and a greedy nearest-neighbor
@@ -55,6 +62,42 @@ class RouteOptimizer {
       current = p;
     }
     return total;
+  }
+
+  /// Estimated arrival/departure windows for [stops] visited in order,
+  /// starting from [start] at [routeStart]. Pure: [routeStart] is the caller's
+  /// resolved start time (e.g. `DateTime.now()` when "now"). [detour] scales
+  /// straight-line distance to approximate road distance.
+  static List<Eta> computeEtas(
+    LatLng start,
+    List<LatLng> stops, {
+    required DateTime routeStart,
+    required int serviceMin,
+    required double avgSpeedKmh,
+    required double detour,
+  }) {
+    final eta = <Eta>[];
+    var t = routeStart;
+    var prev = start;
+    for (final s in stops) {
+      final km = distanceKm(prev, s) * detour;
+      final travelMin = avgSpeedKmh > 0 ? (km / avgSpeedKmh * 60) : 0.0;
+      final arrival = t.add(Duration(minutes: travelMin.round()));
+      final departure = arrival.add(Duration(minutes: serviceMin));
+      eta.add(Eta(arrival, departure));
+      t = departure;
+      prev = s;
+    }
+    return eta;
+  }
+
+  /// Latest departure time across [etas], or null when empty.
+  static DateTime? latestDeparture(Iterable<Eta> etas) {
+    DateTime? last;
+    for (final e in etas) {
+      if (last == null || e.departure.isAfter(last)) last = e.departure;
+    }
+    return last;
   }
 
   static double _rad(double deg) => deg * pi / 180.0;

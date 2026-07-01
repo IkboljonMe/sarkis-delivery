@@ -118,105 +118,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Order control
         Text(t.t('setOrdersControl'), style: AppTextStyles.headingM),
         const SizedBox(height: 8),
-        DarkCard(
-          child: Column(
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: AppColors.primary,
-                value: _acceptingOrders,
-                title: Text(t.t('setAcceptingOrders'),
-                    style: AppTextStyles.body),
-                subtitle: Text(t.t('setAcceptingOrdersSub'),
-                    style: AppTextStyles.caption),
-                onChanged: (v) => setState(() => _acceptingOrders = v),
-              ),
-              const Divider(color: AppColors.border),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: AppColors.primary,
-                value: _autoAccept,
-                title:
-                    Text(t.t('setAutoAccept'), style: AppTextStyles.body),
-                subtitle: Text(t.t('setAutoAcceptSub'),
-                    style: AppTextStyles.caption),
-                onChanged: (v) => setState(() => _autoAccept = v),
-              ),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(
-                    child: AppInputField(
-                        controller: _cancelDays,
-                        label: t.t('setCancelDays'),
-                        keyboardType: TextInputType.number)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: AppInputField(
-                        controller: _editDays,
-                        label: t.t('setEditDays'),
-                        keyboardType: TextInputType.number)),
-              ]),
-            ],
-          ),
-        ),
+        _ordersControlCard(t),
         const SizedBox(height: 16),
 
         // Orders (qty + money)
         Text(t.t('setOrders'), style: AppTextStyles.headingM),
         const SizedBox(height: 8),
-        DarkCard(
-          child: Column(
-            children: [
-              Row(children: [
-                Expanded(
-                    child: AppInputField(
-                        controller: _minQty,
-                        label: t.t('setMinQty'),
-                        keyboardType: TextInputType.number)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: AppInputField(
-                        controller: _maxQty,
-                        label: t.t('setMaxQty'),
-                        keyboardType: TextInputType.number)),
-              ]),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                    child: AppInputField(
-                        controller: _deliveryFee,
-                        label: t.t('setDeliveryFee'),
-                        keyboardType: TextInputType.number)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: AppInputField(
-                        controller: _minOrder,
-                        label: t.t('setMinOrder'),
-                        keyboardType: TextInputType.number)),
-              ]),
-            ],
-          ),
-        ),
+        _orderLimitsCard(t),
         const SizedBox(height: 16),
 
         // Contacts
         Text(t.t('setContacts'), style: AppTextStyles.headingM),
         const SizedBox(height: 8),
-        DarkCard(
-          child: Column(
-            children: [
-              AppInputField(
-                  controller: _whatsapp,
-                  label: t.t('setWhatsapp'),
-                  keyboardType: TextInputType.phone),
-              const SizedBox(height: 12),
-              AppInputField(
-                  controller: _phone,
-                  label: t.t('setPhone'),
-                  keyboardType: TextInputType.phone),
-            ],
-          ),
-        ),
+        _contactsCard(t),
         const SizedBox(height: 16),
         GoldenButton(label: t.t('save'), onPressed: _save),
         const SizedBox(height: 16),
@@ -224,41 +138,144 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // App info
         Text(t.t('setApp'), style: AppTextStyles.headingM),
         const SizedBox(height: 8),
-        DarkCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _info(t.t('setVersion'), AppConstants.appVersion),
-              const SizedBox(height: 8),
-              _info(t.t('setFirebase'), AppConstants.firebaseProjectId),
-              const SizedBox(height: 8),
-              _info(t.t('setEnv'), 'Production'),
-            ],
-          ),
-        ),
+        _appInfoCard(t),
         const SizedBox(height: 16),
-        DarkCard(
-          borderColor: AppColors.error,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(t.t('setDanger'),
-                  style: AppTextStyles.bodyBold
-                      .copyWith(color: AppColors.error)),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
-                ),
-                onPressed: _logout,
-                icon: const Icon(Icons.logout),
-                label: Text(t.t('logout')),
-              ),
-            ],
-          ),
-        ),
+        _dangerCard(t),
       ],
+    );
+  }
+
+  Widget _ordersControlCard(AdminLocalizations t) {
+    return DarkCard(
+      child: Column(
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.primary,
+            value: _acceptingOrders,
+            title: Text(t.t('setAcceptingOrders'), style: AppTextStyles.body),
+            subtitle: Text(t.t('setAcceptingOrdersSub'),
+                style: AppTextStyles.caption),
+            onChanged: (v) => setState(() => _acceptingOrders = v),
+          ),
+          const Divider(color: AppColors.border),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.primary,
+            value: _autoAccept,
+            title: Text(t.t('setAutoAccept'), style: AppTextStyles.body),
+            subtitle:
+                Text(t.t('setAutoAcceptSub'), style: AppTextStyles.caption),
+            onChanged: (v) => setState(() => _autoAccept = v),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+                child: AppInputField(
+                    controller: _cancelDays,
+                    label: t.t('setCancelDays'),
+                    keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: AppInputField(
+                    controller: _editDays,
+                    label: t.t('setEditDays'),
+                    keyboardType: TextInputType.number)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _orderLimitsCard(AdminLocalizations t) {
+    return DarkCard(
+      child: Column(
+        children: [
+          Row(children: [
+            Expanded(
+                child: AppInputField(
+                    controller: _minQty,
+                    label: t.t('setMinQty'),
+                    keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: AppInputField(
+                    controller: _maxQty,
+                    label: t.t('setMaxQty'),
+                    keyboardType: TextInputType.number)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+                child: AppInputField(
+                    controller: _deliveryFee,
+                    label: t.t('setDeliveryFee'),
+                    keyboardType: TextInputType.number)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: AppInputField(
+                    controller: _minOrder,
+                    label: t.t('setMinOrder'),
+                    keyboardType: TextInputType.number)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactsCard(AdminLocalizations t) {
+    return DarkCard(
+      child: Column(
+        children: [
+          AppInputField(
+              controller: _whatsapp,
+              label: t.t('setWhatsapp'),
+              keyboardType: TextInputType.phone),
+          const SizedBox(height: 12),
+          AppInputField(
+              controller: _phone,
+              label: t.t('setPhone'),
+              keyboardType: TextInputType.phone),
+        ],
+      ),
+    );
+  }
+
+  Widget _appInfoCard(AdminLocalizations t) {
+    return DarkCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _info(t.t('setVersion'), AppConstants.appVersion),
+          const SizedBox(height: 8),
+          _info(t.t('setFirebase'), AppConstants.firebaseProjectId),
+          const SizedBox(height: 8),
+          _info(t.t('setEnv'), 'Production'),
+        ],
+      ),
+    );
+  }
+
+  Widget _dangerCard(AdminLocalizations t) {
+    return DarkCard(
+      borderColor: AppColors.error,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(t.t('setDanger'),
+              style: AppTextStyles.bodyBold.copyWith(color: AppColors.error)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
+            ),
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+            label: Text(t.t('logout')),
+          ),
+        ],
+      ),
     );
   }
 

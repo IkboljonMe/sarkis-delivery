@@ -220,7 +220,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
       children: [
         _stat('${orders.length}', 'Заказов'),
         const SizedBox(width: 12),
-        _stat('€${spent.toStringAsFixed(0)}', 'Потрачено'),
+        _stat(AppConstants.price(spent, decimals: 0), 'Потрачено'),
       ],
     );
   }
@@ -287,7 +287,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodyBold),
         subtitle: Text(
-            '${o.shiftLabel} • €${o.totalPrice.toStringAsFixed(2)} • '
+            '${o.shiftLabel} • ${AppConstants.price(o.totalPrice)} • '
             '${AppConstants.statusLabel(o.status)}',
             style: AppTextStyles.caption),
         trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),

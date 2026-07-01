@@ -251,10 +251,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Expanded(flex: 3, child: Text(i.name, style: AppTextStyles.body)),
                   Expanded(child: Text('x${i.qty}', style: AppTextStyles.caption)),
                   Expanded(
-                      child: Text('€${i.unitPrice.toStringAsFixed(2)}',
+                      child: Text(AppConstants.price(i.unitPrice),
                           style: AppTextStyles.caption)),
                   Expanded(
-                      child: Text('€${i.subtotal.toStringAsFixed(2)}',
+                      child: Text(AppConstants.price(i.subtotal),
                           textAlign: TextAlign.right,
                           style: AppTextStyles.bodyBold)),
                 ]),
@@ -264,7 +264,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             Row(children: [
               Text('Сумма', style: AppTextStyles.caption),
               const Spacer(),
-              Text('€${o.subtotal.toStringAsFixed(2)}',
+              Text(AppConstants.price(o.subtotal),
                   style: AppTextStyles.body),
             ]),
             const SizedBox(height: 4),
@@ -276,7 +276,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   style: AppTextStyles.caption
                       .copyWith(color: AppColors.primary)),
               const Spacer(),
-              Text('−€${o.discount.toStringAsFixed(2)}',
+              Text('−${AppConstants.price(o.discount)}',
                   style: AppTextStyles.body
                       .copyWith(color: AppColors.primary)),
             ]),
@@ -285,7 +285,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Row(children: [
             Text('Итого', style: AppTextStyles.bodyBold),
             const Spacer(),
-            Text('€${o.totalPrice.toStringAsFixed(2)}',
+            Text(AppConstants.price(o.totalPrice),
                 style: AppTextStyles.price),
           ]),
         ],

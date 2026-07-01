@@ -111,7 +111,7 @@ class ShiftDetailScreen extends StatelessWidget {
                     Expanded(
                         child: Text(o.userName,
                             style: AppTextStyles.bodyBold)),
-                    Text('€${o.totalPrice.toStringAsFixed(2)}',
+                    Text(AppConstants.price(o.totalPrice),
                         style: AppTextStyles.price),
                   ],
                 ),

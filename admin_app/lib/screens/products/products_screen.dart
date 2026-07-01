@@ -5,6 +5,7 @@ import '../../models/product_model.dart';
 import '../../services/product_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
 import 'add_edit_category_sheet.dart';
 import 'add_edit_product_sheet.dart';
@@ -159,7 +160,7 @@ class _ProductsTab extends StatelessWidget {
                         children: [
                           Text(p.nameFor('ru'),
                               style: AppTextStyles.bodyBold),
-                          Text('€${p.price.toStringAsFixed(2)} / ${p.unit}',
+                          Text('${AppConstants.price(p.price)} / ${p.unit}',
                               style: AppTextStyles.caption),
                         ],
                       ),

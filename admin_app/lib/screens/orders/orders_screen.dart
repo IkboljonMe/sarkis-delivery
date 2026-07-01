@@ -214,7 +214,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ? AppColors.warning
                           : AppColors.textSecondary)),
               const Spacer(),
-              Text('€${o.totalPrice.toStringAsFixed(2)}',
+              Text(AppConstants.price(o.totalPrice),
                   style: AppTextStyles.price),
               const SizedBox(width: 8),
               TextButton(
