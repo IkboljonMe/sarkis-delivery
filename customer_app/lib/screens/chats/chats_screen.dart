@@ -258,31 +258,34 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Future<void> _openWhatsApp() async {
+    final t = AppLocalizations.of(context);
     final uri = Uri.parse('https://wa.me/${AppConstants.adminPhoneDigits}');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      Fluttertoast.showToast(msg: 'WhatsApp недоступен');
+      Fluttertoast.showToast(msg: t.t('whatsAppUnavailable'));
     }
   }
 
   Future<void> _callAdmin() async {
+    final t = AppLocalizations.of(context);
     final uri = Uri(
         scheme: 'tel',
         path: AppConstants.adminPhoneNumber.replaceAll(' ', ''));
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      Fluttertoast.showToast(msg: 'Не удалось позвонить');
+      Fluttertoast.showToast(msg: t.t('callFailed'));
     }
   }
 
   static const int _maxVoiceSeconds = 300; // 5-minute cap
 
   Future<void> _startRecording(UserModel user) async {
+    final t = AppLocalizations.of(context);
     final ok = await _recorder.hasPermission();
     if (!ok) {
-      Fluttertoast.showToast(msg: 'Нет доступа к микрофону');
+      Fluttertoast.showToast(msg: t.t('micPermissionDenied'));
       return;
     }
     await _recorder.start();
@@ -307,6 +310,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     if (!_recording) return;
     _recTimer?.cancel();
     setState(() => _recording = false);
+    final t = AppLocalizations.of(context);
     final msg = context.read<MessageProvider>();
     try {
       final rec = await _recorder.stop();
@@ -332,7 +336,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       await msg.patchMessage(
           user.id, id, {'mediaUrl': url, 'uploading': false});
     } catch (_) {
-      Fluttertoast.showToast(msg: 'Не удалось отправить голосовое');
+      Fluttertoast.showToast(msg: t.t('voiceSendFailed'));
     }
   }
 
@@ -361,6 +365,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   void _showAttachSheet(UserModel user) {
+    final t = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceElevated,
@@ -374,7 +379,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             ListTile(
               leading: const Icon(Icons.photo_library_outlined,
                   color: AppColors.primary),
-              title: const Text('Фото'),
+              title: Text(t.t('photo')),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickAndSendImages(user);
@@ -383,8 +388,8 @@ class _ChatsScreenState extends State<ChatsScreen>
             ListTile(
               leading: const Icon(Icons.videocam_outlined,
                   color: AppColors.primary),
-              title: const Text('Видео'),
-              subtitle: const Text('до 50 МБ'),
+              title: Text(t.t('video')),
+              subtitle: Text(t.t('videoMaxSize')),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickAndSendVideo(user);
@@ -397,13 +402,15 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Future<void> _pickAndSendVideo(UserModel user) async {
+    final t = AppLocalizations.of(context);
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null || !mounted) return;
     final size = await picked.length();
     if (size > 50 * 1024 * 1024) {
-      Fluttertoast.showToast(msg: 'Видео слишком большое (макс 50 МБ)');
+      Fluttertoast.showToast(msg: t.t('videoTooLarge'));
       return;
     }
+    if (!mounted) return;
     final msg = context.read<MessageProvider>();
     _pendingScrollToEnd = true;
     try {
@@ -423,11 +430,12 @@ class _ChatsScreenState extends State<ChatsScreen>
           ext: 'mp4', contentType: 'video/mp4');
       await msg.patchMessage(user.id, id, {'mediaUrl': url, 'uploading': false});
     } catch (_) {
-      Fluttertoast.showToast(msg: 'Не удалось отправить видео');
+      Fluttertoast.showToast(msg: t.t('videoSendFailed'));
     }
   }
 
   Future<void> _pickAndSendImages(UserModel user) async {
+    final t = AppLocalizations.of(context);
     if (_uploading) return;
     final picked =
         await _picker.pickMultiImage(imageQuality: 70, maxWidth: 1600);
@@ -470,11 +478,12 @@ class _ChatsScreenState extends State<ChatsScreen>
       // 3) Mark the album complete.
       await msg.patchMessage(user.id, id, {'uploading': false});
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Не удалось отправить фото');
+      Fluttertoast.showToast(msg: t.t('photoSendFailed'));
     }
   }
 
   void _showReactions(UserModel user, MessageModel m) {
+    final t = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceElevated,
@@ -504,7 +513,7 @@ class _ChatsScreenState extends State<ChatsScreen>
             ),
             ListTile(
               leading: const Icon(Icons.reply, color: AppColors.primary),
-              title: const Text('Ответить'),
+              title: Text(t.t('reply')),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _replyTo = m);
@@ -708,12 +717,13 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _unreadDivider() {
+    final t = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(vertical: 4),
       alignment: Alignment.center,
       color: AppColors.surfaceElevated.withOpacity(0.6),
-      child: Text('Непрочитанные сообщения',
+      child: Text(t.t('unreadMessages'),
           style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
     );
   }
@@ -899,6 +909,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   /// Renders the message text, swapping in the translation for incoming
   /// (admin) messages while the global translate toggle is on.
   Widget _translatedAwareText(MessageModel m, Color textColor, bool mine) {
+    final t = AppLocalizations.of(context);
     final incoming = !mine;
     final translated = _translations[m.id];
     final showT = _showTranslated && incoming && translated != null;
@@ -919,7 +930,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         if (translating)
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Text('Перевод…',
+            child: Text(t.t('translating'),
                 style: TextStyle(
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
@@ -1121,6 +1132,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _replyQuote(MessageModel m, bool mine) {
+    final t = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () => _scrollToMessage(m.replyToId),
       child: Container(
@@ -1136,12 +1148,12 @@ class _ChatsScreenState extends State<ChatsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(m.replyToSender.isEmpty ? 'Ответ' : m.replyToSender,
+            Text(m.replyToSender.isEmpty ? t.t('reply') : m.replyToSender,
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: mine ? Colors.white : AppColors.primary)),
-            Text(m.replyToText.isEmpty ? '📎 вложение' : m.replyToText,
+            Text(m.replyToText.isEmpty ? t.t('attachment') : m.replyToText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -1176,6 +1188,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _replyBanner() {
+    final t = AppLocalizations.of(context);
     final r = _replyTo!;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
@@ -1191,7 +1204,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(r.isFromAdmin ? 'Admin' : 'Вы',
+                Text(r.isFromAdmin ? 'Admin' : t.t('you'),
                     style: AppTextStyles.label
                         .copyWith(color: AppColors.primary)),
                 Text(r.text,
@@ -1268,6 +1281,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   }
 
   Widget _recordingStrip() {
+    final t = AppLocalizations.of(context);
     return Row(
       children: [
         const _RecDot(),
@@ -1276,7 +1290,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            _recDrag < -40 ? 'Отпустите — отмена' : '← сдвиньте для отмены',
+            _recDrag < -40 ? t.t('releaseToCancel') : t.t('slideToCancel'),
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.caption.copyWith(color: AppColors.error),
           ),

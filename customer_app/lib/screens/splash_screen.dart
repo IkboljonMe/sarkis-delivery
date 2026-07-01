@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/app_colors.dart';
@@ -41,6 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
@@ -57,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 .fadeIn(delay: 300.ms, duration: 500.ms),
             const SizedBox(height: 8),
             Text(
-              'Армянский хлеб с доставкой',
+              t.t('welcomeSubtitle'),
               style: AppTextStyles.caption,
             ).animate().fadeIn(delay: 600.ms, duration: 600.ms),
           ],

@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/locale_provider.dart';
-import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
+import '../../widgets/language_option_tile.dart';
 
 /// Lets the customer pick which language incoming chat messages are
 /// translated into. Defaults to the app language until changed.
@@ -28,42 +28,10 @@ class TranslateLanguageScreen extends StatelessWidget {
                 style: AppTextStyles.caption),
           ),
           ...AppConstants.languages.map((lang) {
-            final selected = locale.translateLang == lang['code'];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector(
-                onTap: () => locale.setTranslateLang(lang['code']!),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : AppColors.border,
-                      width: selected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(lang['flag']!, style: const TextStyle(fontSize: 26)),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(lang['native']!,
-                                style: AppTextStyles.headingM),
-                            Text(lang['name']!, style: AppTextStyles.caption),
-                          ],
-                        ),
-                      ),
-                      if (selected)
-                        const Icon(Icons.check_circle,
-                            color: AppColors.primary),
-                    ],
-                  ),
-                ),
-              ),
+            return LanguageOptionTile(
+              lang: lang,
+              selected: locale.translateLang == lang['code'],
+              onTap: () => locale.setTranslateLang(lang['code']!),
             );
           }),
         ],

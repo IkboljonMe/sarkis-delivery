@@ -94,6 +94,23 @@ class AppLocalizations {
   String get continueWithSms => t('continueWithSms');
   String get contactWhatsApp => t('contactWhatsApp');
 
+  /// Localized label for a product unit (e.g. 'pack' -> 'упак.').
+  /// Falls back to the raw unit for values we don't translate.
+  String unitLabel(String unit) {
+    switch (unit.toLowerCase().trim()) {
+      case 'pack':
+        return t('unitPack');
+      case 'piece':
+        return t('unitPiece');
+      case 'kg':
+        return t('unitKg');
+      case 'loaf':
+        return t('unitLoaf');
+      default:
+        return unit;
+    }
+  }
+
   String statusLabel(String status) {
     switch (status) {
       case 'pending':

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../l10n/app_localizations.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import 'golden_button.dart';
@@ -47,12 +48,13 @@ class _MediaComposerState extends State<MediaComposer> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       // Keep the caption field pinned directly above the keyboard.
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: Text('${_files.length} фото'),
+        title: Text(t.t('photosCount').replaceFirst('{n}', '${_files.length}')),
         actions: [
           IconButton(
               onPressed: _addMore,
@@ -85,12 +87,12 @@ class _MediaComposerState extends State<MediaComposer> {
                       style: AppTextStyles.body,
                       minLines: 1,
                       maxLines: 3,
-                      decoration: const InputDecoration(hintText: 'Подпись…'),
+                      decoration: InputDecoration(hintText: t.t('captionHint')),
                     ),
                   ),
                   const SizedBox(width: 8),
                   GoldenButton(
-                    label: 'Отправить',
+                    label: t.t('send'),
                     height: 48,
                     onPressed: () => Navigator.pop(context,
                         MediaComposerResult(_files, _caption.text.trim())),

@@ -157,7 +157,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 fontWeight: FontWeight.bold)),
                       ),
                     ],
-                    Text(' / ${p.unit}', style: AppTextStyles.caption),
+                    Text(' / ${t.unitLabel(p.unit)}',
+                        style: AppTextStyles.caption),
                   ],
                 ),
                 if (p.descriptionFor(lang).isNotEmpty) ...[
@@ -201,22 +202,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _btn(IconData icon, VoidCallback? onTap, bool gold) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: onTap == null
-              ? AppColors.surfaceElevated
-              : (gold ? AppColors.primary : AppColors.surfaceElevated),
-          border: Border.all(color: AppColors.border),
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: onTap == null
+                  ? AppColors.surfaceElevated
+                  : (gold ? AppColors.primary : AppColors.surfaceElevated),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(icon,
+                color: onTap == null
+                    ? AppColors.textMuted
+                    : (gold ? Colors.white : AppColors.textSecondary)),
+          ),
         ),
-        child: Icon(icon,
-            color: onTap == null
-                ? AppColors.textMuted
-                : (gold ? Colors.white : AppColors.textSecondary)),
       ),
     );
   }

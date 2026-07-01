@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -59,8 +60,6 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     const BrandLogo.wordmark(size: 34),
                     const Spacer(),
-                    const Icon(Icons.notifications_none,
-                        color: AppColors.textSecondary),
                   ],
                 ),
               ),
@@ -158,15 +157,19 @@ class HomeScreen extends StatelessWidget {
                             margin: const EdgeInsets.only(right: 12),
                             child: Column(
                               children: [
-                                Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: AppColors.goldGradient,
+                                ClipOval(
+                                  child: SizedBox(
+                                    width: 72,
+                                    height: 72,
+                                    child: c.imageUrl.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: c.imageUrl,
+                                            fit: BoxFit.cover,
+                                            errorWidget: (_, __, ___) =>
+                                                _categoryFallback(),
+                                          )
+                                        : _categoryFallback(),
                                   ),
-                                  child: const Icon(Icons.category,
-                                      color: Colors.white),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(c.nameFor(lang),
@@ -191,9 +194,9 @@ class HomeScreen extends StatelessWidget {
                 builder: (context, snap) {
                   final orders = (snap.data ?? []).take(3).toList();
                   if (orders.isEmpty) {
-                    return const SliverToBoxAdapter(
+                    return SliverToBoxAdapter(
                       child: EmptyState(
-                          icon: Icons.receipt_long, title: 'No orders yet'),
+                          icon: Icons.receipt_long, title: t.noOrders),
                     );
                   }
                   return SliverList(
@@ -255,6 +258,14 @@ class HomeScreen extends StatelessWidget {
       ),
     ).animate().fadeIn().slideY(begin: -0.2);
   }
+
+  Widget _categoryFallback() => Container(
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: AppColors.goldGradient,
+        ),
+        child: const Icon(Icons.category, color: Colors.white),
+      );
 
   Widget _sectionTitle(String title) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),

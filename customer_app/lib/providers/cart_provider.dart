@@ -167,10 +167,12 @@ class CartProvider extends ChangeNotifier {
     required List<ProductModel> products,
   }) async {
     if (_qty.isEmpty) return null;
-    // An in-coverage customer must pick a delivery shift. An out-of-coverage
-    // customer (empty group) orders without one and we schedule it later.
+    // If no delivery shift was chosen (the cart is reachable directly from the
+    // product list, which never sets one), place the order as "awaiting
+    // schedule" — exactly the "we'll agree on a delivery date" flow the cart
+    // already advertises. Previously this returned null silently, so checkout
+    // appeared to do nothing for in-coverage users who skipped the shift picker.
     final awaiting = _shift == null;
-    if (awaiting && user.group.isNotEmpty) return null;
     final coupon = _coupon;
     _placing = true;
     notifyListeners();
@@ -258,7 +260,8 @@ class CartProvider extends ChangeNotifier {
       _placing = false;
       notifyListeners();
       return id;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('placeOrder failed: $e\n$st');
       _placing = false;
       notifyListeners();
       return null;

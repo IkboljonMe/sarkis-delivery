@@ -75,6 +75,7 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final cart = context.watch<CartProvider>();
     final qty = cart.qtyOf(product.id);
 
@@ -134,7 +135,8 @@ class _ProductCard extends StatelessWidget {
                     ] else
                       Text('€${product.price.toStringAsFixed(2)}',
                           style: AppTextStyles.price),
-                    Text(' / ${product.unit}', style: AppTextStyles.caption),
+                    Text(' / ${t.unitLabel(product.unit)}',
+                        style: AppTextStyles.caption),
                     const Spacer(),
                     _qtyPicker(context, cart, qty),
                   ],
@@ -164,23 +166,29 @@ class _ProductCard extends StatelessWidget {
   }
 
   Widget _btn(IconData icon, VoidCallback? onTap, {required bool gold}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: onTap == null
-              ? AppColors.surfaceElevated
-              : (gold ? AppColors.primary : AppColors.surfaceElevated),
-          border: Border.all(color: AppColors.border),
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: onTap == null
+                  ? AppColors.surfaceElevated
+                  : (gold ? AppColors.primary : AppColors.surfaceElevated),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(icon,
+                size: 18,
+                color: onTap == null
+                    ? AppColors.textMuted
+                    : (gold ? Colors.white : AppColors.textSecondary)),
+          ),
         ),
-        child: Icon(icon,
-            size: 18,
-            color: onTap == null
-                ? AppColors.textMuted
-                : (gold ? Colors.white : AppColors.textSecondary)),
       ),
     );
   }

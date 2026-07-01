@@ -365,8 +365,12 @@ class _CartScreenState extends State<CartScreen> {
 
     final auth = context.read<AuthProvider>();
     final cart = context.read<CartProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final user = auth.user;
-    if (user == null) return;
+    if (user == null) {
+      messenger.showSnackBar(SnackBar(content: Text(t.t('pleaseSignIn'))));
+      return;
+    }
 
     final id = await cart.placeOrder(user: user, products: products);
     if (!context.mounted) return;
@@ -375,6 +379,12 @@ class _CartScreenState extends State<CartScreen> {
         context,
         MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: id)),
       );
+    } else {
+      // Never leave the tap with no feedback — surface the failure.
+      messenger.showSnackBar(SnackBar(
+        content: Text(t.t('orderFailed')),
+        backgroundColor: AppColors.error,
+      ));
     }
   }
 }

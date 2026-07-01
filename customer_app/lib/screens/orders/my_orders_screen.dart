@@ -45,6 +45,32 @@ class MyOrdersScreen extends StatelessWidget {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const LoadingShimmer();
                   }
+                  if (snap.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline,
+                              color: AppColors.error, size: 40),
+                          const SizedBox(height: 12),
+                          Text(t.t('somethingWrong'),
+                              style: AppTextStyles.body,
+                              textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                (context as Element).markNeedsBuild(),
+                            icon: const Icon(Icons.refresh),
+                            label: Text(t.t('retry')),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(color: AppColors.primary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   final orders = snap.data ?? [];
                   return TabBarView(
                     children: [

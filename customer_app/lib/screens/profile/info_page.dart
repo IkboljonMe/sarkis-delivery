@@ -15,8 +15,6 @@ class InfoPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(title, style: AppTextStyles.headingL),
-          const SizedBox(height: 16),
           Text(body,
               style: AppTextStyles.body.copyWith(height: 1.6)),
         ],

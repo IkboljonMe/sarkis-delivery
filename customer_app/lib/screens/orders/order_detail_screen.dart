@@ -80,7 +80,7 @@ class OrderDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               if (order.status == 'on_the_way') _etaBanner(t),
-              _timeline(order.status)
+              _timeline(context, order.status)
                   .animate()
                   .fadeIn(duration: 350.ms)
                   .slideY(begin: 0.1),
@@ -261,16 +261,18 @@ class OrderDetailScreen extends StatelessWidget {
         .slideY(begin: -0.2, curve: Curves.easeOut);
   }
 
-  Widget _timeline(String status) {
+  Widget _timeline(BuildContext context, String status) {
+    final t = AppLocalizations.of(context);
     final currentIndex = _steps.indexOf(status);
     if (status == 'cancelled') {
       return DarkCard(
         borderColor: AppColors.error,
         child: Row(
-          children: const [
-            Icon(Icons.cancel, color: AppColors.error),
-            SizedBox(width: 8),
-            Text('Cancelled', style: TextStyle(color: AppColors.error)),
+          children: [
+            const Icon(Icons.cancel, color: AppColors.error),
+            const SizedBox(width: 8),
+            Text(t.statusLabel('cancelled'),
+                style: const TextStyle(color: AppColors.error)),
           ],
         ),
       );

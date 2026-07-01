@@ -30,14 +30,15 @@ class SettingsScreen extends StatelessWidget {
     final auth = context.read<AuthProvider>();
     final uid = auth.user?.id;
     if (uid == null) return;
-    Fluttertoast.showToast(msg: 'Загрузка фото…');
+    final t = AppLocalizations.of(context);
+    Fluttertoast.showToast(msg: t.t('uploadingPhoto'));
     try {
       final bytes = await x.readAsBytes();
       final url = await UserService.instance.uploadAvatar(uid, bytes);
       await auth.updateFields({'photoUrl': url});
-      Fluttertoast.showToast(msg: 'Фото обновлено');
+      Fluttertoast.showToast(msg: t.t('photoUpdated'));
     } catch (_) {
-      Fluttertoast.showToast(msg: 'Не удалось загрузить фото');
+      Fluttertoast.showToast(msg: t.t('photoUploadFailed'));
     }
   }
 
@@ -97,7 +98,8 @@ class SettingsScreen extends StatelessWidget {
         title: Text(t.t('settings')),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 16 + 68 + 16 + MediaQuery.of(context).padding.bottom),
         children: [
           // Header
           Row(
@@ -202,7 +204,6 @@ class SettingsScreen extends StatelessWidget {
             _row(context, Icons.logout, t.logout, () => _logout(context),
                 danger: true),
           ]),
-          const SizedBox(height: 100),
         ],
       ),
     );
@@ -225,7 +226,7 @@ class SettingsScreen extends StatelessWidget {
           children: [
             _aboutRow(t.appName, ''),
             _aboutRow(t.t('appVersionLabel'), AppConstants.appVersion),
-            _aboutRow('Date', today),
+            _aboutRow(t.t('date'), today),
           ],
         ),
         actions: [
