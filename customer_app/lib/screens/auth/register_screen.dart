@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -42,6 +43,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _nameError;
   String? _lastNameError;
   String? _phoneError;
+
+  // Required legal consent before registration can proceed. (Placeholder
+  // links for now — swap for the real hosted Terms/Privacy URLs later.)
+  bool _agreeTerms = false;
+  bool _agreePrivacy = false;
+  static const _termsUrl = 'https://example.com/terms';
+  static const _privacyUrl = 'https://example.com/privacy';
 
   // Live phone state for step 3.
   bool _phoneValid = false; // enough digits typed
@@ -324,7 +332,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _bottomButton(AppLocalizations t, bool busy) {
     if (_step == 0) {
-      return GoldenButton(label: t.continueLabel, onPressed: () => _next(t));
+      final canContinue = _agreeTerms && _agreePrivacy;
+      return GoldenButton(
+        label: t.continueLabel,
+        onPressed: canContinue ? () => _next(t) : null,
+      );
     }
     if (_step == 2) {
       // Number already registered → offer to log in instead.
@@ -415,8 +427,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
           prefixIcon: Icons.group_outlined,
           textCapitalization: TextCapitalization.words,
         ),
+        const SizedBox(height: 20),
+        _consentTile(
+          value: _agreeTerms,
+          onChanged: (v) => setState(() => _agreeTerms = v),
+          prefix: t.t('iAccept'),
+          linkText: t.t('termsOfService'),
+          onLinkTap: () => _openUrl(_termsUrl),
+        ),
+        const SizedBox(height: 4),
+        _consentTile(
+          value: _agreePrivacy,
+          onChanged: (v) => setState(() => _agreePrivacy = v),
+          prefix: t.t('iAccept'),
+          linkText: t.t('privacyPolicy'),
+          onLinkTap: () => _openUrl(_privacyUrl),
+        ),
       ],
     ).animate().fadeIn().slideX(begin: 0.1);
+  }
+
+  /// One required-consent row: a checkbox plus a "prefix + tappable link".
+  Widget _consentTile({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required String prefix,
+    required String linkText,
+    required VoidCallback onLinkTap,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 26,
+          height: 26,
+          child: Checkbox(
+            value: value,
+            onChanged: (v) => onChanged(v ?? false),
+            activeColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.border),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('$prefix ', style: AppTextStyles.caption),
+              GestureDetector(
+                onTap: onLinkTap,
+                child: Text(
+                  linkText,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Fluttertoast.showToast(msg: url);
+    }
   }
 
   Widget _addressStep(AppLocalizations t) {

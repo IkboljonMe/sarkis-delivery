@@ -70,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
     if (ok == true && context.mounted) {
       await context.read<AuthProvider>().signOut();
       if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/phone', (r) => false);
+        Navigator.pushNamedAndRemoveUntil(context, '/welcome', (r) => false);
       }
     }
   }
