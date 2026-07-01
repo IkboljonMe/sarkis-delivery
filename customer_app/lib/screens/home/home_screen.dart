@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/category_model.dart';
 import '../../models/order_model.dart';
 import '../../models/shift_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/order_service.dart';
@@ -74,6 +75,12 @@ class HomeScreen extends StatelessWidget {
                       .copyWith(color: AppColors.textSecondary),
                 ),
               ),
+            ),
+            // Verification notice — shown until an admin verifies the account.
+            SliverToBoxAdapter(
+              child: (user != null && !user.isVerified)
+                  ? _verifyBanner(t, user)
+                  : const SizedBox.shrink(),
             ),
             // Unfinished basket — lets the customer resume an order they
             // started but never placed (quantities survive app restarts).
@@ -213,6 +220,57 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Shown on Home until an admin verifies the account. Explains the process
+  /// and echoes the delivery address we'll confirm.
+  Widget _verifyBanner(AppLocalizations t, UserModel user) {
+    final address = [user.address, user.city]
+        .where((s) => s.trim().isNotEmpty)
+        .join(', ');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.error.withOpacity(0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.cancel, color: AppColors.error, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(t.t('verifyTitle'),
+                      style: AppTextStyles.headingM.copyWith(fontSize: 16)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(t.t('verifyBody'), style: AppTextStyles.caption),
+            if (address.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(t.t('verifyAddressLabel'), style: AppTextStyles.label),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined,
+                      size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                      child:
+                          Text(address, style: AppTextStyles.body)),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ).animate().fadeIn(duration: 400.ms),
     );
   }
 

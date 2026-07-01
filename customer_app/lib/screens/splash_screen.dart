@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 .scale(duration: 600.ms, curve: Curves.easeOutBack)
                 .fadeIn(),
             const SizedBox(height: 24),
-            Text('Sarkis Bread', style: AppTextStyles.headingXL.copyWith(fontSize: 36))
+            Text('Sarkis Delivery', style: AppTextStyles.headingXL.copyWith(fontSize: 36))
                 .animate()
                 .fadeIn(delay: 300.ms, duration: 500.ms),
             const SizedBox(height: 8),

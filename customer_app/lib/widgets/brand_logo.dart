@@ -56,7 +56,7 @@ class BrandLogo extends StatelessWidget {
               ),
             ),
             Text(
-              'BREAD',
+              'DELIVERY',
               style: TextStyle(
                 fontSize: size * 0.26,
                 height: 1.2,

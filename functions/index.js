@@ -236,3 +236,24 @@ exports.onOrderCreated = onDocumentCreated(
       }
     },
 );
+
+// ---- New user registered -> notify admins ---------------------------------
+exports.onUserCreated = onDocumentCreated(
+    "users/{uid}",
+    async (event) => {
+      const u = event.data && event.data.data();
+      if (!u) return;
+      const uid = event.params.uid;
+      const name = (u.name || u.userName || u.firstName || "Новый пользователь")
+          .toString().trim() || "Новый пользователь";
+
+      // Tell every admin a new customer signed up.
+      await sendToTokens(
+          await adminTokens(),
+          "Новый пользователь",
+          `${name} зарегистрировался`,
+          {type: "user", uid},
+          `newuser_${uid}`,
+      );
+    },
+);

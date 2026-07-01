@@ -33,6 +33,11 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(t.t('welcomeSubtitle'),
                   textAlign: TextAlign.center, style: AppTextStyles.caption),
+              const SizedBox(height: 12),
+              Text(t.t('welcomeBridge'),
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.primary)),
               const Spacer(),
               GoldenButton(
                 label: t.t('register'),

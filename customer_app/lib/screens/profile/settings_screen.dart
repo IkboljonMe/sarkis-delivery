@@ -13,6 +13,7 @@ import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
+import '../../widgets/verification_badge.dart';
 import '../orders/my_orders_screen.dart';
 import 'account_settings_screen.dart';
 import 'info_page.dart';
@@ -155,7 +156,17 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user?.name ?? '', style: AppTextStyles.headingM),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(user?.name ?? '',
+                              style: AppTextStyles.headingM,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                        VerificationBadge(
+                            verified: user?.isVerified ?? false, size: 18),
+                      ],
+                    ),
                     Text(user?.phone ?? '', style: AppTextStyles.caption),
                     Text('${t.t('memberSince')} $memberSince',
                         style: AppTextStyles.label),
