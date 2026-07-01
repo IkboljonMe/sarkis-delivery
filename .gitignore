@@ -3,3 +3,7 @@ icon_out/
 
 # build artifacts
 SarkisBread-*.apk
+
+# local screen-audit workspace (screenshots + reports)
+screen_audit/
+.claude/scheduled_tasks.lock
