@@ -29,6 +29,7 @@ class MyOrdersScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(t.myOrders),
           bottom: TabBar(
+            indicatorSize: TabBarIndicatorSize.tab,
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,

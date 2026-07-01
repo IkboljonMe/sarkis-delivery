@@ -89,6 +89,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                 style: AppTextStyles.headingM),
             const SizedBox(height: 12),
             TabBar(
+              indicatorSize: TabBarIndicatorSize.tab,
               isScrollable: true,
               indicatorColor: AppColors.primary,
               labelColor: AppColors.primary,

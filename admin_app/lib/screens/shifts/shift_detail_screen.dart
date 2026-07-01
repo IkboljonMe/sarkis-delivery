@@ -48,6 +48,7 @@ class ShiftDetailScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text('Смена ${DateFormat('d MMM').format(shift.date)}'),
           bottom: const TabBar(
+            indicatorSize: TabBarIndicatorSize.tab,
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,

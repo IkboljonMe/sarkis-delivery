@@ -43,6 +43,7 @@ class _ReportsScreenState extends State<ReportsScreen>
         Container(
           color: AppColors.surface,
           child: TabBar(
+            indicatorSize: TabBarIndicatorSize.tab,
             controller: _tabs,
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primary,

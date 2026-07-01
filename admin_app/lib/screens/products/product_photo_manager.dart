@@ -333,6 +333,7 @@ class _PhotoEditorSheetState extends State<_PhotoEditorSheet> {
               Text('Название фото (по языку)', style: AppTextStyles.body),
               const SizedBox(height: 8),
               TabBar(
+                indicatorSize: TabBarIndicatorSize.tab,
                 isScrollable: true,
                 indicatorColor: AppColors.primary,
                 labelColor: AppColors.primary,

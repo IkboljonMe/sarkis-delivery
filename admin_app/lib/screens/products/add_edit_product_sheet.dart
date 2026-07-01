@@ -132,6 +132,7 @@ class _ProductSheetState extends State<_ProductSheet> {
               ),
               const SizedBox(height: 12),
               TabBar(
+                indicatorSize: TabBarIndicatorSize.tab,
                 isScrollable: true,
                 indicatorColor: AppColors.primary,
                 labelColor: AppColors.primary,

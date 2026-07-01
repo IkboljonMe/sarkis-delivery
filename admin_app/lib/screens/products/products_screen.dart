@@ -22,6 +22,7 @@ class ProductsScreen extends StatelessWidget {
           const Material(
             color: Colors.transparent,
             child: TabBar(
+              indicatorSize: TabBarIndicatorSize.tab,
               indicatorColor: AppColors.primary,
               labelColor: AppColors.primary,
               unselectedLabelColor: AppColors.textSecondary,

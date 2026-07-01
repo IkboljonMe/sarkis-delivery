@@ -26,6 +26,7 @@ class ApprovalsScreen extends StatelessWidget {
       child: Column(
         children: [
           TabBar(
+            indicatorSize: TabBarIndicatorSize.tab,
             labelColor: AppColors.primary,
             indicatorColor: AppColors.primary,
             tabs: [
