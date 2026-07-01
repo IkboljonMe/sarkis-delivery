@@ -12,6 +12,7 @@ import '../../services/order_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/dark_card.dart';
+import '../../widgets/skeletons.dart';
 import '../../widgets/glass_card.dart';
 import '../products/categories_screen.dart';
 
@@ -70,7 +71,7 @@ class OrderDetailScreen extends StatelessWidget {
         stream: OrderService.instance.orderStream(orderId),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const OrderDetailSkeleton();
           }
           final order = snap.data;
           if (order == null) {

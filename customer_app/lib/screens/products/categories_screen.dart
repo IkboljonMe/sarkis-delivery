@@ -10,7 +10,7 @@ import '../../services/product_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/loading_shimmer.dart';
+import '../../widgets/skeletons.dart';
 import 'products_screen.dart';
 
 class CategoriesScreen extends StatelessWidget {
@@ -27,7 +27,7 @@ class CategoriesScreen extends StatelessWidget {
         stream: ProductService.instance.activeCategoriesStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const LoadingShimmer(count: 6);
+            return const CategoryGridSkeleton();
           }
           final cats = snap.data ?? [];
           if (cats.isEmpty) {

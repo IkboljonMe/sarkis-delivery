@@ -10,7 +10,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/app_lottie.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/loading_shimmer.dart';
+import '../../widgets/skeletons.dart';
 import 'order_detail_screen.dart';
 import 'order_status_badge.dart';
 
@@ -45,7 +45,7 @@ class MyOrdersScreen extends StatelessWidget {
                 stream: orderProvider.userOrdersStream(user.id),
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
-                    return const LoadingShimmer();
+                    return const OrderListSkeleton();
                   }
                   if (snap.hasError) {
                     return Center(

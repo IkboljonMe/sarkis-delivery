@@ -13,7 +13,7 @@ import '../../utils/app_text_styles.dart';
 import '../../services/product_service.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/golden_button.dart';
-import '../../widgets/loading_shimmer.dart';
+import '../../widgets/skeletons.dart';
 import '../cart/cart_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -33,7 +33,7 @@ class ProductsScreen extends StatelessWidget {
             ProductService.instance.productsByCategoryStream(category.id),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const LoadingShimmer();
+            return const ProductListSkeleton();
           }
           final products = snap.data ?? [];
           if (products.isEmpty) {

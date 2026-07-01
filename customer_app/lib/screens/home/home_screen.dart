@@ -21,6 +21,7 @@ import '../../widgets/brand_logo.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/gold_badge.dart';
+import '../../widgets/skeletons.dart';
 import '../cart/cart_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../orders/order_status_badge.dart';
@@ -112,7 +113,7 @@ class HomeScreen extends StatelessWidget {
                               .toList();
                           if (snap.connectionState ==
                               ConnectionState.waiting) {
-                            return const AppLoader();
+                            return const DeliveryCardsSkeleton();
                           }
                           if (shifts.isEmpty) {
                             return Center(
@@ -140,6 +141,9 @@ class HomeScreen extends StatelessWidget {
                 child: StreamBuilder<List<CategoryModel>>(
                   stream: ProductService.instance.activeCategoriesStream(),
                   builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const CategoryCirclesSkeleton();
+                    }
                     final cats = snap.data ?? [];
                     if (cats.isEmpty) {
                       return Center(
@@ -199,6 +203,12 @@ class HomeScreen extends StatelessWidget {
               StreamBuilder<List<OrderModel>>(
                 stream: OrderService.instance.userOrdersStream(user.id),
                 builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const SliverToBoxAdapter(
+                      child: SizedBox(
+                          height: 240, child: OrderListSkeleton(count: 2)),
+                    );
+                  }
                   final orders = (snap.data ?? []).take(3).toList();
                   if (orders.isEmpty) {
                     return SliverToBoxAdapter(
