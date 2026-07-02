@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../utils/app_colors.dart';
 
-/// Sarkis Bread brand mark: a gold-gradient rounded badge with a custom
-/// painted wheat sheaf. Use [BrandLogo] for the badge alone, or
-/// [BrandLogo.wordmark] for the badge beside the "Sarkis Bread" wordmark.
+/// Sarkis Delivery brand mark: a gold-gradient rounded badge with a custom
+/// painted delivery location-pin. Use [BrandLogo] for the badge alone, or
+/// [BrandLogo.wordmark] for the badge beside the "Sarkis Delivery" wordmark.
 class BrandLogo extends StatelessWidget {
   final double size;
   final bool showWordmark;
@@ -29,8 +29,8 @@ class BrandLogo extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(size * 0.22),
-        child: CustomPaint(painter: _WheatPainter()),
+        padding: EdgeInsets.all(size * 0.24),
+        child: CustomPaint(painter: _PinPainter()),
       ),
     );
 
@@ -72,62 +72,36 @@ class BrandLogo extends StatelessWidget {
   }
 }
 
-/// Draws a symmetric wheat sheaf (central stalk + angled grain pairs) in white,
-/// scaled to fill the given canvas.
-class _WheatPainter extends CustomPainter {
+/// Draws a rounded location pin (teardrop head + point) in white with a
+/// gold "hole", scaled to fill the canvas.
+class _PinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
     final cx = w / 2;
-    final stroke = Paint()
+    final white = Paint()
       ..color = Colors.white
-      ..strokeWidth = w * 0.06
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final fill = Paint()
-      ..color = Colors.white
+      ..isAntiAlias = true
       ..style = PaintingStyle.fill;
 
-    // Central stalk.
-    canvas.drawLine(
-        Offset(cx, h * 0.18), Offset(cx, h * 0.96), stroke);
+    final headC = Offset(cx, h * 0.36);
+    final headR = w * 0.34;
+    final tip = Offset(cx, h * 0.98);
 
-    // Grain pairs down the stalk.
-    final grainLen = w * 0.30;
-    final grainW = w * 0.13;
-    for (var i = 0; i < 4; i++) {
-      final y = h * (0.22 + i * 0.18);
-      _grain(canvas, fill, Offset(cx, y), grainLen, grainW, left: true);
-      _grain(canvas, fill, Offset(cx, y), grainLen, grainW, left: false);
-    }
-    // Top grain crowning the stalk.
-    _topGrain(canvas, fill, Offset(cx, h * 0.16), grainW * 1.1, h * 0.20);
-  }
-
-  void _grain(Canvas canvas, Paint paint, Offset base, double len, double width,
-      {required bool left}) {
-    final dir = left ? -1.0 : 1.0;
-    final tip = Offset(base.dx + dir * len * 0.78, base.dy - len * 0.62);
-    final mid = Offset((base.dx + tip.dx) / 2, (base.dy + tip.dy) / 2);
-    final perp = Offset(dir * width * 0.5, width * 0.5);
-    final path = Path()
-      ..moveTo(base.dx, base.dy)
-      ..quadraticBezierTo(mid.dx + perp.dx, mid.dy + perp.dy, tip.dx, tip.dy)
-      ..quadraticBezierTo(mid.dx - perp.dx, mid.dy - perp.dy, base.dx, base.dy)
+    // Teardrop = head circle + triangle converging to the tip.
+    final dx = headR * 0.80;
+    final shoulderY = headC.dy + headR * 0.55;
+    final body = Path()
+      ..moveTo(cx - dx, shoulderY)
+      ..lineTo(cx + dx, shoulderY)
+      ..lineTo(tip.dx, tip.dy)
       ..close();
-    canvas.drawPath(path, paint);
-  }
+    canvas.drawPath(body, white);
+    canvas.drawCircle(headC, headR, white);
 
-  void _topGrain(
-      Canvas canvas, Paint paint, Offset top, double width, double len) {
-    final base = Offset(top.dx, top.dy + len);
-    final path = Path()
-      ..moveTo(base.dx, base.dy)
-      ..quadraticBezierTo(top.dx + width, (top.dy + base.dy) / 2, top.dx, top.dy)
-      ..quadraticBezierTo(top.dx - width, (top.dy + base.dy) / 2, base.dx, base.dy)
-      ..close();
-    canvas.drawPath(path, paint);
+    // Gold hole so it reads as a pin.
+    canvas.drawCircle(headC, headR * 0.40, Paint()..color = AppColors.primary);
   }
 
   @override

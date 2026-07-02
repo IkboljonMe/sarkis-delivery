@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Central color palette for the Sarkis Bread dark premium design system.
+/// Central color palette for the Sarkis Delivery dark premium design system.
 class AppColors {
   AppColors._();
 

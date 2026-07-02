@@ -90,7 +90,7 @@ class AdminApp extends StatelessWidget {
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, loc, _) => MaterialApp(
-          title: 'Sarkis Bread Admin',
+          title: 'Sarkis Delivery Admin',
           navigatorKey: adminNavKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.dark,

@@ -48,7 +48,7 @@ class LocalNotifications {
     if (kIsWeb) return;
     final n = m.notification;
     final data = m.data;
-    final title = n?.title ?? (data['title'] as String?) ?? 'Sarkis Bread';
+    final title = n?.title ?? (data['title'] as String?) ?? 'Sarkis Delivery';
     final body = n?.body ?? (data['body'] as String?) ?? '';
     if (title.isEmpty && body.isEmpty) return;
 

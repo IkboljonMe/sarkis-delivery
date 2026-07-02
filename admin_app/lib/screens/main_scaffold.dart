@@ -191,7 +191,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Sarkis Bread', style: AppTextStyles.headingM),
+                        Text('Sarkis Delivery', style: AppTextStyles.headingM),
                         Text('Admin', style: AppTextStyles.caption),
                       ],
                     ),

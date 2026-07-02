@@ -1,5 +1,5 @@
 /**
- * Sarkis Bread push notifications (FCM HTTP v1 via firebase-admin).
+ * Sarkis Delivery push notifications (FCM HTTP v1 via firebase-admin).
  *
  * Triggers:
  *  - New chat message  -> notify the other party (customer <-> admins)
@@ -152,9 +152,9 @@ exports.onChatMessageCreated = onDocumentCreated(
         const body = await translate(preview, lang);
         const ok = await sendToTokens(
             [user.get("fcmToken")],
-            "Sarkis Bread",
+            "Sarkis Delivery",
             body,
-            {type: "chat", topicId, senderName: "Sarkis Bread"},
+            {type: "chat", topicId, senderName: "Sarkis Delivery"},
             `chat_${topicId}`,
         );
         if (ok > 0) await event.data.ref.update({delivered: true}).catch(() => {});

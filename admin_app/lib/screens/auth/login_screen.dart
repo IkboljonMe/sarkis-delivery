@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const Center(child: BrandLogo(size: 84)),
           const SizedBox(height: 16),
-          Text('Sarkis Bread',
+          Text('Sarkis Delivery',
               textAlign: TextAlign.center, style: AppTextStyles.headingXL),
           Text('Панель управления',
               textAlign: TextAlign.center, style: AppTextStyles.caption),
