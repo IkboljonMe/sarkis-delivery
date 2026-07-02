@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/dark_card.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/skeletons.dart';
 import 'group_map_editor_screen.dart';
 
 /// Lists admin-created map region groups; tapping the FAB opens the free-draw
@@ -68,8 +69,7 @@ class GroupsScreen extends StatelessWidget {
         stream: RegionGroupService.instance.groupsStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary));
+            return const SimpleCardListSkeleton();
           }
           final groups = snap.data ?? const [];
           if (groups.isEmpty) {

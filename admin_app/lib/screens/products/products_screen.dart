@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/skeletons.dart';
 import 'add_edit_category_sheet.dart';
 import 'add_edit_product_sheet.dart';
 
@@ -60,7 +61,7 @@ class _CategoriesTab extends StatelessWidget {
         stream: ProductService.instance.allCategoriesStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const CategoryListSkeleton();
           }
           final cats = snap.data ?? [];
           if (cats.isEmpty) {
@@ -133,7 +134,7 @@ class _ProductsTab extends StatelessWidget {
         stream: ProductService.instance.allProductsStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ProductListSkeleton();
           }
           final products = snap.data ?? [];
           if (products.isEmpty) {

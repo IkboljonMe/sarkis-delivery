@@ -15,6 +15,7 @@ import '../../utils/constants.dart';
 import '../../widgets/app_input_field.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/golden_button.dart';
+import '../../widgets/skeletons.dart';
 import '../../widgets/verified_badge.dart';
 import 'chat_detail_screen.dart';
 
@@ -92,7 +93,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 stream: MessageService.instance.topicsStream(),
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const ChatListSkeleton();
                   }
                   var topics = snap.data ?? [];
                   if (_groupFilter.isNotEmpty) {

@@ -10,6 +10,7 @@ import '../../services/user_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
+import '../../widgets/skeletons.dart';
 import '../../widgets/verified_badge.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -89,6 +90,22 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           StreamBuilder<List<OrderModel>>(
             stream: OrderService.instance.userOrdersStream(widget.userId),
             builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Shimmered(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SBox(height: 88, radius: 16),
+                      SizedBox(height: 16),
+                      SBox(width: 160, height: 16),
+                      SizedBox(height: 12),
+                      SBox(height: 72, radius: 16),
+                      SizedBox(height: 12),
+                      SBox(height: 72, radius: 16),
+                    ],
+                  ),
+                );
+              }
               final orders = snap.data ?? [];
               final active = orders.where(_isActive).toList();
               final past = orders.where((o) => !_isActive(o)).toList();

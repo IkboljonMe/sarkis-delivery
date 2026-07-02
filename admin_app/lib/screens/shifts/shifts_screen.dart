@@ -13,6 +13,7 @@ import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/gold_badge.dart';
 import '../../widgets/golden_button.dart';
+import '../../widgets/skeletons.dart';
 import 'shift_detail_screen.dart';
 
 class ShiftsScreen extends StatelessWidget {
@@ -184,7 +185,7 @@ class ShiftsScreen extends StatelessWidget {
         stream: ShiftService.instance.shiftsStream(group),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const SimpleCardListSkeleton(cardHeight: 120);
           }
           final shifts = snap.data ?? [];
           if (shifts.isEmpty) {

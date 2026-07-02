@@ -14,6 +14,7 @@ import '../../utils/constants.dart';
 import '../../utils/reports_aggregator.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/skeletons.dart';
 import '../orders/order_detail_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -73,7 +74,7 @@ class _ReportsScreenState extends State<ReportsScreen>
       stream: OrderService.instance.ordersStream(group),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const ReportCardsSkeleton();
         }
         // Income = everything that wasn't cancelled.
         final all = (snap.data ?? [])
@@ -364,7 +365,7 @@ class _ReportsScreenState extends State<ReportsScreen>
       stream: UserService.instance.usersStream(),
       builder: (context, uSnap) {
         if (uSnap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SimpleCardListSkeleton();
         }
         var users = (uSnap.data ?? []).where((u) => !u.isAdmin).toList();
         if (!AppConstants.isAllGroups(group)) {

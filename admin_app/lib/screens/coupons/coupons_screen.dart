@@ -9,6 +9,7 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/gold_badge.dart';
 import '../../widgets/golden_button.dart';
+import '../../widgets/skeletons.dart';
 
 class CouponsScreen extends StatelessWidget {
   const CouponsScreen({super.key});
@@ -24,7 +25,7 @@ class CouponsScreen extends StatelessWidget {
         stream: CouponService.instance.couponsStream(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const SimpleCardListSkeleton();
           }
           final coupons = snap.data ?? [];
           if (coupons.isEmpty) {

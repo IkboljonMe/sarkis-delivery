@@ -14,6 +14,7 @@ import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/gold_badge.dart';
+import '../../widgets/skeletons.dart';
 import '../../widgets/verified_badge.dart';
 import 'order_detail_screen.dart';
 
@@ -112,7 +113,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             stream: OrderService.instance.ordersStream(group),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const OrderListSkeleton();
               }
               var orders = snap.data ?? [];
               if (_status.isNotEmpty) {

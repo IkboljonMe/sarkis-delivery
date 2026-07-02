@@ -8,6 +8,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/skeletons.dart';
 import '../orders/order_detail_screen.dart';
 import 'summary_card_widget.dart';
 
@@ -26,6 +27,9 @@ class DashboardScreen extends StatelessWidget {
     return StreamBuilder<List<OrderModel>>(
       stream: OrderService.instance.ordersStream(group),
       builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const DashboardSkeleton();
+        }
         final orders = snap.data ?? [];
         final pending =
             orders.where((o) => o.status == AppConstants.statusPending).length;

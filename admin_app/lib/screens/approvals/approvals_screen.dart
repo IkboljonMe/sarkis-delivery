@@ -11,6 +11,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../utils/constants.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/skeletons.dart';
 import '../orders/order_detail_screen.dart';
 
 /// Admin review queue: new orders awaiting acceptance + customer profile-change
@@ -48,6 +49,9 @@ class ApprovalsScreen extends StatelessWidget {
     return StreamBuilder<List<OrderModel>>(
       stream: OrderService.instance.allOrdersStream(),
       builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const OrderListSkeleton();
+        }
         final orders =
             (snap.data ?? []).where((o) => o.pendingApproval).toList();
         if (orders.isEmpty) {
@@ -143,6 +147,9 @@ class ApprovalsScreen extends StatelessWidget {
     return StreamBuilder<List<ApprovalModel>>(
       stream: ApprovalService.instance.pendingStream(),
       builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const SimpleCardListSkeleton();
+        }
         final items = (snap.data ?? [])
             .where((a) => a.type == 'profile')
             .toList();

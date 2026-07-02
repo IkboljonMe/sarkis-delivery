@@ -66,6 +66,10 @@ class AppTheme {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surfaceElevated,
         modalBackgroundColor: AppColors.surfaceElevated,
+        showDragHandle: true,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surfaceElevated,
