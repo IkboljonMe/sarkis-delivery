@@ -249,6 +249,28 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Permanently deletes the account: removes the Firestore profile, then the
+  /// Firebase Auth user (best-effort — may need recent login), then signs out.
+  /// The profile doc is always removed so the account can't be used again.
+  Future<void> deleteAccount() async {
+    final id = _auth.uid;
+    try {
+      if (id != null) await _users.deleteUser(id);
+    } catch (e) {
+      debugPrint('deleteAccount (profile): $e');
+    }
+    try {
+      await _auth.deleteCurrentUser();
+    } catch (e) {
+      debugPrint('deleteAccount (auth): $e');
+    }
+    await _auth.signOut();
+    _user = null;
+    _verificationId = null;
+    _status = AuthStatus.unknown;
+    notifyListeners();
+  }
+
   void resetError() {
     _error = null;
     notifyListeners();

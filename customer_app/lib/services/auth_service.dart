@@ -74,6 +74,9 @@ class AuthService {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Deletes the Firebase Auth user. May throw `requires-recent-login`.
+  Future<void> deleteCurrentUser() => _auth.currentUser?.delete() ?? Future.value();
+
   String _emailError(String code) {
     switch (code) {
       case 'invalid-email':

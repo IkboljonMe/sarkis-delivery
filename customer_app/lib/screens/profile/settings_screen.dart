@@ -16,7 +16,6 @@ import '../../utils/constants.dart';
 import '../../widgets/verification_badge.dart';
 import '../orders/my_orders_screen.dart';
 import 'account_settings_screen.dart';
-import 'info_page.dart';
 import 'language_settings_screen.dart';
 import 'translate_language_screen.dart';
 
@@ -70,6 +69,40 @@ class SettingsScreen extends StatelessWidget {
     );
     if (ok == true && context.mounted) {
       await context.read<AuthProvider>().signOut();
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/welcome', (r) => false);
+      }
+    }
+  }
+
+  /// Opens a hosted legal/link URL in the browser (same links as registration).
+  Future<void> _openLink(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Fluttertoast.showToast(msg: url);
+    }
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    final t = AppLocalizations.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.t('deleteAccount')),
+        content: Text(t.t('deleteAccountConfirm')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(t.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(t.t('deleteAccount'),
+                  style: const TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      await context.read<AuthProvider>().deleteAccount();
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/welcome', (r) => false);
       }
@@ -196,16 +229,9 @@ class SettingsScreen extends StatelessWidget {
           _group([
             _row(context, Icons.chat_outlined, t.t('contactUs'), _whatsApp),
             _row(context, Icons.description_outlined, t.t('termsOfService'),
-                () => _push(
-                    context,
-                    InfoPage(
-                        title: t.t('termsOfService'), body: t.t('termsBody')))),
+                () => _openLink(AppConstants.termsUrl)),
             _row(context, Icons.privacy_tip_outlined, t.t('privacyPolicy'),
-                () => _push(
-                    context,
-                    InfoPage(
-                        title: t.t('privacyPolicy'),
-                        body: t.t('privacyBody')))),
+                () => _openLink(AppConstants.privacyUrl)),
             _row(context, Icons.info_outline, t.t('aboutApp'),
                 () => _showAbout(context)),
           ]),
@@ -213,6 +239,9 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _group([
             _row(context, Icons.logout, t.logout, () => _logout(context),
+                danger: true),
+            _row(context, Icons.delete_forever, t.t('deleteAccount'),
+                () => _deleteAccount(context),
                 danger: true),
           ]),
         ],

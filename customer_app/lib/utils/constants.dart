@@ -19,6 +19,13 @@ class AppConstants {
   static String get adminWhatsappNumber => adminPhoneDigits;
   static const String adminUid = 'HjygD2zQpKZ0zakT0JZWFvc3GcA3';
 
+  /// Public website (Next.js). REPLACE with the deployed domain after hosting
+  /// the `landing/` project. Used for the shareable download link and the
+  /// Privacy / Terms links shown in registration and settings.
+  static const String webBaseUrl = 'https://sarkis-delivery.vercel.app';
+  static const String termsUrl = '$webBaseUrl/terms';
+  static const String privacyUrl = '$webBaseUrl/privacy';
+
   /// Google Geocoding + Static Maps API key, loaded from the bundled .env.
   static String get googleApiKey =>
       dotenv.maybeGet('GOOGLE_GEOCODING_API_KEY') ?? '';

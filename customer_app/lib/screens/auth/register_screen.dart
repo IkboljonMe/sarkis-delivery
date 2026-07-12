@@ -44,12 +44,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _lastNameError;
   String? _phoneError;
 
-  // Required legal consent before registration can proceed. (Placeholder
-  // links for now — swap for the real hosted Terms/Privacy URLs later.)
+  // Required legal consent before registration can proceed.
   bool _agreeTerms = false;
   bool _agreePrivacy = false;
-  static const _termsUrl = 'https://example.com/terms';
-  static const _privacyUrl = 'https://example.com/privacy';
+  static const _termsUrl = AppConstants.termsUrl;
+  static const _privacyUrl = AppConstants.privacyUrl;
 
   // Live phone state for step 3.
   bool _phoneValid = false; // enough digits typed

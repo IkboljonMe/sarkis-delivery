@@ -44,6 +44,15 @@ class UserService {
     } catch (_) {}
   }
 
+  /// Permanently removes the user's profile document.
+  Future<void> deleteUser(String uid) async {
+    try {
+      await _col.doc(uid).delete();
+    } catch (e) {
+      throw Exception('Failed to delete user: $e');
+    }
+  }
+
   /// Uploads a profile photo to Storage and returns its download URL.
   Future<String> uploadAvatar(String uid, Uint8List bytes) async {
     final ref = FirebaseStorage.instance.ref().child('avatars/$uid/avatar.jpg');
