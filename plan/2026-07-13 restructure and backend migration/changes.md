@@ -12,3 +12,14 @@
 **Why:** Requested repo reorganization ahead of the Firebase → self-hosted backend migration, plus a documented planning workflow in Obsidian.
 
 **Verification:** `git status` shows clean renames (`R` entries) for both Flutter apps; `frontend/landing/` contains the Next.js project. Flutter apps are self-contained so the move does not break builds. Known follow-up: paths mentioned in `docs/*.md` (e.g. `customer_app/...`) are now stale and should be updated to `app/customer_app/...`.
+
+## 2026-07-13 — Migration plan written after stack decisions
+
+**What changed:**
+- User chose the stack: NestJS (Node.js/TypeScript), PostgreSQL, GatewayAPI for SMS OTP.
+- Wrote `plan.md` — architecture, data model, auth/OTP design, 7 migration phases, VPS notes.
+- Wrote `api-routes.md` — full v1 REST route design for customer, driver, and admin clients.
+
+**Why:** Deliverable of this request: an agreed, written plan in the vault before implementation starts.
+
+**Verification:** Documentation only — nothing to run.
