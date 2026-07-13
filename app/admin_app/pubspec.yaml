@@ -1,5 +1,5 @@
 name: admin_app
-description: Sarkis Delivery - admin / driver app (v2 dark premium).
+description: Sarko Driver - admin / driver app (v2 dark premium).
 publish_to: "none"
 version: 2.0.0+1
 
@@ -62,8 +62,8 @@ flutter_launcher_icons:
   ios: false
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#C8972A"
-  adaptive_icon_foreground: "assets/icon/wheat_fg.png"
+  adaptive_icon_background: "#2E2F36"
+  adaptive_icon_foreground: "assets/icon/adaptive_fg.png"
 
 flutter:
   uses-material-design: true

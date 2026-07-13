@@ -9,7 +9,7 @@ class WelcomeMessage {
 
   static const Map<String, String> _messages = {
     'en':
-        'Hi! 👋 I\'m Sarkis, the admin of Sarkis Delivery.\n\n'
+        'Hi! 👋 I\'m Sarkis, the admin of Sarko Delivery.\n\n'
             'I\'ll keep you posted right here about your order status — when it\'s '
             'confirmed, on the way, and delivered. If a delivery is ever delayed, '
             'I\'ll let you know here first.\n\n'
@@ -18,14 +18,14 @@ class WelcomeMessage {
             'send 🎤 voice messages and 📷 photos of the product. I\'m happy to help. '
             'Enjoy your fresh bread! 🥖',
     'ru':
-        'Здравствуйте! 👋 Я Саркис, администратор Sarkis Delivery.\n\n'
+        'Здравствуйте! 👋 Я Саркис, администратор Sarko Delivery.\n\n'
             'Здесь я буду сообщать вам о статусе заказа — когда он подтверждён, в пути '
             'и доставлен. Если доставка задержится, я первым делом напишу вам сюда.\n\n'
             'Это также чат поддержки. Если с заказом что-то не так или хлеб пришёл не в '
             'лучшем виде — просто напишите мне. Можно отправлять 🎤 голосовые сообщения '
             'и 📷 фото продукта. Буду рад помочь. Приятного аппетита! 🥖',
     'de':
-        'Hallo! 👋 Ich bin Sarkis, der Admin von Sarkis Delivery.\n\n'
+        'Hallo! 👋 Ich bin Sarkis, der Admin von Sarko Delivery.\n\n'
             'Hier halte ich dich über deinen Bestellstatus auf dem Laufenden — '
             'bestätigt, unterwegs und geliefert. Sollte eine Lieferung sich '
             'verspäten, erfährst du es zuerst hier.\n\n'
@@ -34,7 +34,7 @@ class WelcomeMessage {
             'auch 🎤 Sprachnachrichten und 📷 Fotos des Produkts senden. Ich helfe '
             'gerne. Guten Appetit! 🥖',
     'tr':
-        'Merhaba! 👋 Ben Sarkis, Sarkis Delivery yöneticisiyim.\n\n'
+        'Merhaba! 👋 Ben Sarkis, Sarko Delivery yöneticisiyim.\n\n'
             'Sipariş durumunu burada bildireceğim — onaylandığında, yolda ve teslim '
             'edildiğinde. Teslimat gecikirse ilk olarak buradan haber veririm.\n\n'
             'Burası aynı zamanda destek sohbetin. Siparişinle ilgili bir sorun olursa '
@@ -42,7 +42,7 @@ class WelcomeMessage {
             'fotoğrafı da gönderebilirsin. Yardımcı olmaktan memnuniyet duyarım. Afiyet '
             'olsun! 🥖',
     'hy':
-        'Բարև! 👋 Ես Սարկիսն եմ՝ Sarkis Delivery-ի ադմինը։\n\n'
+        'Բարև! 👋 Ես Սարկիսն եմ՝ Sarko Delivery-ի ադմինը։\n\n'
             'Այստեղ կտեղեկացնեմ ձեր պատվերի կարգավիճակի մասին՝ երբ այն հաստատվի, '
             'ճանապարհին լինի և առաքվի։ Եթե առաքումը ուշանա, առաջինը կգրեմ ձեզ այստեղ։\n\n'
             'Սա նաև ձեր աջակցության զրույցն է։ Եթե պատվերի հետ խնդիր լինի կամ հացը լավ '

@@ -1,7 +1,7 @@
 {
   "name": "sarkis-backend",
   "version": "1.0.0",
-  "description": "Sarkis Delivery REST API",
+  "description": "Sarko Delivery REST API",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

@@ -2,7 +2,7 @@
   "name": "sarkis-delivery-web",
   "version": "1.0.0",
   "private": true,
-  "description": "Sarkis Delivery — smart app-store redirect + Privacy Policy & Terms pages.",
+  "description": "Sarko Delivery — smart app-store redirect + Privacy Policy & Terms pages.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

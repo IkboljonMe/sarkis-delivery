@@ -211,7 +211,7 @@ class _RouteScreenState extends State<RouteScreen> {
     if (eta != null) {
       final t = DateFormat('HH:mm').format(eta.arrival);
       final first = o.userName.split(' ').first;
-      draft = 'Hallo $first! Ihre Sarkis-Bread-Bestellung kommt '
+      draft = 'Hallo $first! Ihre Sarko-Bestellung kommt '
           'voraussichtlich gegen $t Uhr (±15 Min.). Bis gleich!';
     }
     Navigator.push(

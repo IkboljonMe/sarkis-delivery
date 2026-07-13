@@ -24,7 +24,7 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('Sarkis Delivery API')
+      .setTitle('Sarko Delivery API')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

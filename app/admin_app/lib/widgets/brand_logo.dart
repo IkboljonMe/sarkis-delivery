@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../utils/app_colors.dart';
 
-/// Sarkis Delivery brand mark: a gold-gradient rounded badge with a custom
-/// painted delivery location-pin. Use [BrandLogo] for the badge alone, or
-/// [BrandLogo.wordmark] for the badge beside the "Sarkis Delivery" wordmark.
+/// Sarko Driver brand mark: the rounded "S-route" logo image. Use [BrandLogo]
+/// for the mark alone, or [BrandLogo.wordmark] for the mark beside the
+/// "Sarko / DRIVER" lockup.
 class BrandLogo extends StatelessWidget {
   final double size;
   final bool showWordmark;
@@ -14,39 +14,27 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badge = Container(
+    final mark = Image.asset(
+      'assets/icon/logo_s.png',
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        gradient: AppColors.goldGradient,
-        borderRadius: BorderRadius.circular(size * 0.28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
-            blurRadius: size * 0.25,
-            offset: Offset(0, size * 0.08),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(size * 0.24),
-        child: CustomPaint(painter: _PinPainter()),
-      ),
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
     );
 
-    if (!showWordmark) return badge;
+    if (!showWordmark) return mark;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        badge,
-        SizedBox(width: size * 0.32),
+        mark,
+        SizedBox(width: size * 0.24),
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Sarkis',
+              'Sarko',
               style: TextStyle(
                 fontSize: size * 0.46,
                 height: 1.0,
@@ -56,13 +44,13 @@ class BrandLogo extends StatelessWidget {
               ),
             ),
             Text(
-              'DELIVERY',
+              'DRIVER',
               style: TextStyle(
-                fontSize: size * 0.26,
-                height: 1.2,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-                letterSpacing: size * 0.10,
+                fontSize: size * 0.24,
+                height: 1.3,
+                fontWeight: FontWeight.w700,
+                color: AppColors.brandOrange,
+                letterSpacing: size * 0.085,
               ),
             ),
           ],
@@ -70,40 +58,4 @@ class BrandLogo extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Draws a rounded location pin (teardrop head + point) in white with a
-/// gold "hole", scaled to fill the canvas.
-class _PinPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final cx = w / 2;
-    final white = Paint()
-      ..color = Colors.white
-      ..isAntiAlias = true
-      ..style = PaintingStyle.fill;
-
-    final headC = Offset(cx, h * 0.36);
-    final headR = w * 0.34;
-    final tip = Offset(cx, h * 0.98);
-
-    // Teardrop = head circle + triangle converging to the tip.
-    final dx = headR * 0.80;
-    final shoulderY = headC.dy + headR * 0.55;
-    final body = Path()
-      ..moveTo(cx - dx, shoulderY)
-      ..lineTo(cx + dx, shoulderY)
-      ..lineTo(tip.dx, tip.dy)
-      ..close();
-    canvas.drawPath(body, white);
-    canvas.drawCircle(headC, headR, white);
-
-    // Gold hole so it reads as a pin.
-    canvas.drawCircle(headC, headR * 0.40, Paint()..color = AppColors.primary);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

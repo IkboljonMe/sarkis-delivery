@@ -94,7 +94,7 @@ class AdminApp extends StatelessWidget {
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, loc, _) => MaterialApp(
-          title: 'Sarkis Delivery Admin',
+          title: 'Sarko Driver',
           navigatorKey: adminNavKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.dark,

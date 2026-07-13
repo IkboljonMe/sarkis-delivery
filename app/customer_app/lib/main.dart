@@ -97,7 +97,7 @@ class SarkisApp extends StatelessWidget {
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, locale, _) => MaterialApp(
-          title: 'Sarkis Delivery',
+          title: 'Sarko Delivery',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.dark,
           locale: locale.locale,

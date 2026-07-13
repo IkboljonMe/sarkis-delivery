@@ -33,6 +33,7 @@ Prices are computed on the server from the product table (incl. product discount
 
 ### Chat
 REST (topics, messages, media upload, reactions, read markers, unread counts) with `?after=<cursor>` polling. WebSocket gateway is a later upgrade; the route shape won't change.
+- **TODO (Feature Upgrade):** Implement Offline-First local database (SQLite/sqflite) to cache messages instantly and eliminate "empty chat" states during network delays. Includes optimistic UI updates for sent messages and background background syncing.
 
 ### Ops
 - Docker: multi-stage `Dockerfile`, `docker-compose.yml` (Postgres 16 + API + uploads volume), `.env.example`, Swagger at `/docs` (non-prod), helmet, CORS, global validation whitelist, rate limiting.

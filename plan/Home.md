@@ -11,3 +11,4 @@ Each user request gets its own folder containing:
 
 - [[2026-07-13 restructure and backend migration/request|2026-07-13 — Repo restructure & Firebase → API backend migration]]
 - [[2026-07-13 backend build and app rewire/request|2026-07-13 — Backend build, device/IP tracking, superadmin, app rewire]]
+- [[2026-07-13 Sarko rebrand and entry animation/request|2026-07-13 — Sarko rebrand + entry animation]]

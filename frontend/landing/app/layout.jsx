@@ -4,7 +4,7 @@ import { APP_NAME } from "./config";
 export const metadata = {
   title: APP_NAME,
   description:
-    "Sarkis Delivery — a bridge between our customers, old and new. Get the app.",
+    "Sarko Delivery — a bridge between our customers, old and new. Get the app.",
 };
 
 export default function RootLayout({ children }) {

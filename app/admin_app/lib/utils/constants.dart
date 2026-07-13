@@ -10,7 +10,7 @@ class AppConstants {
   static String get translateApiKey =>
       dotenv.maybeGet('GOOGLE_TRANSLATE_API_KEY') ?? '';
 
-  /// Base URL of the Sarkis backend API (no trailing slash). Override via the
+  /// Base URL of the Sarko backend API (no trailing slash). Override via the
   /// bundled .env (API_BASE_URL). 10.0.2.2 reaches the host from the Android
   /// emulator.
   static String get apiBaseUrl =>

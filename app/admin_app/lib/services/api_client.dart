@@ -17,7 +17,7 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-/// HTTP client for the Sarkis Delivery backend.
+/// HTTP client for the Sarko Delivery backend.
 ///
 /// Owns the JWT session (access + refresh token in SharedPreferences),
 /// transparently refreshes on 401, and sends the device-identification

@@ -47,7 +47,7 @@ class _AdminSplashScreenState extends State<AdminSplashScreen> {
                 .animate()
                 .scale(duration: 500.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 20),
-            Text('Sarkis Delivery', style: AppTextStyles.headingXL)
+            Text('Sarko Driver', style: AppTextStyles.headingXL)
                 .animate()
                 .fadeIn(delay: 300.ms),
             Text('Admin Panel', style: AppTextStyles.caption)

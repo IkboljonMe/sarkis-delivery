@@ -239,7 +239,7 @@ class _CouponSheetState extends State<_CouponSheet> {
               controller: _code,
               textCapitalization: TextCapitalization.characters,
               style: AppTextStyles.body,
-              decoration: const InputDecoration(labelText: 'Код (напр. SARKIS10)'),
+              decoration: const InputDecoration(labelText: 'Код (напр. SARKO10)'),
             ),
             const SizedBox(height: 12),
             Row(

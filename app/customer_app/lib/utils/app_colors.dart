@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Central color palette for the Sarkis Delivery dark premium design system.
+/// Central color palette for the Sarko Delivery dark premium design system.
 class AppColors {
   AppColors._();
 
@@ -12,6 +12,12 @@ class AppColors {
   static const Color primaryLight = Color(0xFFE8B84B);
   static const Color primaryDark = Color(0xFFA07820);
   static const Color accent = Color(0xFFFF6B35); // orange CTA
+
+  // Sarko brand mark colors (sampled from the S-route logo).
+  static const Color brandOrange = Color(0xFFF16702);
+  static const Color brandOrangeLight = Color(0xFFFF8A34);
+  static const Color roadDark = Color(0xFF2E2F36); // charcoal road / logo dark half
+  static const Color roadDarker = Color(0xFF212228);
 
   static const Color textPrimary = Color(0xFFF5F5F5);
   static const Color textSecondary = Color(0xFF9E9E9E);

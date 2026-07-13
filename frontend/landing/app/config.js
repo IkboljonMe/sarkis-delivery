@@ -1,5 +1,5 @@
 // Central config — update these when the apps are published / domain is set.
-export const APP_NAME = "Sarkis Delivery";
+export const APP_NAME = "Sarko Delivery";
 export const SUPPORT_EMAIL = "support@sarkisdelivery.app";
 export const CONTACT_WHATSAPP = "https://wa.me/48600516406";
 

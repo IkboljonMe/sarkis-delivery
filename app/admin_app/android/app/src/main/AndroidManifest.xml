@@ -23,7 +23,7 @@
     </queries>
 
     <application
-        android:label="Sarkis Delivery Admin"
+        android:label="Sarko Driver"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

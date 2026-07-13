@@ -39,8 +39,8 @@ export class GatewayApiSmsProvider extends SmsProvider {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: this.config.get('GATEWAYAPI_SENDER') ?? 'Sarkis',
-        message: `${code} is your Sarkis Delivery verification code.`,
+        sender: this.config.get('GATEWAYAPI_SENDER') ?? 'Sarko',
+        message: `${code} is your Sarko Delivery verification code.`,
         recipients: [{ msisdn: Number(phone.replace(/\D/g, '')) }],
         class: 'secret', // GatewayAPI hides message content in logs (OTP class)
       }),

@@ -180,7 +180,7 @@ export class MessagesService {
 
     const preview = dto.text?.slice(0, 100) || '📎 Attachment';
     if (fromAdmin) {
-      void this.notifications.sendToUser(topicId, 'Sarkis Delivery', preview, { type: 'chat' });
+      void this.notifications.sendToUser(topicId, 'Sarko Delivery', preview, { type: 'chat' });
     } else {
       void this.notifications.sendToStaff(message.senderName || 'New message', preview, { type: 'chat', topicId });
     }
@@ -217,7 +217,7 @@ export class MessagesService {
         data: {
           topicId: topic.id,
           senderId: user.id,
-          senderName: dto.senderName ?? 'Sarkis Delivery',
+          senderName: dto.senderName ?? 'Sarko Delivery',
           isFromAdmin: true,
           type: 'text',
           text: dto.text,
