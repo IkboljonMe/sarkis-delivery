@@ -1,18 +1,23 @@
 import { Global, Injectable, Logger, Module, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 /**
  * Push notifications via FCM. Enabled when FIREBASE_SERVICE_ACCOUNT points to a
  * service-account JSON file; otherwise sends are logged and dropped (no-op),
  * so the API works without any Firebase project at all.
+ *
+ * Every call also persists a `Notification` row and emits it over the socket
+ * gateway (`notification:created`), so clients can build a syncable in-app
+ * inbox instead of relying purely on ephemeral FCM tray messages.
  */
 @Injectable()
 export class NotificationsService implements OnModuleInit {
   private readonly logger = new Logger(NotificationsService.name);
   private messaging: any = null;
 
-  constructor(private config: ConfigService, private prisma: PrismaService) {}
+  constructor(private config: ConfigService, private prisma: PrismaService, private realtime: RealtimeGateway) {}
 
   async onModuleInit() {
     const credPath = this.config.get<string>('FIREBASE_SERVICE_ACCOUNT');
@@ -31,6 +36,19 @@ export class NotificationsService implements OnModuleInit {
   }
 
   async sendToUser(userId: string, title: string, body: string, data: Record<string, string> = {}) {
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId,
+        type: data.type ?? 'system',
+        title,
+        body,
+        data,
+        orderId: data.orderId ?? '',
+        topicId: data.topicId ?? '',
+      },
+    });
+    this.realtime.emitToUser(userId, 'notification:created', notification);
+
     const devices = await this.prisma.device.findMany({
       where: { userId, fcmToken: { not: '' } },
     });

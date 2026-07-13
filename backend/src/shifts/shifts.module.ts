@@ -26,6 +26,7 @@ export const toShiftJson = (s: Shift) => ({
   cancelDaysBefore: s.cancelDaysBefore,
   editDaysBefore: s.editDaysBefore,
   createdAt: s.createdAt.toISOString(),
+  updatedAt: s.updatedAt.toISOString(),
 });
 
 class ShiftDto {
@@ -52,11 +53,12 @@ export class ShiftsController {
 
   /** Customers see shifts for their group; ?open=true filters to bookable ones. */
   @Get('shifts')
-  async list(@Query('group') group?: string, @Query('open') open?: string) {
+  async list(@Query('group') group?: string, @Query('open') open?: string, @Query('since') since?: string) {
     const rows = await this.prisma.shift.findMany({
       where: {
         ...(group ? { group } : {}),
         ...(open === 'true' ? { isOpen: true, date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } : {}),
+        ...(since ? { updatedAt: { gt: new Date(since) } } : {}),
       },
       orderBy: { date: 'asc' },
       take: 200,

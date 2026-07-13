@@ -21,8 +21,10 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/platform-socket.io": "^11.1.28",
     "@nestjs/swagger": "^11.0.0",
     "@nestjs/throttler": "^6.3.0",
+    "@nestjs/websockets": "^11.1.28",
     "@prisma/client": "^6.8.0",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
@@ -32,6 +34,7 @@
     "helmet": "^8.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
     "ua-parser-js": "^1.0.40",
     "uuid": "^11.1.0"
   },

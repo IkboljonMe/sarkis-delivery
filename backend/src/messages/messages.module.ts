@@ -18,6 +18,7 @@ import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validato
 import { CurrentUser, Roles } from '../common/decorators';
 import { NotificationsService } from '../notifications/notifications.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 const isStaff = (u: User) => u.role === Role.ADMIN || u.role === Role.SUPERADMIN;
 
@@ -101,7 +102,11 @@ class MarkReadDto {
 
 @Injectable()
 export class MessagesService {
-  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private realtime: RealtimeGateway,
+  ) {}
 
   private assertAccess(user: User, topicId: string) {
     if (!isStaff(user) && user.id !== topicId) throw new ForbiddenException();
@@ -155,7 +160,7 @@ export class MessagesService {
       if ((dto as any)[k] !== undefined) extra[k] = (dto as any)[k];
     }
 
-    const [message] = await this.prisma.$transaction([
+    const [message, updatedTopic] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
           topicId: topic.id,
@@ -178,13 +183,17 @@ export class MessagesService {
       }),
     ]);
 
+    const messageJson = toMessageJson(message);
+    this.realtime.emitToTopic(topic.id, 'message:created', messageJson);
+    this.realtime.emitToStaff('topic:updated', toTopicJson(updatedTopic));
+
     const preview = dto.text?.slice(0, 100) || '📎 Attachment';
     if (fromAdmin) {
       void this.notifications.sendToUser(topicId, 'Sarko Delivery', preview, { type: 'chat' });
     } else {
       void this.notifications.sendToStaff(message.senderName || 'New message', preview, { type: 'chat', topicId });
     }
-    return toMessageJson(message);
+    return messageJson;
   }
 
   async patch(user: User, topicId: string, msgId: string, dto: PatchMessageDto) {
@@ -204,7 +213,9 @@ export class MessagesService {
         ...(dto.text !== undefined ? { text: dto.text, editedAt: new Date() } : {}),
       },
     });
-    return toMessageJson(updated);
+    const json = toMessageJson(updated);
+    this.realtime.emitToTopic(topicId, 'message:updated', json);
+    return json;
   }
 
   /** One-time automated greeting, shown as coming from the shop. */
@@ -237,7 +248,9 @@ export class MessagesService {
       where: { id: msg.id },
       data: { deleted: true },
     });
-    return toMessageJson(updated);
+    const json = toMessageJson(updated);
+    this.realtime.emitToTopic(topicId, 'message:updated', json);
+    return json;
   }
 
   async toggleReaction(user: User, topicId: string, msgId: string, emoji: string) {
@@ -252,13 +265,15 @@ export class MessagesService {
       where: { id: msg.id },
       data: { extra: { ...extra, reactions } },
     });
-    return toMessageJson(updated);
+    const json = toMessageJson(updated);
+    this.realtime.emitToTopic(topicId, 'message:updated', json);
+    return json;
   }
 
   async markRead(user: User, topicId: string, asAdmin?: boolean) {
     this.assertAccess(user, topicId);
     const readingAsAdmin = isStaff(user) && asAdmin !== false;
-    await this.prisma.$transaction([
+    const [, topic] = await this.prisma.$transaction([
       this.prisma.message.updateMany({
         where: { topicId, isFromAdmin: !readingAsAdmin, isRead: false },
         data: { isRead: true },
@@ -269,6 +284,9 @@ export class MessagesService {
         update: readingAsAdmin ? { adminUnread: 0 } : { customerUnread: 0 },
       }),
     ]);
+    const topicJson = toTopicJson(topic);
+    if (readingAsAdmin) this.realtime.emitToStaff('topic:updated', topicJson);
+    else this.realtime.emitToUser(topicId, 'topic:updated', topicJson);
     return { ok: true };
   }
 

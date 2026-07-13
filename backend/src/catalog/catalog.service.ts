@@ -9,6 +9,7 @@ export const toCategoryJson = (c: Category) => ({
   imageUrl: c.imageUrl,
   sortOrder: c.sortOrder,
   isActive: c.isActive,
+  updatedAt: c.updatedAt.toISOString(),
 });
 
 export const toProductJson = (p: Product) => ({
@@ -26,25 +27,34 @@ export const toProductJson = (p: Product) => ({
   sortOrder: p.sortOrder,
   discountType: p.discountType,
   discountValue: p.discountValue,
+  updatedAt: p.updatedAt.toISOString(),
 });
 
 @Injectable()
 export class CatalogService {
   constructor(private prisma: PrismaService) {}
 
-  async categories(includeInactive: boolean) {
+  // When `since` is set we deliberately ignore the isActive filter — a row
+  // that just got deactivated is exactly the kind of change a delta sync
+  // needs to see, so the client can hide it locally instead of only ever
+  // learning about deactivations via a full refresh.
+  async categories(includeInactive: boolean, since?: string) {
     const rows = await this.prisma.category.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: {
+        ...(includeInactive || since ? {} : { isActive: true }),
+        ...(since ? { updatedAt: { gt: new Date(since) } } : {}),
+      },
       orderBy: { sortOrder: 'asc' },
     });
     return rows.map(toCategoryJson);
   }
 
-  async products(categoryId?: string, includeInactive?: boolean) {
+  async products(categoryId?: string, includeInactive?: boolean, since?: string) {
     const rows = await this.prisma.product.findMany({
       where: {
-        ...(includeInactive ? {} : { isActive: true }),
+        ...(includeInactive || since ? {} : { isActive: true }),
         ...(categoryId ? { categoryId } : {}),
+        ...(since ? { updatedAt: { gt: new Date(since) } } : {}),
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });

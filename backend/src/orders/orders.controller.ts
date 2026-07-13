@@ -16,8 +16,8 @@ export class OrdersController {
   }
 
   @Get('orders/mine')
-  mine(@CurrentUser() user: User) {
-    return this.orders.myOrders(user.id);
+  mine(@CurrentUser() user: User, @Query('since') since?: string) {
+    return this.orders.myOrders(user.id, since);
   }
 
   @Get('orders/:id')
@@ -40,8 +40,8 @@ export class OrdersController {
 
   @Roles(Role.DRIVER)
   @Get('driver/orders')
-  driverOrders(@CurrentUser() user: User, @Query('shiftId') shiftId?: string) {
-    return this.orders.driverOrders(user, shiftId);
+  driverOrders(@CurrentUser() user: User, @Query('shiftId') shiftId?: string, @Query('since') since?: string) {
+    return this.orders.driverOrders(user, shiftId, since);
   }
 
   @Roles(Role.DRIVER)
@@ -60,8 +60,9 @@ export class OrdersController {
     @Query('status') status?: string,
     @Query('driverId') driverId?: string,
     @Query('userId') userId?: string,
+    @Query('since') since?: string,
   ) {
-    return this.orders.staffList({ group, shiftId, status, driverId, userId });
+    return this.orders.staffList({ group, shiftId, status, driverId, userId, since });
   }
 
   @Roles(Role.ADMIN)

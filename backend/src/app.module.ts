@@ -13,7 +13,9 @@ import { HealthController } from './health/health.controller';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
+import { NotificationsInboxModule } from './notifications-inbox/notifications-inbox.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import { SettingsModule } from './settings/settings.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { SuperadminModule } from './superadmin/superadmin.module';
@@ -33,7 +35,9 @@ import { ZonesModule } from './zones/zones.module';
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     PrismaModule,
+    RealtimeModule,
     NotificationsModule,
+    NotificationsInboxModule,
     AuthModule,
     UsersModule,
     CatalogModule,

@@ -16,6 +16,7 @@ import { IsObject } from 'class-validator';
 import { CurrentUser, Roles } from '../common/decorators';
 import { NotificationsService } from '../notifications/notifications.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 const toApprovalJson = (a: Approval) => ({
   id: a.id,
@@ -38,7 +39,11 @@ class CreateApprovalDto {
 
 @Injectable()
 export class ApprovalsService {
-  constructor(private prisma: PrismaService, private notifications: NotificationsService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private realtime: RealtimeGateway,
+  ) {}
 
   async create(user: User, changes: Record<string, any>) {
     const filtered = Object.fromEntries(
@@ -55,7 +60,9 @@ export class ApprovalsService {
       },
     });
     void this.notifications.sendToStaff('Profile change request', row.userName, { type: 'approval' });
-    return toApprovalJson(row);
+    const json = toApprovalJson(row);
+    this.realtime.emitToStaff('approval:created', json);
+    return json;
   }
 
   async list(status?: string) {
@@ -101,7 +108,9 @@ export class ApprovalsService {
       '',
       { type: 'approval' },
     );
-    return toApprovalJson(row);
+    const json = toApprovalJson(row);
+    this.realtime.emitToStaff('approval:updated', json);
+    return json;
   }
 }
 

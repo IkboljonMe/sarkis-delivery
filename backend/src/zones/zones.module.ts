@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { RegionGroup, Role } from '@prisma/client';
 import { IsInt, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
@@ -82,8 +83,11 @@ export class ZonesController {
   /** Public: registration screen needs the group list + polygon resolve before login. */
   @Public()
   @Get('zones')
-  async list() {
-    const rows = await this.prisma.regionGroup.findMany({ orderBy: { name: 'asc' } });
+  async list(@Query('since') since?: string) {
+    const rows = await this.prisma.regionGroup.findMany({
+      where: since ? { updatedAt: { gt: new Date(since) } } : {},
+      orderBy: { name: 'asc' },
+    });
     return rows.map(toZoneJson);
   }
 

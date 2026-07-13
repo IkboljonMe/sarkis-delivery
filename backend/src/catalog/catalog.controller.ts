@@ -21,14 +21,14 @@ export class CatalogController {
 
   @Public()
   @Get('categories')
-  categories(@Query('all') all?: string) {
-    return this.catalog.categories(all === 'true');
+  categories(@Query('all') all?: string, @Query('since') since?: string) {
+    return this.catalog.categories(all === 'true', since);
   }
 
   @Public()
   @Get('products')
-  products(@Query('categoryId') categoryId?: string, @Query('all') all?: string) {
-    return this.catalog.products(categoryId, all === 'true');
+  products(@Query('categoryId') categoryId?: string, @Query('all') all?: string, @Query('since') since?: string) {
+    return this.catalog.products(categoryId, all === 'true', since);
   }
 
   @Public()

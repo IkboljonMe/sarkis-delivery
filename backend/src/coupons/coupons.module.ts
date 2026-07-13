@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { Coupon, Role } from '@prisma/client';
 import { IsBoolean, IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
@@ -27,6 +28,7 @@ export const toCouponJson = (c: Coupon) => ({
   usageLimit: c.usageLimit,
   usedCount: c.usedCount,
   createdAt: c.createdAt.toISOString(),
+  updatedAt: c.updatedAt.toISOString(),
 });
 
 export function couponUsable(c: Coupon, subtotal: number): string | null {
@@ -79,8 +81,11 @@ export class CouponsController {
 
   @Roles(Role.ADMIN)
   @Get('admin/coupons')
-  async list() {
-    const rows = await this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
+  async list(@Query('since') since?: string) {
+    const rows = await this.prisma.coupon.findMany({
+      where: since ? { updatedAt: { gt: new Date(since) } } : {},
+      orderBy: { createdAt: 'desc' },
+    });
     return rows.map(toCouponJson);
   }
 

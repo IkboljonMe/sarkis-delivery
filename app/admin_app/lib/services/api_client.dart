@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../session/secure_session_store.dart';
 import '../utils/constants.dart';
 
 class ApiException implements Exception {
@@ -35,12 +36,18 @@ class ApiClient {
 
   bool get isLoggedIn => _refreshToken != null;
   String? get uid => currentUser?['id'] as String?;
+  String? get accessToken => _accessToken;
+
+  final _secureSession = SecureSessionStore.instance;
 
   /// Must be awaited once in main() before the first screen builds.
   Future<void> init() async {
+    _accessToken = await _secureSession.readAccessToken();
+    _refreshToken = await _secureSession.readRefreshToken();
+    // The cached user profile isn't sensitive session material, so it stays
+    // in SharedPreferences for now; Phase 2 moves it into the Drift
+    // `local_user` table so it's queryable/reactive like everything else.
     final sp = await SharedPreferences.getInstance();
-    _accessToken = sp.getString('api_access');
-    _refreshToken = sp.getString('api_refresh');
     final raw = sp.getString('api_user');
     if (raw != null && raw.isNotEmpty) {
       try {
@@ -55,19 +62,19 @@ class ApiClient {
     if (auth['user'] is Map) {
       currentUser = Map<String, dynamic>.from(auth['user'] as Map);
     }
-    final sp = await SharedPreferences.getInstance();
-    if (_accessToken != null) await sp.setString('api_access', _accessToken!);
-    if (_refreshToken != null) await sp.setString('api_refresh', _refreshToken!);
-    if (currentUser != null) await sp.setString('api_user', jsonEncode(currentUser));
+    await _secureSession.save(accessToken: _accessToken, refreshToken: _refreshToken);
+    if (currentUser != null) {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setString('api_user', jsonEncode(currentUser));
+    }
   }
 
   Future<void> clearSession() async {
     _accessToken = null;
     _refreshToken = null;
     currentUser = null;
+    await _secureSession.clear();
     final sp = await SharedPreferences.getInstance();
-    await sp.remove('api_access');
-    await sp.remove('api_refresh');
     await sp.remove('api_user');
   }
 

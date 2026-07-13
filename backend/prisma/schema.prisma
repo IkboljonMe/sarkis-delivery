@@ -61,6 +61,7 @@ model User {
   loginEvents   LoginEvent[]
   approvals     Approval[]
   messages      Message[]
+  notifications Notification[]
 
   @@index([group])
   @@index([role])
@@ -142,6 +143,7 @@ model Category {
   sortOrder Int       @default(0)
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   products  Product[]
 }
 
@@ -178,6 +180,7 @@ model Coupon {
   usageLimit Int       @default(0) // 0 = unlimited
   usedCount  Int       @default(0)
   createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model RegionGroup {
@@ -198,6 +201,7 @@ model Shift {
   cancelDaysBefore Int      @default(1)
   editDaysBefore   Int      @default(1)
   createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   orders           Order[]
 
   @@index([group, date])
@@ -298,8 +302,10 @@ model Message {
   extra       Json      @default("{}") // mediaUrl, mediaUrls, reactions, replyTo*, durationMs, waveform, sizeBytes, orderId, uploadCount
   createdAt   DateTime  @default(now())
   editedAt    DateTime?
+  updatedAt   DateTime  @updatedAt // bumped by edits, deletes, reactions, read-state — delta-sync cursor
 
   @@index([topicId, createdAt])
+  @@index([topicId, updatedAt])
 }
 
 model AppSetting {
@@ -320,4 +326,23 @@ model Approval {
   createdAt  DateTime  @default(now())
 
   @@index([status, createdAt])
+}
+
+/// Persisted mirror of every push we send, so clients can sync an in-app
+/// notification inbox instead of relying on ephemeral FCM tray messages.
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String    @default("system") // order | chat | approval | system
+  title     String    @default("")
+  body      String    @default("")
+  data      Json      @default("{}")
+  orderId   String    @default("")
+  topicId   String    @default("")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

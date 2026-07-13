@@ -8,6 +8,7 @@ import { Order, OrderItem, OrderStatus, Prisma, Role, Shift, User } from '@prism
 import { couponDiscount, couponUsable, CouponsService } from '../coupons/coupons.module';
 import { NotificationsService } from '../notifications/notifications.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { AssignDriverDto, CreateOrderDto, DriverStatusDto, EditOrderDto, StaffUpdateOrderDto } from './dto';
 
 type OrderWithItems = Order & { items: OrderItem[] };
@@ -65,7 +66,16 @@ export class OrdersService {
     private prisma: PrismaService,
     private coupons: CouponsService,
     private notifications: NotificationsService,
+    private realtime: RealtimeGateway,
   ) {}
+
+  /** Pushes the current row to everyone who has it open: the owning customer,
+   *  the assigned driver (if any), and connected admin staff. */
+  private broadcastOrder(event: 'order:created' | 'order:updated', order: ReturnType<typeof toOrderJson>) {
+    this.realtime.emitToUser(order.userId, event, order);
+    if (order.driverId) this.realtime.emitToUser(order.driverId, event, order);
+    this.realtime.emitToStaff(event, order);
+  }
 
   // ---------- customer ----------
 
@@ -136,15 +146,17 @@ export class OrdersService {
       `${order.userName} — ${order.totalPrice.toFixed(2)} € (${order.userGroup || 'no group'})`,
       { type: 'order', orderId: order.id },
     );
-    return toOrderJson(order);
+    const json = toOrderJson(order);
+    this.broadcastOrder('order:created', json);
+    return json;
   }
 
-  async myOrders(userId: string) {
+  async myOrders(userId: string, since?: string) {
     const rows = await this.prisma.order.findMany({
-      where: { userId },
+      where: { userId, ...(since ? { updatedAt: { gt: new Date(since) } } : {}) },
       include: { items: true, driver: true },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: since ? undefined : 100,
     });
     return rows.map(toOrderJson);
   }
@@ -199,12 +211,21 @@ export class OrdersService {
       type: 'order',
       orderId: updated.id,
     });
-    return toOrderJson(updated);
+    const json = toOrderJson(updated);
+    this.broadcastOrder('order:updated', json);
+    return json;
   }
 
   // ---------- staff / driver ----------
 
-  async staffList(filter: { group?: string; shiftId?: string; status?: string; driverId?: string; userId?: string }) {
+  async staffList(filter: {
+    group?: string;
+    shiftId?: string;
+    status?: string;
+    driverId?: string;
+    userId?: string;
+    since?: string;
+  }) {
     const rows = await this.prisma.order.findMany({
       where: {
         ...(filter.group ? { userGroup: filter.group } : {}),
@@ -212,10 +233,11 @@ export class OrdersService {
         ...(filter.status ? { status: filter.status as OrderStatus } : {}),
         ...(filter.driverId ? { driverId: filter.driverId } : {}),
         ...(filter.userId ? { userId: filter.userId } : {}),
+        ...(filter.since ? { updatedAt: { gt: new Date(filter.since) } } : {}),
       },
       include: { items: true, driver: true },
       orderBy: { createdAt: 'desc' },
-      take: 500,
+      take: filter.since ? undefined : 500,
     });
     return rows.map(toOrderJson);
   }
@@ -239,11 +261,17 @@ export class OrdersService {
         awaitingSchedule: false,
       });
     }
+    let fieldsChanged = false;
     if (Object.keys(data).length) {
       order = await this.prisma.order.update({ where: { id }, data, include: { items: true } });
+      fieldsChanged = true;
     }
     if (dto.status && dto.status !== order.status) {
+      // updateStatus() broadcasts order:updated itself.
       order = await this.updateStatus(order, dto.status as OrderStatus, actor.id);
+    } else if (fieldsChanged) {
+      const withDriver = await this.prisma.order.findUnique({ where: { id: order.id }, include: { items: true, driver: true } });
+      this.broadcastOrder('order:updated', toOrderJson(withDriver!));
     }
     return toOrderJson(order);
   }
@@ -266,11 +294,13 @@ export class OrdersService {
       type: 'order',
       orderId: order.id,
     });
-    return toOrderJson(order);
+    const json = toOrderJson(order);
+    this.broadcastOrder('order:updated', json);
+    return json;
   }
 
-  async driverOrders(driver: User, shiftId?: string) {
-    return this.staffList({ driverId: driver.id, shiftId });
+  async driverOrders(driver: User, shiftId?: string, since?: string) {
+    return this.staffList({ driverId: driver.id, shiftId, since });
   }
 
   async driverUpdateStatus(driver: User, id: string, dto: DriverStatusDto) {
@@ -387,6 +417,7 @@ export class OrdersService {
         orderId: updated.id,
       });
     }
+    this.broadcastOrder('order:updated', toOrderJson(updated));
     return updated;
   }
 }
