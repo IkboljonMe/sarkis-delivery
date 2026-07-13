@@ -1,26 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'api_client.dart';
 
 class SettingsService {
   SettingsService._();
   static final SettingsService instance = SettingsService._();
 
-  final DocumentReference<Map<String, dynamic>> _doc =
-      FirebaseFirestore.instance.collection('settings').doc('config');
+  final ApiClient _api = ApiClient.instance;
+
+  static const _defaults = {'maxQty': 10, 'minQty': 1, 'adminWhatsapp': ''};
 
   Future<Map<String, dynamic>> get() async {
     try {
-      final d = await _doc.get();
-      return d.data() ?? {'maxQty': 10, 'minQty': 1, 'adminWhatsapp': ''};
+      final res = await _api.get('/v1/admin/settings');
+      final data = Map<String, dynamic>.from(res as Map);
+      return {..._defaults, ...data};
     } catch (_) {
-      return {'maxQty': 10, 'minQty': 1, 'adminWhatsapp': ''};
+      return Map<String, dynamic>.from(_defaults);
     }
   }
 
   Future<void> save(Map<String, dynamic> data) async {
-    try {
-      await _doc.set(data, SetOptions(merge: true));
-    } catch (e) {
-      throw Exception('Failed to save settings: $e');
-    }
+    final current = await get();
+    await _api.put('/v1/admin/settings', {...current, ...data});
   }
 }

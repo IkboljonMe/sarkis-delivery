@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
+import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
 import '../services/message_service.dart';
@@ -13,8 +12,8 @@ import '../utils/welcome_message.dart';
 
 enum AuthStatus { unknown, codeSent, authenticated, error }
 
-/// Profile details collected during the new 3-step registration BEFORE the
-/// phone is verified. Saved once phone verification yields a uid.
+/// Profile details collected during the 3-step registration BEFORE the phone
+/// is verified. Saved once phone verification yields a session.
 class RegistrationDraft {
   String name = '';
   String lastName = '';
@@ -33,11 +32,11 @@ class AuthProvider extends ChangeNotifier {
   final UserService _users = UserService.instance;
 
   UserModel? _user;
-  String? _verificationId;
-  int? _resendToken;
+  String? _pendingPhone; // phone currently going through OTP
   AuthStatus _status = AuthStatus.unknown;
   String? _error;
   bool _busy = false;
+  bool _isNewUser = false;
 
   // 'login' or 'register' — set before opening the phone screen so the OTP
   // screen knows what to do on success.
@@ -46,13 +45,17 @@ class AuthProvider extends ChangeNotifier {
   RegistrationDraft? draft;
 
   UserModel? get user => _user;
-  String? get verificationId => _verificationId;
+
+  /// The phone number the current OTP was sent to (kept under the old name
+  /// for compatibility with the OTP screen).
+  String? get verificationId => _pendingPhone;
   AuthStatus get status => _status;
   String? get error => _error;
   bool get busy => _busy;
   bool get isLoggedIn => _auth.isLoggedIn;
   String? get uid => _auth.uid;
-  String? get phone => _auth.currentUser?.phoneNumber;
+  String? get phone => _auth.phone ?? _pendingPhone;
+  bool get isNewUser => _isNewUser;
 
   void _setBusy(bool v) {
     _busy = v;
@@ -60,15 +63,25 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<UserModel?> loadCurrentUser() async {
-    final id = _auth.uid;
-    if (id == null) return null;
+    if (!_auth.isLoggedIn) return null;
     try {
-      _user = await _users.getUser(id);
+      final fetched = await _users.getUser(_auth.uid ?? '');
+      // A profile without a name has not completed registration yet — callers
+      // treat a null user as "needs registration".
+      _user = (fetched != null && fetched.name.trim().isNotEmpty) ? fetched : null;
       if (_user != null) {
-        await FcmService.instance.init(id);
+        await FcmService.instance.init(_user!.id);
       }
       notifyListeners();
       return _user;
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        _user = null;
+      } else {
+        _error = e.message;
+      }
+      notifyListeners();
+      return null;
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -76,66 +89,51 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Starts phone verification and completes ONLY when the SMS code has been
-  /// sent (or verification finished/failed). The Future from `verifyPhoneNumber`
-  /// resolves before the `codeSent` callback fires, so we drive completion off
-  /// the callbacks via a Completer — otherwise the caller would see a stale
-  /// status and need a second tap to navigate.
-  Future<bool> startPhoneVerification(String phoneNumber) {
+  /// Requests the OTP SMS for [phoneNumber]. Completes when the code has been
+  /// sent (status → codeSent) or on failure (status → error).
+  Future<bool> startPhoneVerification(String phoneNumber) async {
     _setBusy(true);
     _error = null;
     _status = AuthStatus.unknown;
-    final completer = Completer<bool>();
-    void finish(bool ok) {
+    try {
+      final devCode = await _auth.requestOtp(phoneNumber);
+      _pendingPhone = phoneNumber;
+      _status = AuthStatus.codeSent;
+      if (devCode != null) {
+        debugPrint('[DEV] OTP for $phoneNumber: $devCode');
+      }
       _setBusy(false);
-      if (!completer.isCompleted) completer.complete(ok);
-    }
-
-    _auth
-        .verifyPhoneNumber(
-          phoneNumber: phoneNumber,
-          forceResendingToken: _resendToken,
-          codeSent: (vid, token) {
-            _verificationId = vid;
-            _resendToken = token;
-            _status = AuthStatus.codeSent;
-            finish(true);
-          },
-          verificationCompleted: (cred) async {
-            // Instant verification (some Android devices): sign in directly.
-            try {
-              await _auth.signInWithCredential(cred);
-              _status = AuthStatus.authenticated;
-              await loadCurrentUser();
-            } catch (_) {}
-            finish(true);
-          },
-          verificationFailed: (e) {
-            _error = e.message ?? 'Verification failed';
-            _status = AuthStatus.error;
-            finish(false);
-          },
-          codeAutoRetrievalTimeout: (vid) => _verificationId = vid,
-        )
-        .catchError((e) {
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _status = AuthStatus.error;
+      _setBusy(false);
+      return false;
+    } catch (e) {
       _error = e.toString();
       _status = AuthStatus.error;
-      finish(false);
-    });
-    return completer.future;
+      _setBusy(false);
+      return false;
+    }
   }
 
   Future<bool> verifyOtp(String smsCode) async {
-    if (_verificationId == null) return false;
+    final phoneNumber = _pendingPhone;
+    if (phoneNumber == null) return false;
     _setBusy(true);
     _error = null;
     try {
-      await _auth.signInWithSmsCode(
-          verificationId: _verificationId!, smsCode: smsCode);
+      final res = await _auth.verifyOtp(phoneNumber, smsCode);
+      _isNewUser = res['isNewUser'] == true;
       _status = AuthStatus.authenticated;
       await loadCurrentUser();
       _setBusy(false);
       return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _status = AuthStatus.error;
+      _setBusy(false);
+      return false;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
       _status = AuthStatus.error;
@@ -164,7 +162,7 @@ class AuthProvider extends ChangeNotifier {
         id: id,
         name: name,
         lastName: lastName,
-        phone: _auth.currentUser?.phoneNumber ?? '',
+        phone: _auth.phone ?? '',
         address: address,
         city: city,
         postalCode: postalCode,
@@ -188,6 +186,7 @@ class AuthProvider extends ChangeNotifier {
         senderName: WelcomeMessage.senderName,
       );
       _setBusy(false);
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString();
@@ -197,9 +196,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Saves the collected [draft] once the phone is verified. The delivery
-  /// group is resolved here (now that we're authenticated and may read
-  /// `regionGroups`) from the geocoded point; empty means out of coverage.
-  /// Returns false if there's no draft or no signed-in uid.
+  /// group is resolved from the geocoded point; empty means out of coverage.
   Future<bool> completeRegistration() async {
     final d = draft;
     if (d == null) return false;
@@ -244,29 +241,22 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     await _auth.signOut();
     _user = null;
-    _verificationId = null;
+    _pendingPhone = null;
     _status = AuthStatus.unknown;
     notifyListeners();
   }
 
-  /// Permanently deletes the account: removes the Firestore profile, then the
-  /// Firebase Auth user (best-effort — may need recent login), then signs out.
-  /// The profile doc is always removed so the account can't be used again.
+  /// Permanently deletes the account server-side (anonymize + deactivate),
+  /// then clears the local session.
   Future<void> deleteAccount() async {
-    final id = _auth.uid;
-    try {
-      if (id != null) await _users.deleteUser(id);
-    } catch (e) {
-      debugPrint('deleteAccount (profile): $e');
-    }
     try {
       await _auth.deleteCurrentUser();
     } catch (e) {
-      debugPrint('deleteAccount (auth): $e');
+      debugPrint('deleteAccount: $e');
+      await _auth.signOut();
     }
-    await _auth.signOut();
     _user = null;
-    _verificationId = null;
+    _pendingPhone = null;
     _status = AuthStatus.unknown;
     notifyListeners();
   }

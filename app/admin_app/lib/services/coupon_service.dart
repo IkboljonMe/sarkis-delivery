@@ -1,42 +1,68 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/coupon_model.dart';
+import 'api_client.dart';
 
 class CouponService {
   CouponService._();
   static final CouponService instance = CouponService._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  CollectionReference<Map<String, dynamic>> get _coupons =>
-      _db.collection('coupons');
+  final ApiClient _api = ApiClient.instance;
 
-  Stream<List<CouponModel>> couponsStream() {
-    return _coupons.snapshots().map((s) {
-      final list = s.docs
-          .map((d) => CouponModel.fromJson({...d.data(), 'id': d.id}))
-          .toList();
-      list.sort((a, b) => a.code.compareTo(b.code));
-      return list;
-    });
-  }
+  List<CouponModel> _parse(dynamic res) => (res as List)
+      .map((e) => CouponModel.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList();
 
-  /// Saves a coupon using the normalized code as the document id. When editing
-  /// a coupon whose code changed, the old document is removed.
+  Stream<List<CouponModel>> couponsStream() => ApiClient.poll(
+      const Duration(seconds: 20),
+      () async => _parse(await _api.get('/v1/admin/coupons')));
+
+  /// Creates or updates a coupon. [previousId] is the pre-edit code/id when
+  /// the admin renamed the code.
   Future<void> saveCoupon(CouponModel c, {String? previousId}) async {
-    final id = CouponModel.normalize(c.code);
-    if (id.isEmpty) throw Exception('Coupon code is required');
-    try {
-      await _coupons.doc(id).set(c.copyWith(id: id, code: id).toJson());
-      if (previousId != null && previousId.isNotEmpty && previousId != id) {
-        await _coupons.doc(previousId).delete();
-      }
-    } catch (e) {
-      throw Exception('Failed to save coupon: $e');
+    final body = {
+      'code': c.code,
+      'type': c.type,
+      'value': c.value,
+      'minOrder': c.minOrder,
+      'isActive': c.isActive,
+      if (c.expiresAt != null) 'expiresAt': c.expiresAt!.toIso8601String(),
+      'usageLimit': c.usageLimit,
+    };
+    final existingId = await _resolveId(previousId ?? c.id) ?? await _resolveId(c.code);
+    if (existingId != null) {
+      await _api.patch('/v1/admin/coupons/$existingId', body);
+    } else {
+      await _api.post('/v1/admin/coupons', body);
     }
   }
 
-  Future<void> setActive(String id, bool active) =>
-      _coupons.doc(id).update({'isActive': active});
+  Future<void> setActive(String id, bool active) async {
+    final backendId = await _resolveId(id);
+    if (backendId != null) {
+      await _api.patch('/v1/admin/coupons/$backendId', {'isActive': active});
+    }
+  }
 
-  Future<void> deleteCoupon(String id) => _coupons.doc(id).delete();
+  Future<void> deleteCoupon(String id) async {
+    final backendId = await _resolveId(id);
+    if (backendId != null) {
+      await _api.delete('/v1/admin/coupons/$backendId');
+    }
+  }
+
+  /// The old Firestore ids were the normalized code; the API uses uuids. This
+  /// accepts either and returns the backend id (or null when unknown).
+  Future<String?> _resolveId(String idOrCode) async {
+    if (idOrCode.isEmpty) return null;
+    try {
+      final list = await _api.get('/v1/admin/coupons') as List;
+      for (final raw in list) {
+        final c = Map<String, dynamic>.from(raw as Map);
+        if (c['id'] == idOrCode ||
+            c['code'] == CouponModel.normalize(idOrCode)) {
+          return c['id'] as String;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
 }

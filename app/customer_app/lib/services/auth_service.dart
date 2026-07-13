@@ -1,94 +1,54 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'api_client.dart';
 
-/// Handles both phone auth (customer) and email/password auth (admin).
+/// Authentication against the Sarkis backend (phone OTP + email/password).
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final ApiClient _api = ApiClient.instance;
 
-  User? get currentUser => _auth.currentUser;
-  String? get uid => _auth.currentUser?.uid;
-  bool get isLoggedIn => _auth.currentUser != null;
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  bool get isLoggedIn => _api.isLoggedIn;
+  String? get uid => _api.uid;
+  String? get phone => _api.currentUser?['phone'] as String?;
 
-  // ---- Phone (customer) ----
-  Future<void> verifyPhoneNumber({
-    required String phoneNumber,
-    required void Function(String, int?) codeSent,
-    required void Function(PhoneAuthCredential) verificationCompleted,
-    required void Function(FirebaseAuthException) verificationFailed,
-    required void Function(String) codeAutoRetrievalTimeout,
-    int? forceResendingToken,
-  }) async {
-    // Allow registered test numbers to bypass reCAPTCHA in debug builds.
-    if (kDebugMode) {
-      try {
-        await _auth.setSettings(appVerificationDisabledForTesting: true);
-      } catch (_) {}
-    }
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      timeout: const Duration(seconds: 60),
-      forceResendingToken: forceResendingToken,
-      verificationCompleted: verificationCompleted,
-      verificationFailed: verificationFailed,
-      codeSent: codeSent,
-      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
-    );
+  /// Requests an SMS code. Returns the dev-mode code when the backend runs
+  /// with the dev SMS provider (so testing needs no real SMS), else null.
+  Future<String?> requestOtp(String phoneNumber) async {
+    final res = await _api.post('/v1/auth/otp/request', {'phone': phoneNumber});
+    return (res as Map)['devCode'] as String?;
   }
 
-  Future<UserCredential> signInWithSmsCode({
-    required String verificationId,
-    required String smsCode,
-  }) async {
-    try {
-      final cred = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-      return await _auth.signInWithCredential(cred);
-    } catch (e) {
-      throw Exception('Invalid code. Please try again.');
-    }
+  /// Verifies the code; on success the session is stored. Returns the auth
+  /// payload ({user, isNewUser, ...}).
+  Future<Map<String, dynamic>> verifyOtp(String phoneNumber, String code) async {
+    final res = await _api.post('/v1/auth/otp/verify', {'phone': phoneNumber, 'code': code});
+    final body = Map<String, dynamic>.from(res as Map);
+    await _api.saveSession(body);
+    return body;
   }
 
-  Future<UserCredential> signInWithCredential(PhoneAuthCredential c) =>
-      _auth.signInWithCredential(c);
-
-  // ---- Email (admin) ----
-  Future<UserCredential> signInWithEmail({
+  Future<Map<String, dynamic>> signInWithEmail({
     required String email,
     required String password,
   }) async {
-    try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-    } on FirebaseAuthException catch (e) {
-      throw Exception(_emailError(e.code));
-    }
+    final res = await _api.post('/v1/auth/email/login', {'email': email.trim(), 'password': password});
+    final body = Map<String, dynamic>.from(res as Map);
+    await _api.saveSession(body);
+    return body;
   }
 
-  Future<void> signOut() => _auth.signOut();
-
-  /// Deletes the Firebase Auth user. May throw `requires-recent-login`.
-  Future<void> deleteCurrentUser() => _auth.currentUser?.delete() ?? Future.value();
-
-  String _emailError(String code) {
-    switch (code) {
-      case 'invalid-email':
-        return 'Неверный email / Invalid email';
-      case 'user-not-found':
-      case 'wrong-password':
-      case 'invalid-credential':
-        return 'Неверный логин или пароль / Wrong credentials';
-      case 'too-many-requests':
-        return 'Слишком много попыток / Too many attempts';
-      default:
-        return 'Ошибка входа / Login error';
+  Future<void> signOut() async {
+    try {
+      await _api.post('/v1/auth/logout', {'refreshToken': _api.refreshToken});
+    } catch (_) {
+      // Best effort — the local session is cleared regardless.
     }
+    await _api.clearSession();
+  }
+
+  /// Deletes (anonymizes + deactivates) the account server-side.
+  Future<void> deleteCurrentUser() async {
+    await _api.delete('/v1/users/me');
+    await _api.clearSession();
   }
 }

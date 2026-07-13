@@ -10,6 +10,12 @@ class AppConstants {
   static String get translateApiKey =>
       dotenv.maybeGet('GOOGLE_TRANSLATE_API_KEY') ?? '';
 
+  /// Base URL of the Sarkis backend API (no trailing slash). Override via the
+  /// bundled .env (API_BASE_URL). 10.0.2.2 reaches the host from the Android
+  /// emulator.
+  static String get apiBaseUrl =>
+      dotenv.maybeGet('API_BASE_URL') ?? 'http://10.0.2.2:3000';
+
   static const String adminWhatsappNumber = 'YOUR_NUMBER_HERE';
   static String get firebaseProjectId =>
       DemoFirebaseOptions.current.projectId;

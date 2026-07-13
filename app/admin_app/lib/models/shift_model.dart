@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 import 'package:intl/intl.dart';
 
 /// A "shift" is a delivery date for a group.
@@ -27,9 +27,7 @@ class ShiftModel {
   static String labelFor(DateTime date) => DateFormat('dd.MM').format(date);
 
   factory ShiftModel.fromJson(Map<String, dynamic> json) {
-    final date = json['date'] is Timestamp
-        ? (json['date'] as Timestamp).toDate()
-        : DateTime.now();
+    final date = parseDate(json['date']) ?? DateTime.now();
     return ShiftModel(
       id: json['id'] as String? ?? '',
       group: json['group'] as String? ?? '',
@@ -40,23 +38,19 @@ class ShiftModel {
       isOpen: json['isOpen'] as bool? ?? false,
       cancelDaysBefore: (json['cancelDaysBefore'] as num?)?.toInt() ?? 3,
       editDaysBefore: (json['editDaysBefore'] as num?)?.toInt() ?? 4,
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
     );
   }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'group': group,
-        'date': Timestamp.fromDate(date),
+        'date': date.toIso8601String(),
         'label': label,
         'isOpen': isOpen,
         'cancelDaysBefore': cancelDaysBefore,
         'editDaysBefore': editDaysBefore,
-        'createdAt': createdAt != null
-            ? Timestamp.fromDate(createdAt!)
-            : FieldValue.serverTimestamp(),
+        'createdAt': createdAt?.toIso8601String(),
       };
 
   ShiftModel copyWith({

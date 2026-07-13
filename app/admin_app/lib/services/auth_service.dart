@@ -1,91 +1,33 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'api_client.dart';
 
-/// Handles both phone auth (customer) and email/password auth (admin).
+/// Staff authentication (email/password — credentials are created by the
+/// superadmin on the backend).
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final ApiClient _api = ApiClient.instance;
 
-  User? get currentUser => _auth.currentUser;
-  String? get uid => _auth.currentUser?.uid;
-  bool get isLoggedIn => _auth.currentUser != null;
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  bool get isLoggedIn => _api.isLoggedIn;
+  String? get uid => _api.uid;
+  Map<String, dynamic>? get currentUser => _api.currentUser;
 
-  // ---- Phone (customer) ----
-  Future<void> verifyPhoneNumber({
-    required String phoneNumber,
-    required void Function(String, int?) codeSent,
-    required void Function(PhoneAuthCredential) verificationCompleted,
-    required void Function(FirebaseAuthException) verificationFailed,
-    required void Function(String) codeAutoRetrievalTimeout,
-    int? forceResendingToken,
-  }) async {
-    // Allow registered test numbers to bypass reCAPTCHA in debug builds.
-    if (kDebugMode) {
-      try {
-        await _auth.setSettings(appVerificationDisabledForTesting: true);
-      } catch (_) {}
-    }
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      timeout: const Duration(seconds: 60),
-      forceResendingToken: forceResendingToken,
-      verificationCompleted: verificationCompleted,
-      verificationFailed: verificationFailed,
-      codeSent: codeSent,
-      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
-    );
-  }
-
-  Future<UserCredential> signInWithSmsCode({
-    required String verificationId,
-    required String smsCode,
-  }) async {
-    try {
-      final cred = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-      return await _auth.signInWithCredential(cred);
-    } catch (e) {
-      throw Exception('Invalid code. Please try again.');
-    }
-  }
-
-  Future<UserCredential> signInWithCredential(PhoneAuthCredential c) =>
-      _auth.signInWithCredential(c);
-
-  // ---- Email (admin) ----
-  Future<UserCredential> signInWithEmail({
+  /// Logs in and stores the session. Returns the auth payload ({user, ...}).
+  Future<Map<String, dynamic>> signInWithEmail({
     required String email,
     required String password,
   }) async {
-    try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-    } on FirebaseAuthException catch (e) {
-      throw Exception(_emailError(e.code));
-    }
+    final res = await _api
+        .post('/v1/auth/email/login', {'email': email.trim(), 'password': password});
+    final body = Map<String, dynamic>.from(res as Map);
+    await _api.saveSession(body);
+    return body;
   }
 
-  Future<void> signOut() => _auth.signOut();
-
-  String _emailError(String code) {
-    switch (code) {
-      case 'invalid-email':
-        return 'Неверный email / Invalid email';
-      case 'user-not-found':
-      case 'wrong-password':
-      case 'invalid-credential':
-        return 'Неверный логин или пароль / Wrong credentials';
-      case 'too-many-requests':
-        return 'Слишком много попыток / Too many attempts';
-      default:
-        return 'Ошибка входа / Login error';
-    }
+  Future<void> signOut() async {
+    try {
+      await _api.post('/v1/auth/logout', {'refreshToken': _api.refreshToken});
+    } catch (_) {}
+    await _api.clearSession();
   }
 }

@@ -10,3 +10,4 @@ Each user request gets its own folder containing:
 ## Requests
 
 - [[2026-07-13 restructure and backend migration/request|2026-07-13 — Repo restructure & Firebase → API backend migration]]
+- [[2026-07-13 backend build and app rewire/request|2026-07-13 — Backend build, device/IP tracking, superadmin, app rewire]]

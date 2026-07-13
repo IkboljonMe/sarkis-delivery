@@ -13,6 +13,7 @@ import 'providers/cart_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/message_provider.dart';
 import 'providers/order_provider.dart';
+import 'services/api_client.dart';
 import 'services/local_notifications.dart';
 import 'screens/auth/language_screen.dart';
 import 'screens/auth/otp_screen.dart';
@@ -63,6 +64,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase init skipped: $e');
   }
+
+  // Restore the API session (JWT) before the first screen decides where to go.
+  await ApiClient.instance.init();
 
   final localeProvider = LocaleProvider();
   await localeProvider.load();

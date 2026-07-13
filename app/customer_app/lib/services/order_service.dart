@@ -1,74 +1,60 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/order_model.dart';
+import 'api_client.dart';
 
 class OrderService {
   OrderService._();
   static final OrderService instance = OrderService._();
 
-  final CollectionReference<Map<String, dynamic>> _col =
-      FirebaseFirestore.instance.collection('orders');
+  final ApiClient _api = ApiClient.instance;
 
+  List<OrderModel> _parseList(dynamic res) => (res as List)
+      .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList();
+
+  /// Creates the order. Prices/discounts are computed server-side from the
+  /// product ids and quantities; the rest of [order] is derived from the
+  /// authenticated profile.
   Future<String> createOrder(OrderModel order) async {
-    try {
-      final ref = _col.doc();
-      final data = order.copyWith(id: ref.id).toJson();
-      data['createdAt'] = FieldValue.serverTimestamp();
-      data['updatedAt'] = FieldValue.serverTimestamp();
-      await ref.set(data);
-      return ref.id;
-    } catch (e) {
-      throw Exception('Failed to create order: $e');
-    }
-  }
-
-  List<OrderModel> _sortByCreatedDesc(QuerySnapshot<Map<String, dynamic>> s) {
-    final list = s.docs
-        .map((d) => OrderModel.fromJson({...d.data(), 'id': d.id}))
-        .toList();
-    list.sort((a, b) {
-      final ad = a.createdAt ?? DateTime(1970);
-      final bd = b.createdAt ?? DateTime(1970);
-      return bd.compareTo(ad);
+    final res = await _api.post('/v1/orders', {
+      if (order.shiftId.isNotEmpty) 'shiftId': order.shiftId,
+      if (order.couponCode.isNotEmpty) 'couponCode': order.couponCode,
+      'items': order.items
+          .map((i) => {'productId': i.productId, 'qty': i.qty})
+          .toList(),
     });
-    return list;
+    return (res as Map)['id'] as String;
   }
 
   Stream<List<OrderModel>> userOrdersStream(String userId) =>
-      _col.where('userId', isEqualTo: userId).snapshots().map(_sortByCreatedDesc);
+      ApiClient.poll(const Duration(seconds: 10),
+          () async => _parseList(await _api.get('/v1/orders/mine')));
 
-  Stream<List<OrderModel>> ordersByGroupStream(String group) =>
-      _col.where('userGroup', isEqualTo: group).snapshots().map(_sortByCreatedDesc);
+  Stream<OrderModel?> orderStream(String orderId) =>
+      ApiClient.poll(const Duration(seconds: 8), () async {
+        final res = await _api.get('/v1/orders/$orderId');
+        return OrderModel.fromJson(Map<String, dynamic>.from(res as Map));
+      });
 
-  Stream<List<OrderModel>> ordersByShiftStream(String shiftId) =>
-      _col.where('shiftId', isEqualTo: shiftId).snapshots().map(_sortByCreatedDesc);
-
-  Stream<OrderModel?> orderStream(String orderId) {
-    return _col.doc(orderId).snapshots().map((d) {
-      if (!d.exists || d.data() == null) return null;
-      return OrderModel.fromJson({...d.data()!, 'id': d.id});
-    });
-  }
-
+  /// Customer-side status change (only cancelling is allowed).
   Future<void> updateStatus(String orderId, String status) async {
-    try {
-      await _col.doc(orderId).update({
-        'status': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      throw Exception('Failed to update status: $e');
+    if (status == 'cancelled') {
+      await _api.post('/v1/orders/$orderId/cancel');
+    } else {
+      throw Exception('Only cancelling is allowed');
     }
   }
 
+  /// Customer edit (items / delivery day) within the edit window.
   Future<void> updateOrder(String orderId, Map<String, dynamic> data) async {
-    try {
-      await _col.doc(orderId).update({
-        ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      throw Exception('Failed to update order: $e');
+    final body = <String, dynamic>{};
+    if (data['items'] is List) {
+      body['items'] = (data['items'] as List)
+          .map((i) => {'productId': i['productId'], 'qty': i['qty']})
+          .toList();
     }
+    if (data['shiftId'] is String && (data['shiftId'] as String).isNotEmpty) {
+      body['shiftId'] = data['shiftId'];
+    }
+    await _api.patch('/v1/orders/$orderId', body);
   }
 }

@@ -1,71 +1,54 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/shift_model.dart';
-import '../utils/constants.dart';
+import 'api_client.dart';
 
 class ShiftService {
   ShiftService._();
   static final ShiftService instance = ShiftService._();
 
-  final CollectionReference<Map<String, dynamic>> _col =
-      FirebaseFirestore.instance.collection('shifts');
+  final ApiClient _api = ApiClient.instance;
 
-  /// Open shifts for a group (customer home).
-  Stream<List<ShiftModel>> openShiftsStream(String group) {
-    return _col
-        .where('group', isEqualTo: group)
-        .where('isOpen', isEqualTo: true)
-        .snapshots()
-        .map((s) {
-      final list = s.docs
-          .map((d) => ShiftModel.fromJson({...d.data(), 'id': d.id}))
-          .toList();
-      list.sort((a, b) => a.date.compareTo(b.date));
-      return list;
-    });
-  }
+  static const _interval = Duration(seconds: 20);
 
-  /// All shifts for a group (admin).
-  Stream<List<ShiftModel>> allShiftsStream(String group) {
-    return _col.where('group', isEqualTo: group).snapshots().map((s) {
-      final list = s.docs
-          .map((d) => ShiftModel.fromJson({...d.data(), 'id': d.id}))
-          .toList();
-      list.sort((a, b) => a.date.compareTo(b.date));
-      return list;
-    });
-  }
+  List<ShiftModel> _parse(dynamic res) => (res as List)
+      .map((e) => ShiftModel.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList();
 
-  /// All shifts across every group.
-  Stream<List<ShiftModel>> allGroupsShiftsStream() {
-    return _col.snapshots().map((s) {
-      final list = s.docs
-          .map((d) => ShiftModel.fromJson({...d.data(), 'id': d.id}))
-          .toList();
-      list.sort((a, b) => a.date.compareTo(b.date));
-      return list;
-    });
-  }
+  /// Open shifts for a group.
+  Stream<List<ShiftModel>> openShiftsStream(String group) =>
+      ApiClient.poll(_interval, () async {
+        return _parse(await _api
+            .get('/v1/shifts?group=${Uri.encodeComponent(group)}&open=true'));
+      });
 
-  /// All shifts when [group] is "All", else just that group's shifts.
+  /// All shifts for a group.
+  Stream<List<ShiftModel>> allShiftsStream(String group) =>
+      ApiClient.poll(_interval, () async {
+        return _parse(
+            await _api.get('/v1/shifts?group=${Uri.encodeComponent(group)}'));
+      });
+
+  /// Shifts of every group (admin overview).
+  Stream<List<ShiftModel>> allGroupsShiftsStream() =>
+      ApiClient.poll(_interval, () async => _parse(await _api.get('/v1/shifts')));
+
   Stream<List<ShiftModel>> shiftsStream(String group) =>
-      AppConstants.isAllGroups(group)
-          ? allGroupsShiftsStream()
-          : allShiftsStream(group);
+      group.isEmpty ? allGroupsShiftsStream() : allShiftsStream(group);
 
   Future<void> addShift(ShiftModel shift) async {
-    try {
-      final ref = _col.doc();
-      final data = shift.copyWith(id: ref.id).toJson();
-      data['createdAt'] = FieldValue.serverTimestamp();
-      await ref.set(data);
-    } catch (e) {
-      throw Exception('Failed to add shift: $e');
-    }
+    await _api.post('/v1/admin/shifts', {
+      'group': shift.group,
+      'date': shift.date.toIso8601String(),
+      'label': shift.label,
+      'isOpen': shift.isOpen,
+      'cancelDaysBefore': shift.cancelDaysBefore,
+      'editDaysBefore': shift.editDaysBefore,
+    });
   }
 
   Future<void> setOpen(String id, bool isOpen) =>
-      _col.doc(id).update({'isOpen': isOpen});
+      _api.patch('/v1/admin/shifts/$id', {'isOpen': isOpen});
 
-  Future<void> deleteShift(String id) => _col.doc(id).delete();
+  Future<void> deleteShift(String id) async {
+    await _api.delete('/v1/admin/shifts/$id');
+  }
 }

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// An admin-created delivery group whose coverage is one or more free-drawn
@@ -57,12 +57,8 @@ class RegionGroupModel {
       name: json['name'] as String? ?? '',
       colorValue: (json['colorValue'] as num?)?.toInt() ?? 0xFFC8972A,
       polygons: polygons,
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
-      updatedAt: json['updatedAt'] is Timestamp
-          ? (json['updatedAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 
@@ -78,10 +74,8 @@ class RegionGroupModel {
                       .toList(),
                 })
             .toList(),
-        'createdAt': createdAt != null
-            ? Timestamp.fromDate(createdAt!)
-            : FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': createdAt?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
       };
 
   RegionGroupModel copyWith({

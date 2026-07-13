@@ -1,85 +1,55 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/order_model.dart';
-import '../utils/constants.dart';
+import 'api_client.dart';
 
 class OrderService {
   OrderService._();
   static final OrderService instance = OrderService._();
 
-  final CollectionReference<Map<String, dynamic>> _col =
-      FirebaseFirestore.instance.collection('orders');
+  final ApiClient _api = ApiClient.instance;
 
-  Future<String> createOrder(OrderModel order) async {
-    try {
-      final ref = _col.doc();
-      final data = order.copyWith(id: ref.id).toJson();
-      data['createdAt'] = FieldValue.serverTimestamp();
-      data['updatedAt'] = FieldValue.serverTimestamp();
-      await ref.set(data);
-      return ref.id;
-    } catch (e) {
-      throw Exception('Failed to create order: $e');
-    }
-  }
+  static const _interval = Duration(seconds: 10);
 
-  List<OrderModel> _sortByCreatedDesc(QuerySnapshot<Map<String, dynamic>> s) {
-    final list = s.docs
-        .map((d) => OrderModel.fromJson({...d.data(), 'id': d.id}))
-        .toList();
-    list.sort((a, b) {
-      final ad = a.createdAt ?? DateTime(1970);
-      final bd = b.createdAt ?? DateTime(1970);
-      return bd.compareTo(ad);
-    });
-    return list;
-  }
+  List<OrderModel> _parse(dynamic res) => (res as List)
+      .map((e) => OrderModel.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList();
 
-  Stream<List<OrderModel>> userOrdersStream(String userId) =>
-      _col.where('userId', isEqualTo: userId).snapshots().map(_sortByCreatedDesc);
+  Stream<List<OrderModel>> _list(String query) =>
+      ApiClient.poll(_interval, () async => _parse(await _api.get('/v1/admin/orders$query')));
+
+  Stream<List<OrderModel>> userOrdersStream(String userId) => _list('?userId=$userId');
 
   Stream<List<OrderModel>> ordersByGroupStream(String group) =>
-      _col.where('userGroup', isEqualTo: group).snapshots().map(_sortByCreatedDesc);
+      _list('?group=${Uri.encodeComponent(group)}');
 
-  /// Every order across all groups.
-  Stream<List<OrderModel>> allOrdersStream() =>
-      _col.snapshots().map(_sortByCreatedDesc);
+  Stream<List<OrderModel>> allOrdersStream() => _list('');
 
-  /// All orders when [group] is the "All" pseudo-group, else just that group.
   Stream<List<OrderModel>> ordersStream(String group) =>
-      AppConstants.isAllGroups(group)
-          ? allOrdersStream()
-          : ordersByGroupStream(group);
+      group.isEmpty ? allOrdersStream() : ordersByGroupStream(group);
 
-  Stream<List<OrderModel>> ordersByShiftStream(String shiftId) =>
-      _col.where('shiftId', isEqualTo: shiftId).snapshots().map(_sortByCreatedDesc);
+  Stream<List<OrderModel>> ordersByShiftStream(String shiftId) => _list('?shiftId=$shiftId');
 
-  Stream<OrderModel?> orderStream(String orderId) {
-    return _col.doc(orderId).snapshots().map((d) {
-      if (!d.exists || d.data() == null) return null;
-      return OrderModel.fromJson({...d.data()!, 'id': d.id});
-    });
-  }
+  Stream<OrderModel?> orderStream(String orderId) =>
+      ApiClient.poll(const Duration(seconds: 8), () async {
+        final res = await _api.get('/v1/orders/$orderId');
+        return OrderModel.fromJson(Map<String, dynamic>.from(res as Map));
+      });
 
   Future<void> updateStatus(String orderId, String status) async {
-    try {
-      await _col.doc(orderId).update({
-        'status': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      throw Exception('Failed to update status: $e');
+    await _api.patch('/v1/admin/orders/$orderId', {'status': status});
+  }
+
+  /// Partial admin edit (adminNote, shiftId, pendingApproval, cashCollected…).
+  Future<void> updateOrder(String orderId, Map<String, dynamic> data) async {
+    final allowed = <String, dynamic>{};
+    for (final k in ['status', 'adminNote', 'pendingApproval', 'awaitingSchedule', 'cashCollected', 'shiftId']) {
+      if (data.containsKey(k)) allowed[k] = data[k];
+    }
+    if (allowed.isNotEmpty) {
+      await _api.patch('/v1/admin/orders/$orderId', allowed);
     }
   }
 
-  Future<void> updateOrder(String orderId, Map<String, dynamic> data) async {
-    try {
-      await _col.doc(orderId).update({
-        ...data,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      throw Exception('Failed to update order: $e');
-    }
+  Future<void> assignDriver(String orderId, String driverId) async {
+    await _api.post('/v1/admin/orders/$orderId/assign', {'driverId': driverId});
   }
 }

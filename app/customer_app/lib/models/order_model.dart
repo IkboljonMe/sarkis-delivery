@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 
 import 'order_item_model.dart';
 
@@ -114,9 +114,7 @@ class OrderModel {
       userLat: (json['userLat'] as num?)?.toDouble(),
       userLng: (json['userLng'] as num?)?.toDouble(),
       shiftId: json['shiftId'] as String? ?? '',
-      shiftDate: json['shiftDate'] is Timestamp
-          ? (json['shiftDate'] as Timestamp).toDate()
-          : DateTime.now(),
+      shiftDate: parseDate(json['shiftDate']) ?? DateTime.now(),
       shiftLabel: json['shiftLabel'] as String? ?? '',
       items: items,
       subtotal: (json['subtotal'] as num?)?.toDouble(),
@@ -129,12 +127,8 @@ class OrderModel {
       editDaysBefore: (json['editDaysBefore'] as num?)?.toInt() ?? 4,
       pendingApproval: json['pendingApproval'] as bool? ?? false,
       awaitingSchedule: json['awaitingSchedule'] as bool? ?? false,
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
-      updatedAt: json['updatedAt'] is Timestamp
-          ? (json['updatedAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 
@@ -149,7 +143,7 @@ class OrderModel {
         'userLat': userLat,
         'userLng': userLng,
         'shiftId': shiftId,
-        'shiftDate': Timestamp.fromDate(shiftDate),
+        'shiftDate': shiftDate.toIso8601String(),
         'shiftLabel': shiftLabel,
         'items': items.map((e) => e.toJson()).toList(),
         'subtotal': subtotal,
@@ -162,10 +156,8 @@ class OrderModel {
         'editDaysBefore': editDaysBefore,
         'pendingApproval': pendingApproval,
         'awaitingSchedule': awaitingSchedule,
-        'createdAt': createdAt != null
-            ? Timestamp.fromDate(createdAt!)
-            : FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': createdAt?.toIso8601String(),
+        'updatedAt': updatedAt?.toIso8601String(),
       };
 
   OrderModel copyWith({

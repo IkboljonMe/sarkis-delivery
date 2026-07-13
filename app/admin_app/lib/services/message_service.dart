@@ -1,73 +1,49 @@
-import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-
 import '../models/message_model.dart';
+import 'api_client.dart';
 
-/// Chat messages live under messages/{topicId}/messages/{msgId}.
-/// One topic per customer; topicId == userId.
+/// Customer↔admin chat backed by the REST API (polling; topicId == userId).
 class MessageService {
   MessageService._();
   static final MessageService instance = MessageService._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ApiClient _api = ApiClient.instance;
 
-  CollectionReference<Map<String, dynamic>> _msgs(String topicId) =>
-      _db.collection('messages').doc(topicId).collection('messages');
+  List<MessageModel> _parse(dynamic res) => (res as List)
+      .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList();
 
-  /// Uploads chat media to Storage and returns its download URL.
+  /// Uploads chat media and returns its public URL.
   Future<String> uploadChatMedia(
     String topicId,
     Uint8List bytes, {
     required String ext,
     required String contentType,
-  }) async {
-    final name = _msgs(topicId).doc().id;
-    final ref = _storage.ref().child('chat/$topicId/$name.$ext');
-    await ref.putData(bytes, SettableMetadata(contentType: contentType));
-    return ref.getDownloadURL();
+  }) {
+    return _api.uploadBytes('/v1/uploads/chat', bytes, filename: 'media.$ext');
   }
 
-  /// Uploads a media file by path (streamed — used for large videos).
+  /// Uploads a media file by path (large videos/voice notes).
   Future<String> uploadChatFile(
     String topicId,
     String path, {
     required String ext,
     required String contentType,
-  }) async {
-    final name = _msgs(topicId).doc().id;
-    final ref = _storage.ref().child('chat/$topicId/$name.$ext');
-    await ref.putFile(File(path), SettableMetadata(contentType: contentType));
-    return ref.getDownloadURL();
+  }) {
+    return _api.uploadFilePath('/v1/uploads/chat', path);
   }
 
   /// Soft-deletes a message ("message deleted" placeholder for both sides).
   Future<void> deleteMessage(String topicId, String msgId) async {
     try {
-      await _msgs(topicId).doc(msgId).update({
-        'deleted': true,
-        'text': '',
-        'mediaUrl': '',
-        'mediaUrls': <String>[],
-        'waveform': <int>[],
-        'orderId': '',
-        'type': 'text',
-        'uploading': false,
-      });
+      await _api.delete('/v1/messages/$topicId/$msgId');
     } catch (_) {}
   }
 
-  Stream<List<MessageModel>> messagesStream(String topicId) {
-    return _msgs(topicId)
-        .orderBy('createdAt', descending: false)
-        .snapshots()
-        .map((s) => s.docs
-            .map((d) => MessageModel.fromJson({...d.data(), 'id': d.id}))
-            .toList());
-  }
+  Stream<List<MessageModel>> messagesStream(String topicId) =>
+      ApiClient.poll(const Duration(seconds: 3),
+          () async => _parse(await _api.get('/v1/messages/$topicId')));
 
   Future<String> sendMessage({
     required String topicId,
@@ -75,7 +51,6 @@ class MessageService {
     required String senderId,
     required String senderName,
     required bool isFromAdmin,
-    bool silent = false,
     String replyToId = '',
     String replyToText = '',
     String replyToSender = '',
@@ -88,149 +63,97 @@ class MessageService {
     int sizeBytes = 0,
     bool uploading = false,
     int uploadCount = 0,
+    bool silent = false, // push suppression is handled server-side
   }) async {
-    final ref = _msgs(topicId).doc();
-    try {
-      await ref.set({
-        'id': ref.id,
-        'senderId': senderId,
-        'senderName': senderName,
-        'text': text,
-        'isFromAdmin': isFromAdmin,
-        'isRead': false,
-        'delivered': false,
-        // Status-update messages set silent:true so the Cloud Function does
-        // not send a duplicate chat push (the order trigger handles it).
-        'silent': silent,
-        'replyToId': replyToId,
-        'replyToText': replyToText,
-        'replyToSender': replyToSender,
-        'reactions': <String, String>{},
-        'type': type,
-        'mediaUrl': mediaUrl,
-        'mediaUrls': mediaUrls,
-        'durationMs': durationMs,
-        'orderId': orderId,
-        'waveform': waveform,
-        'sizeBytes': sizeBytes,
-        'uploading': uploading,
-        'uploadCount': uploadCount,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      return ref.id;
-    } catch (e) {
-      throw Exception('Failed to send message: $e');
-    }
+    final res = await _api.post('/v1/messages/$topicId', {
+      'type': type,
+      'text': text,
+      if (replyToId.isNotEmpty) 'replyToId': replyToId,
+      if (replyToText.isNotEmpty) 'replyToText': replyToText,
+      if (replyToSender.isNotEmpty) 'replyToSender': replyToSender,
+      if (mediaUrl.isNotEmpty) 'mediaUrl': mediaUrl,
+      if (mediaUrls.isNotEmpty) 'mediaUrls': mediaUrls,
+      if (durationMs > 0) 'durationMs': durationMs,
+      if (orderId.isNotEmpty) 'orderId': orderId,
+      if (waveform.isNotEmpty) 'waveform': waveform,
+      if (sizeBytes > 0) 'sizeBytes': sizeBytes,
+      if (uploadCount > 0) 'uploadCount': uploadCount,
+    });
+    return (res as Map)['id'] as String;
   }
 
-  /// Patches fields of an existing message (fills media URLs after upload).
+  /// Patches fields of an existing message (fills media URLs after an
+  /// optimistic upload completes).
   Future<void> patchMessage(
       String topicId, String msgId, Map<String, dynamic> data) async {
     try {
-      await _msgs(topicId).doc(msgId).update(data);
+      await _api.patch('/v1/messages/$topicId/$msgId', data);
     } catch (_) {}
   }
 
   /// Appends one uploaded photo URL to an album message (optimistic send).
   Future<void> appendMediaUrl(String topicId, String msgId, String url) async {
     try {
-      await _msgs(topicId).doc(msgId).update({
-        'mediaUrls': FieldValue.arrayUnion([url]),
-      });
+      await _api.patch('/v1/messages/$topicId/$msgId', {'appendMediaUrl': url});
     } catch (_) {}
   }
 
-  /// Toggles an emoji reaction by [userId] on a message.
+  /// Toggles an emoji reaction on a message ([userId] is implied by auth).
   Future<void> toggleReaction(
       String topicId, String msgId, String userId, String emoji) async {
     try {
-      final ref = _msgs(topicId).doc(msgId);
-      final doc = await ref.get();
-      final reactions = (doc.data()?['reactions'] as Map?) ?? const {};
-      if (reactions[userId] == emoji) {
-        await ref.update({'reactions.$userId': FieldValue.delete()});
-      } else {
-        await ref.update({'reactions.$userId': emoji});
-      }
+      await _api.post('/v1/messages/$topicId/$msgId/reactions', {'emoji': emoji});
     } catch (_) {}
   }
 
   /// Marks messages from the other party as read.
   Future<void> markRead(String topicId, {required bool readingAsAdmin}) async {
     try {
-      // Admin reads customer messages (isFromAdmin == false) and vice versa.
-      final query = await _msgs(topicId)
-          .where('isFromAdmin', isEqualTo: !readingAsAdmin)
-          .where('isRead', isEqualTo: false)
-          .get();
-      final batch = _db.batch();
-      for (final d in query.docs) {
-        batch.update(d.reference, {'isRead': true});
-      }
-      await batch.commit();
+      await _api.post('/v1/messages/$topicId/read', {'asAdmin': readingAsAdmin});
     } catch (_) {}
   }
 
   /// Unread count for the customer (admin messages not yet read).
-  Stream<int> customerUnreadStream(String topicId) {
-    return _msgs(topicId)
-        .where('isFromAdmin', isEqualTo: true)
-        .where('isRead', isEqualTo: false)
-        .snapshots()
-        .map((s) => s.docs.length);
-  }
-
-  /// All topics with their latest message (admin chat list).
-  Stream<List<ChatTopicModel>> topicsStream() {
-    return _db.collection('messages').snapshots().asyncMap((s) async {
-      final topics = <ChatTopicModel>[];
-      for (final doc in s.docs) {
-        final last = await _msgs(doc.id)
-            .orderBy('createdAt', descending: true)
-            .limit(1)
-            .get();
-        final unread = await _msgs(doc.id)
-            .where('isFromAdmin', isEqualTo: false)
-            .where('isRead', isEqualTo: false)
-            .get();
-        final data = doc.data();
-        final lastMsg = last.docs.isNotEmpty
-            ? MessageModel.fromJson(
-                {...last.docs.first.data(), 'id': last.docs.first.id})
-            : null;
-        topics.add(ChatTopicModel(
-          topicId: doc.id,
-          userName: data['userName'] as String? ?? '',
-          userGroup: data['userGroup'] as String? ?? '',
-          lastMessage: lastMsg?.previewText ?? '',
-          lastAt: lastMsg?.createdAt,
-          unread: unread.docs.length,
-          lastFromAdmin: lastMsg?.isFromAdmin ?? false,
-          lastDelivered: lastMsg?.delivered ?? false,
-          lastRead: lastMsg?.isRead ?? false,
-        ));
-      }
-      topics.sort((a, b) {
-        if (a.unread != b.unread) return b.unread.compareTo(a.unread);
-        final ad = a.lastAt ?? DateTime(1970);
-        final bd = b.lastAt ?? DateTime(1970);
-        return bd.compareTo(ad);
+  Stream<int> customerUnreadStream(String topicId) =>
+      ApiClient.poll(const Duration(seconds: 6), () async {
+        final res = await _api.get('/v1/messages/unread');
+        return ((res as Map)['unread'] as num?)?.toInt() ?? 0;
       });
-      return topics;
-    });
+
+  /// All topics (admin chat list).
+  Stream<List<ChatTopicModel>> topicsStream() =>
+      ApiClient.poll(const Duration(seconds: 5), () async {
+        final res = await _api.get('/v1/messages/topics');
+        return (res as List)
+            .map((e) =>
+                ChatTopicModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      });
+
+  /// Asks the backend to post the one-time welcome message (no-op if the
+  /// topic already has messages).
+  Future<void> sendWelcomeIfNew({
+    required String topicId,
+    required String userName,
+    required String userGroup,
+    required String text,
+    required String adminUid,
+    required String senderName,
+  }) async {
+    try {
+      await _api.post('/v1/messages/$topicId/welcome',
+          {'text': text, 'senderName': senderName});
+    } catch (_) {}
   }
 
-  /// Ensures a topic doc exists with denormalized user info for the admin list.
+  /// Topics are created server-side on first access; kept for compatibility.
   Future<void> ensureTopic({
     required String topicId,
     required String userName,
     required String userGroup,
   }) async {
     try {
-      await _db.collection('messages').doc(topicId).set(
-        {'userName': userName, 'userGroup': userGroup},
-        SetOptions(merge: true),
-      );
+      await _api.get('/v1/messages/topics/$topicId');
     } catch (_) {}
   }
 }

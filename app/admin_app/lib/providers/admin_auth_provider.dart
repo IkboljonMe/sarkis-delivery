@@ -2,11 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_service.dart';
-import '../services/user_service.dart';
 
 class AdminAuthProvider extends ChangeNotifier {
   final AuthService _auth = AuthService.instance;
-  final UserService _users = UserService.instance;
 
   static const _rememberKey = 'admin_remember';
   static const _emailKey = 'admin_email';
@@ -43,11 +41,11 @@ class AdminAuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final cred = await _auth.signInWithEmail(email: email, password: password);
-      final uid = cred.user?.uid;
-      if (uid == null) throw Exception('No user');
-
-      final admin = await _users.isAdmin(uid);
+      final session = await _auth.signInWithEmail(email: email, password: password);
+      final role =
+          ((session['user'] as Map?)?['role'] as String?) ?? 'CUSTOMER';
+      // Staff app: drivers, admins and the superadmin may log in.
+      final admin = role != 'CUSTOMER';
       if (!admin) {
         await _auth.signOut();
         _error = 'Доступ запрещён / Not an admin account';

@@ -1,74 +1,55 @@
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-
 import '../models/user_model.dart';
+import 'api_client.dart';
 
 class UserService {
   UserService._();
   static final UserService instance = UserService._();
 
-  final CollectionReference<Map<String, dynamic>> _col =
-      FirebaseFirestore.instance.collection('users');
+  final ApiClient _api = ApiClient.instance;
 
+  /// The API only exposes the caller's own profile ([uid] kept for
+  /// signature compatibility).
   Future<UserModel?> getUser(String uid) async {
-    try {
-      final doc = await _col.doc(uid).get();
-      if (!doc.exists || doc.data() == null) return null;
-      return UserModel.fromJson({...doc.data()!, 'id': doc.id});
-    } catch (e) {
-      throw Exception('Failed to load user: $e');
-    }
+    final res = await _api.get('/v1/users/me');
+    _api.currentUser = Map<String, dynamic>.from(res as Map);
+    return UserModel.fromJson(_api.currentUser!);
   }
 
+  /// Saves the profile fields of [user] (registration / profile edit).
   Future<void> saveUser(UserModel user) async {
-    try {
-      await _col.doc(user.id).set(user.toJson(), SetOptions(merge: true));
-    } catch (e) {
-      throw Exception('Failed to save user: $e');
-    }
+    await _api.patch('/v1/users/me', {
+      'name': user.name,
+      'lastName': user.lastName,
+      'address': user.address,
+      'city': user.city,
+      'postalCode': user.postalCode,
+      'group': user.group,
+      if (user.lat != null) 'lat': user.lat,
+      if (user.lng != null) 'lng': user.lng,
+      'language': user.language,
+      'referredBy': user.referredBy,
+    });
   }
 
   Future<void> updateFields(String uid, Map<String, dynamic> data) async {
-    try {
-      await _col.doc(uid).set(data, SetOptions(merge: true));
-    } catch (e) {
-      throw Exception('Failed to update user: $e');
-    }
+    await _api.patch('/v1/users/me', data);
   }
 
   Future<void> updateFcmToken(String uid, String token) async {
-    try {
-      await _col.doc(uid).set({'fcmToken': token}, SetOptions(merge: true));
-    } catch (_) {}
+    await _api.post('/v1/users/me/fcm-token', {'token': token});
   }
 
-  /// Permanently removes the user's profile document.
   Future<void> deleteUser(String uid) async {
-    try {
-      await _col.doc(uid).delete();
-    } catch (e) {
-      throw Exception('Failed to delete user: $e');
-    }
+    await _api.delete('/v1/users/me');
   }
 
-  /// Uploads a profile photo to Storage and returns its download URL.
   Future<String> uploadAvatar(String uid, Uint8List bytes) async {
-    final ref = FirebaseStorage.instance.ref().child('avatars/$uid/avatar.jpg');
-    await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-    return ref.getDownloadURL();
+    return _api.uploadBytes('/v1/users/me/avatar', bytes,
+        filename: 'avatar.jpg', field: 'file');
   }
 
-  Future<bool> isAdmin(String uid) async {
-    final user = await getUser(uid);
-    return user?.isAdmin ?? false;
-  }
-
-  /// All users (admin only).
-  Stream<List<UserModel>> usersStream() {
-    return _col.snapshots().map((s) => s.docs
-        .map((d) => UserModel.fromJson({...d.data(), 'id': d.id}))
-        .toList());
-  }
+  Future<bool> isAdmin(String uid) async =>
+      (_api.currentUser?['isAdmin'] as bool?) ?? false;
 }

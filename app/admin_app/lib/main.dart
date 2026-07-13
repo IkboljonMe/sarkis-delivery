@@ -11,6 +11,7 @@ import 'l10n/admin_localizations.dart';
 import 'providers/admin_auth_provider.dart';
 import 'providers/group_provider.dart';
 import 'providers/locale_provider.dart';
+import 'services/api_client.dart';
 import 'services/local_notifications.dart';
 import 'screens/chats/chat_detail_screen.dart';
 import 'screens/splash_screen.dart';
@@ -59,6 +60,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase init skipped: $e');
   }
+
+  // Restore the API session (JWT) before the first screen decides where to go.
+  await ApiClient.instance.init();
 
   final auth = AdminAuthProvider();
   await auth.loadPreferences();

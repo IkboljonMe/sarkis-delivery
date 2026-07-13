@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 
 /// A discount coupon a customer can redeem at checkout. The document id is the
 /// normalized (uppercased) code, so a customer can fetch one by code without
@@ -60,14 +60,10 @@ class CouponModel {
       value: (json['value'] as num?)?.toDouble() ?? 0,
       minOrder: (json['minOrder'] as num?)?.toDouble() ?? 0,
       isActive: json['isActive'] as bool? ?? true,
-      expiresAt: json['expiresAt'] is Timestamp
-          ? (json['expiresAt'] as Timestamp).toDate()
-          : null,
+      expiresAt: parseDate(json['expiresAt']),
       usageLimit: (json['usageLimit'] as num?)?.toInt() ?? 0,
       usedCount: (json['usedCount'] as num?)?.toInt() ?? 0,
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
     );
   }
 
@@ -78,12 +74,10 @@ class CouponModel {
         'value': value,
         'minOrder': minOrder,
         'isActive': isActive,
-        'expiresAt': expiresAt != null ? Timestamp.fromDate(expiresAt!) : null,
+        'expiresAt': expiresAt?.toIso8601String(),
         'usageLimit': usageLimit,
         'usedCount': usedCount,
-        'createdAt': createdAt != null
-            ? Timestamp.fromDate(createdAt!)
-            : FieldValue.serverTimestamp(),
+        'createdAt': createdAt?.toIso8601String(),
       };
 
   CouponModel copyWith({

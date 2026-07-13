@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 
 /// A chat message inside a topic (topicId == userId).
 class MessageModel {
@@ -101,9 +101,7 @@ class MessageModel {
       isFromAdmin: json['isFromAdmin'] as bool? ?? false,
       isRead: json['isRead'] as bool? ?? false,
       delivered: json['delivered'] as bool? ?? false,
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
       replyToId: json['replyToId'] as String? ?? '',
       replyToText: json['replyToText'] as String? ?? '',
       replyToSender: json['replyToSender'] as String? ?? '',
@@ -150,9 +148,7 @@ class MessageModel {
         'uploading': uploading,
         'uploadCount': uploadCount,
         'deleted': deleted,
-        'createdAt': createdAt != null
-            ? Timestamp.fromDate(createdAt!)
-            : FieldValue.serverTimestamp(),
+        'createdAt': createdAt?.toIso8601String(),
       };
 
   MessageModel copyWith({bool? isRead, bool? delivered}) => MessageModel(
@@ -191,4 +187,13 @@ class ChatTopicModel {
     this.lastAt,
     this.unread = 0,
   });
+
+  factory ChatTopicModel.fromJson(Map<String, dynamic> json) => ChatTopicModel(
+        topicId: json['topicId'] as String? ?? '',
+        userName: json['userName'] as String? ?? '',
+        userGroup: json['userGroup'] as String? ?? '',
+        lastMessage: json['lastMessage'] as String? ?? '',
+        lastAt: parseDate(json['lastAt']),
+        unread: (json['unread'] as num?)?.toInt() ?? 0,
+      );
 }

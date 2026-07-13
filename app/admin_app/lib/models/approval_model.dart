@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 
 /// A pending change a customer requested that needs admin review.
 class ApprovalModel {
@@ -28,9 +28,7 @@ class ApprovalModel {
       userName: json['userName'] as String? ?? '',
       changes: (json['changes'] as Map?)?.cast<String, dynamic>() ?? const {},
       status: json['status'] as String? ?? 'pending',
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
     );
   }
 }

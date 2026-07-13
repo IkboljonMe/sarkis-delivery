@@ -1,33 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/coupon_model.dart';
+import 'api_client.dart';
 
 class CouponService {
   CouponService._();
   static final CouponService instance = CouponService._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  CollectionReference<Map<String, dynamic>> get _coupons =>
-      _db.collection('coupons');
+  final ApiClient _api = ApiClient.instance;
 
-  /// Fetches a coupon by its (case-insensitive) code, or null if it doesn't
-  /// exist. The doc id is the normalized code, so this is a single get.
+  /// Fetches a coupon by its (case-insensitive) code, or null if unknown.
   Future<CouponModel?> getByCode(String code) async {
     final id = CouponModel.normalize(code);
     if (id.isEmpty) return null;
     try {
-      final doc = await _coupons.doc(id).get();
-      if (!doc.exists) return null;
-      return CouponModel.fromJson({...doc.data()!, 'id': doc.id});
+      final res = await _api.get('/v1/coupons/${Uri.encodeComponent(id)}');
+      return CouponModel.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (_) {
       return null;
     }
   }
 
-  /// Best-effort increment of redemption count after an order is placed.
-  Future<void> incrementUsage(String id) async {
-    try {
-      await _coupons.doc(id).update({'usedCount': FieldValue.increment(1)});
-    } catch (_) {}
-  }
+  /// Redemption is counted server-side when the order is created.
+  Future<void> incrementUsage(String id) async {}
 }

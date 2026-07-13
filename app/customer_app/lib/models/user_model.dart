@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/json_date.dart';
 
 class UserModel {
   final String id;
@@ -60,9 +60,7 @@ class UserModel {
       isAdmin: json['isAdmin'] as bool? ?? false,
       isVerified: json['isVerified'] as bool? ?? false,
       referredBy: json['referredBy'] as String? ?? '',
-      createdAt: json['createdAt'] is Timestamp
-          ? (json['createdAt'] as Timestamp).toDate()
-          : null,
+      createdAt: parseDate(json['createdAt']),
     );
   }
 
@@ -84,9 +82,7 @@ class UserModel {
       'isAdmin': isAdmin,
       'isVerified': isVerified,
       'referredBy': referredBy,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 

@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  DRIVER
+  ADMIN
+  SUPERADMIN
+}
+
+enum Platform {
+  android
+  ios
+  web
+  unknown
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  on_the_way
+  delivered
+  cancelled
+}
+
+model User {
+  id              String    @id @default(uuid())
+  role            Role      @default(CUSTOMER)
+  phone           String?   @unique
+  email           String?   @unique
+  passwordHash    String?
+  googleId        String?   @unique
+  name            String    @default("")
+  lastName        String    @default("")
+  address         String    @default("")
+  city            String    @default("")
+  postalCode      String    @default("")
+  group           String    @default("") // Berlin | Hamburg | Frankfurt | München
+  lat             Float?
+  lng             Float?
+  language        String    @default("en") // en | hy | ru | tr | de
+  photoUrl        String    @default("")
+  referredBy      String    @default("")
+  isVerified      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  phoneVerifiedAt DateTime?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  orders        Order[]        @relation("CustomerOrders")
+  driverOrders  Order[]        @relation("DriverOrders")
+  refreshTokens RefreshToken[]
+  devices       Device[]
+  loginEvents   LoginEvent[]
+  approvals     Approval[]
+  messages      Message[]
+
+  @@index([group])
+  @@index([role])
+}
+
+model OtpCode {
+  id         String    @id @default(uuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  ip         String    @default("")
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  family      String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  ip          String    @default("")
+  platform    Platform  @default(unknown)
+  userAgent   String    @default("")
+  deviceModel String    @default("")
+  appVersion  String    @default("")
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([family])
+}
+
+model LoginEvent {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  identifier  String // phone or email used
+  method      String // otp | email | google | refresh
+  success     Boolean
+  ip          String   @default("")
+  platform    Platform @default(unknown)
+  userAgent   String   @default("")
+  browser     String   @default("")
+  os          String   @default("")
+  deviceModel String   @default("")
+  appVersion  String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+model Device {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    Platform @default(unknown)
+  deviceModel String   @default("")
+  osVersion   String   @default("")
+  appVersion  String   @default("")
+  fcmToken    String   @default("")
+  lastIp      String   @default("")
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, platform, deviceModel])
+  @@index([fcmToken])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      Json // {en, hy, ru, tr, de}
+  imageUrl  String    @default("")
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name          Json // {en, hy, ru, tr, de}
+  description   Json     @default("{}")
+  price         Float
+  unit          String   @default("")
+  maxQty        Int      @default(0)
+  imageUrl      String   @default("")
+  images        Json     @default("[]")
+  photos        Json     @default("[]") // [{url, title:{en,..}}]
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  discountType  String   @default("none") // none | percent | fixed
+  discountValue Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model Coupon {
+  id         String    @id @default(uuid())
+  code       String    @unique
+  type       String // percent | fixed
+  value      Float
+  minOrder   Float     @default(0)
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime?
+  usageLimit Int       @default(0) // 0 = unlimited
+  usedCount  Int       @default(0)
+  createdAt  DateTime  @default(now())
+}
+
+model RegionGroup {
+  id         String   @id @default(uuid())
+  name       String   @unique // Berlin | Hamburg | ...
+  colorValue Int      @default(0)
+  polygons   Json     @default("[]") // [[{lat,lng}, ...], ...]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Shift {
+  id               String   @id @default(uuid())
+  group            String
+  date             DateTime
+  label            String   @default("")
+  isOpen           Boolean  @default(true)
+  cancelDaysBefore Int      @default(1)
+  editDaysBefore   Int      @default(1)
+  createdAt        DateTime @default(now())
+  orders           Order[]
+
+  @@index([group, date])
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  userId           String
+  user             User        @relation("CustomerOrders", fields: [userId], references: [id])
+  userName         String      @default("")
+  userPhone        String      @default("")
+  userAddress      String      @default("")
+  userCity         String      @default("")
+  userGroup        String      @default("")
+  userLat          Float?
+  userLng          Float?
+  shiftId          String?
+  shift            Shift?      @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  shiftDate        DateTime?
+  shiftLabel       String      @default("")
+  driverId         String?
+  driver           User?       @relation("DriverOrders", fields: [driverId], references: [id], onDelete: SetNull)
+  subtotal         Float       @default(0)
+  discount         Float       @default(0)
+  couponCode       String      @default("")
+  totalPrice       Float       @default(0)
+  status           OrderStatus @default(pending)
+  adminNote        String      @default("")
+  cancelDaysBefore Int         @default(1)
+  editDaysBefore   Int         @default(1)
+  pendingApproval  Boolean     @default(false)
+  awaitingSchedule Boolean     @default(false)
+  cashCollected    Boolean     @default(false)
+  confirmedAt      DateTime?
+  onTheWayAt       DateTime?
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  items            OrderItem[]
+  events           OrderEvent[]
+
+  @@index([userId, createdAt])
+  @@index([shiftId])
+  @@index([userGroup, status])
+  @@index([driverId, status])
+}
+
+model OrderItem {
+  id         String @id @default(uuid())
+  orderId    String
+  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String @default("")
+  categoryId String @default("")
+  name       String @default("")
+  qty        Int
+  unitPrice  Float
+}
+
+model OrderEvent {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  actorId   String   @default("")
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model ChatTopic {
+  id            String    @id // == customer userId
+  userName      String    @default("")
+  userGroup     String    @default("")
+  lastMessage   String    @default("")
+  lastAt        DateTime?
+  lastFromAdmin Boolean   @default(false)
+  customerUnread Int      @default(0) // unread for the customer
+  adminUnread    Int      @default(0) // unread for staff
+  createdAt     DateTime  @default(now())
+  messages      Message[]
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  topicId     String
+  topic       ChatTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User      @relation(fields: [senderId], references: [id])
+  senderName  String    @default("")
+  isFromAdmin Boolean   @default(false)
+  isRead      Boolean   @default(false)
+  delivered   Boolean   @default(true)
+  type        String    @default("text") // text | image | album | voice | file | order
+  text        String    @default("")
+  deleted     Boolean   @default(false)
+  extra       Json      @default("{}") // mediaUrl, mediaUrls, reactions, replyTo*, durationMs, waveform, sizeBytes, orderId, uploadCount
+  createdAt   DateTime  @default(now())
+  editedAt    DateTime?
+
+  @@index([topicId, createdAt])
+}
+
+model AppSetting {
+  key   String @id
+  value Json   @default("{}")
+}
+
+model Approval {
+  id         String    @id @default(uuid())
+  type       String    @default("profile")
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName   String    @default("")
+  changes    Json      @default("{}")
+  status     String    @default("pending") // pending | approved | rejected
+  resolvedBy String    @default("")
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([status, createdAt])
+}

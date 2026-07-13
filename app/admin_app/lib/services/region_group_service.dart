@@ -1,40 +1,35 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/region_group_model.dart';
+import 'api_client.dart';
 
-/// CRUD for admin-created map region groups (collection `regionGroups`).
+/// Admin CRUD for delivery zones (map polygons).
 class RegionGroupService {
   RegionGroupService._();
   static final RegionGroupService instance = RegionGroupService._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  CollectionReference<Map<String, dynamic>> get _groups =>
-      _db.collection('regionGroups');
+  final ApiClient _api = ApiClient.instance;
 
-  Stream<List<RegionGroupModel>> groupsStream() {
-    return _groups.snapshots().map((s) {
-      final list = s.docs
-          .map((d) => RegionGroupModel.fromJson({...d.data(), 'id': d.id}))
-          .toList();
-      list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      return list;
-    });
-  }
+  Stream<List<RegionGroupModel>> groupsStream() => ApiClient.poll(
+      const Duration(seconds: 30), () async {
+        final res = await _api.get('/v1/zones');
+        return (res as List)
+            .map((e) =>
+                RegionGroupModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      });
 
-  /// Creates a new group (auto id) or updates an existing one when [g.id] is
-  /// set. Returns the saved document id.
+  /// Creates or updates a zone; returns its id.
   Future<String> save(RegionGroupModel g) async {
-    try {
-      if (g.id.isEmpty) {
-        final ref = await _groups.add(g.toJson());
-        return ref.id;
-      }
-      await _groups.doc(g.id).set(g.toJson(), SetOptions(merge: true));
-      return g.id;
-    } catch (e) {
-      throw Exception('Failed to save group: $e');
-    }
+    final body = Map<String, dynamic>.from(g.toJson())
+      ..remove('id')
+      ..remove('createdAt')
+      ..remove('updatedAt');
+    final res = g.id.isEmpty
+        ? await _api.post('/v1/admin/zones', body)
+        : await _api.patch('/v1/admin/zones/${g.id}', body);
+    return ((res as Map)['id'] as String?) ?? g.id;
   }
 
-  Future<void> delete(String id) => _groups.doc(id).delete();
+  Future<void> delete(String id) async {
+    await _api.delete('/v1/admin/zones/$id');
+  }
 }
