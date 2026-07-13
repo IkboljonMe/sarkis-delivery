@@ -20,7 +20,16 @@ async function main() {
   for (const u of testUsers) {
     await prisma.user.upsert({
       where: { phone: u.phone },
-      update: {},
+      update: {
+        name: u.name,
+        lastName: u.lastName,
+        address: u.address,
+        city: u.city,
+        group: u.group,
+        language: u.language,
+        isActive: true,
+        isVerified: true,
+      },
       create: u,
     });
     console.log(`Upserted test user: ${u.name} ${u.lastName} (${u.phone})`);

@@ -89,7 +89,9 @@ class ApiClient {
   Future<dynamic> delete(String path) => _send('DELETE', path);
 
   Future<dynamic> _send(String method, String path, [Object? body, bool canRetry = true]) async {
-    final uri = Uri.parse('$baseUrl$path');
+    final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    final uri = Uri.parse('$cleanBase$cleanPath');
     http.Response res;
     try {
       final req = http.Request(method, uri)..headers.addAll(headers());
@@ -111,8 +113,9 @@ class ApiClient {
 
   Future<bool> _tryRefresh() async {
     try {
+      final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
       final res = await http.post(
-        Uri.parse('$baseUrl/v1/auth/refresh'),
+        Uri.parse('$cleanBase/v1/auth/refresh'),
         headers: headers(),
         body: jsonEncode({'refreshToken': _refreshToken}),
       );
@@ -145,7 +148,9 @@ class ApiClient {
     required String field,
     List<http.MultipartFile> files = const [],
   }) async {
-    final req = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
+    final cleanBase = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    final req = http.MultipartRequest('POST', Uri.parse('$cleanBase$cleanPath'))
       ..headers.addAll(headers(json: false))
       ..files.addAll(files);
     final res = await http.Response.fromStream(await req.send());
