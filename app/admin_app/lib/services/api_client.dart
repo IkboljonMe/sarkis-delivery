@@ -180,7 +180,7 @@ class ApiClient {
     return urls.first;
   }
 
-  /// Turns a fetch into a Firestore-like stream: emits immediately, then
+  /// Turns a fetch into a periodic stream: emits immediately, then
   /// re-fetches every [interval]. Errors after the first emission are
   /// swallowed so a flaky connection doesn't kill open StreamBuilders.
   static Stream<T> poll<T>(Duration interval, Future<T> Function() fetch) async* {

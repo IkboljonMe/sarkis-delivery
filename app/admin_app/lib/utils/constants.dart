@@ -1,7 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import '../demo_firebase_options.dart' show DemoFirebaseOptions;
-
 /// App-wide constants for the admin app (Russian primary).
 class AppConstants {
   AppConstants._();
@@ -17,8 +15,6 @@ class AppConstants {
       dotenv.maybeGet('API_BASE_URL') ?? 'http://10.0.2.2:3000';
 
   static const String adminWhatsappNumber = 'YOUR_NUMBER_HERE';
-  static String get firebaseProjectId =>
-      DemoFirebaseOptions.current.projectId;
 
   // Groups are now admin-defined map regions (see RegionGroupService /
   // GroupProvider). A group's identifier is its name, so labels are identity.

@@ -1,20 +1,19 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' as drift;
+
+import '../local_db/app_database.dart';
 import '../models/message_model.dart';
+import '../sync/mutation_queue.dart';
 import 'api_client.dart';
 
-/// Customer↔admin chat backed by the REST API (polling; topicId == userId).
 class MessageService {
   MessageService._();
   static final MessageService instance = MessageService._();
 
   final ApiClient _api = ApiClient.instance;
 
-  List<MessageModel> _parse(dynamic res) => (res as List)
-      .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
-      .toList();
-
-  /// Uploads chat media and returns its public URL.
   Future<String> uploadChatMedia(
     String topicId,
     Uint8List bytes, {
@@ -24,7 +23,6 @@ class MessageService {
     return _api.uploadBytes('/v1/uploads/chat', bytes, filename: 'media.$ext');
   }
 
-  /// Uploads a media file by path (large videos/voice notes).
   Future<String> uploadChatFile(
     String topicId,
     String path, {
@@ -34,16 +32,52 @@ class MessageService {
     return _api.uploadFilePath('/v1/uploads/chat', path);
   }
 
-  /// Soft-deletes a message ("message deleted" placeholder for both sides).
   Future<void> deleteMessage(String topicId, String msgId) async {
-    try {
-      await _api.delete('/v1/messages/$topicId/$msgId');
-    } catch (_) {}
+    final db = AppDatabase.instance;
+    await (db.update(db.messages)..where((t) => t.id.equals(msgId))).write(const MessagesCompanion(
+      type: drift.Value('deleted'),
+      content: drift.Value(''),
+    ));
+
+    await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'DELETE',
+      path: '/v1/messages/$topicId/$msgId',
+    );
   }
 
-  Stream<List<MessageModel>> messagesStream(String topicId) =>
-      ApiClient.poll(const Duration(seconds: 3),
-          () async => _parse(await _api.get('/v1/messages/$topicId')));
+  Stream<List<MessageModel>> messagesStream(String topicId) {
+    final db = AppDatabase.instance;
+    return (db.select(db.messages)
+          ..where((t) => t.topicId.equals(topicId))
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+        .watch()
+        .map((rows) => rows.map((r) {
+              final extra = r.extraJson.isNotEmpty ? jsonDecode(r.extraJson) as Map<String, dynamic> : <String, dynamic>{};
+              return MessageModel(
+                id: r.id,
+                senderId: r.senderId,
+                senderName: r.senderName,
+                isFromAdmin: r.isFromAdmin,
+                type: r.type,
+                text: r.content,
+                createdAt: r.createdAt,
+                replyToId: (extra['replyToId'] as String?) ?? '',
+                replyToText: (extra['replyToText'] as String?) ?? '',
+                replyToSender: (extra['replyToSender'] as String?) ?? '',
+                mediaUrl: (extra['mediaUrl'] as String?) ?? '',
+                mediaUrls: extra['mediaUrls'] != null ? (extra['mediaUrls'] as List).map((e) => e.toString()).toList() : const [],
+                durationMs: (extra['durationMs'] as num?)?.toInt() ?? 0,
+                orderId: (extra['orderId'] as String?) ?? '',
+                waveform: extra['waveform'] != null ? (extra['waveform'] as List).map((e) => (e as num).toInt()).toList() : const [],
+                sizeBytes: (extra['sizeBytes'] as num?)?.toInt() ?? 0,
+                uploading: r.pendingSync,
+                uploadCount: (extra['uploadCount'] as num?)?.toInt() ?? 0,
+                reactions: extra['reactions'] != null ? Map<String, String>.from(extra['reactions'] as Map) : const {},
+                isRead: r.isRead,
+              );
+            }).toList());
+  }
 
   Future<String> sendMessage({
     required String topicId,
@@ -63,11 +97,12 @@ class MessageService {
     int sizeBytes = 0,
     bool uploading = false,
     int uploadCount = 0,
-    bool silent = false, // push suppression is handled server-side
+    bool silent = false,
   }) async {
-    final res = await _api.post('/v1/messages/$topicId', {
-      'type': type,
-      'text': text,
+    final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+    final db = AppDatabase.instance;
+    
+    final extra = <String, dynamic>{
       if (replyToId.isNotEmpty) 'replyToId': replyToId,
       if (replyToText.isNotEmpty) 'replyToText': replyToText,
       if (replyToSender.isNotEmpty) 'replyToSender': replyToSender,
@@ -78,75 +113,121 @@ class MessageService {
       if (waveform.isNotEmpty) 'waveform': waveform,
       if (sizeBytes > 0) 'sizeBytes': sizeBytes,
       if (uploadCount > 0) 'uploadCount': uploadCount,
-    });
-    return (res as Map)['id'] as String;
+      if (silent) 'silent': silent,
+    };
+
+    await db.into(db.messages).insert(MessagesCompanion.insert(
+          id: localId,
+          topicId: topicId,
+          senderId: senderId,
+          senderName: drift.Value(senderName),
+          isFromAdmin: drift.Value(isFromAdmin),
+          type: drift.Value(type),
+          content: drift.Value(text),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          extraJson: drift.Value(jsonEncode(extra)),
+          isRead: const drift.Value(true),
+          pendingSync: const drift.Value(true),
+        ));
+
+    final res = await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'POST',
+      path: '/v1/messages/$topicId',
+      body: {
+        'type': type,
+        'text': text,
+        ...extra,
+      },
+      localRefId: localId,
+    );
+
+    if (res != null) {
+      await (db.delete(db.messages)..where((t) => t.id.equals(localId))).go();
+      return (res as Map)['id'] as String;
+    }
+    return localId;
   }
 
-  /// Patches fields of an existing message (fills media URLs after an
-  /// optimistic upload completes).
-  Future<void> patchMessage(
-      String topicId, String msgId, Map<String, dynamic> data) async {
-    try {
-      await _api.patch('/v1/messages/$topicId/$msgId', data);
-    } catch (_) {}
+  Future<void> patchMessage(String topicId, String msgId, Map<String, dynamic> data) async {
+    await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'PATCH',
+      path: '/v1/messages/$topicId/$msgId',
+      body: data,
+    );
   }
 
-  /// Appends one uploaded photo URL to an album message (optimistic send).
   Future<void> appendMediaUrl(String topicId, String msgId, String url) async {
-    try {
-      await _api.patch('/v1/messages/$topicId/$msgId', {'appendMediaUrl': url});
-    } catch (_) {}
+    await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'PATCH',
+      path: '/v1/messages/$topicId/$msgId',
+      body: {'appendMediaUrl': url},
+    );
   }
 
-  /// Toggles an emoji reaction on a message ([userId] is implied by auth).
-  Future<void> toggleReaction(
-      String topicId, String msgId, String userId, String emoji) async {
-    try {
-      await _api.post('/v1/messages/$topicId/$msgId/reactions', {'emoji': emoji});
-    } catch (_) {}
+  Future<void> toggleReaction(String topicId, String msgId, String userId, String emoji) async {
+    await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'POST',
+      path: '/v1/messages/$topicId/$msgId/reactions',
+      body: {'emoji': emoji},
+    );
   }
 
-  /// Marks messages from the other party as read.
   Future<void> markRead(String topicId, {required bool readingAsAdmin}) async {
-    try {
-      await _api.post('/v1/messages/$topicId/read', {'asAdmin': readingAsAdmin});
-    } catch (_) {}
+    final db = AppDatabase.instance;
+    await (db.update(db.messages)
+          ..where((t) => t.topicId.equals(topicId) & t.isFromAdmin.equals(!readingAsAdmin)))
+        .write(const MessagesCompanion(isRead: drift.Value(true)));
+
+    await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'POST',
+      path: '/v1/messages/$topicId/read',
+      body: {'asAdmin': readingAsAdmin},
+    );
   }
 
-  /// Unread count for the customer (admin messages not yet read).
-  Stream<int> customerUnreadStream(String topicId) =>
-      ApiClient.poll(const Duration(seconds: 6), () async {
-        final res = await _api.get('/v1/messages/unread');
-        return ((res as Map)['unread'] as num?)?.toInt() ?? 0;
-      });
+  Stream<int> customerUnreadStream(String topicId) {
+    return const Stream.empty(); // Not actively used via polling in admin app, kept for signature
+  }
 
-  /// All topics (admin chat list).
-  Stream<List<ChatTopicModel>> topicsStream() =>
-      ApiClient.poll(const Duration(seconds: 5), () async {
-        final res = await _api.get('/v1/messages/topics');
-        return (res as List)
-            .map((e) =>
-                ChatTopicModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
+  Stream<List<ChatTopicModel>> topicsStream() {
+    final db = AppDatabase.instance;
+    return (db.select(db.chatTopics)
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.lastAt)])) // Changed to watch directly
+        .watch()
+        .map((rows) => rows.map((r) => ChatTopicModel(
+              topicId: r.id,
+              userName: r.userName,
+              userGroup: r.userGroup,
+              lastMessage: r.lastMessage,
+              lastAt: r.lastAt,
+              unread: r.adminUnread,
+              lastFromAdmin: r.lastFromAdmin,
+              lastRead: false,
+              lastDelivered: true,
+            )).toList());
+  }
 
-  /// Asks the backend to post the one-time welcome message (no-op if the
-  /// topic already has messages).
   Future<void> sendWelcomeIfNew({
     required String topicId,
     required String userName,
     required String userGroup,
     required String text,
-    required String adminUid,
     required String senderName,
   }) async {
-    try {
-      await _api.post('/v1/messages/$topicId/welcome',
-          {'text': text, 'senderName': senderName});
-    } catch (_) {}
+    await MutationQueue.instance.run(
+      entityType: 'message',
+      method: 'POST',
+      path: '/v1/messages/$topicId/welcome',
+      body: {'text': text, 'senderName': senderName},
+    );
   }
 
-  /// Topics are created server-side on first access; kept for compatibility.
   Future<void> ensureTopic({
     required String topicId,
     required String userName,

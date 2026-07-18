@@ -30,7 +30,7 @@ class GroupProvider extends ChangeNotifier {
   /// Names plus the "all" pseudo-group, for the region switcher.
   List<String> get groupsWithAll => [AppConstants.groupAll, ...groupNames];
 
-  /// Loads the persisted selection and starts listening to Firestore. The
+  /// Loads the persisted selection and starts watching the zones list. The
   /// stream is started at boot; if auth hasn't been restored yet the read is
   /// denied, so [_subscribe] retries until it succeeds.
   Future<void> load() async {

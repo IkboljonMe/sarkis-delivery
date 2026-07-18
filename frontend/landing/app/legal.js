@@ -110,7 +110,7 @@ export const PRIVACY = {
     sections: [
       { h: "1. Was wir erheben", p: "Wir erheben Ihren Namen, Ihre Telefonnummer, Ihre Lieferadresse und Ihre bevorzugte Sprache — die Informationen, die zur Lieferung Ihrer Bestellungen und zur Kontaktaufnahme nötig sind." },
       { h: "2. Wie wir sie nutzen", p: "Ihre Daten werden ausschließlich verwendet, um Ihre Bestellungen auszuführen, Ihr Konto zu verifizieren und Sie zu Lieferungen zu kontaktieren. Wir verkaufen Ihre Daten nicht und nutzen sie nicht für Werbung." },
-      { h: "3. Wo sie gespeichert werden", p: "Ihre Daten werden sicher in Google Firebase gespeichert. Der Zugriff ist auf das Sarkis-Delivery-Team für die oben genannten Zwecke beschränkt." },
+      { h: "3. Wo sie gespeichert werden", p: "Ihre Daten werden sicher in Google Firebase gespeichert. Der Zugriff ist auf das Sarko-Delivery-Team für die oben genannten Zwecke beschränkt." },
       { h: "4. Nachrichten & Benachrichtigungen", p: "Chats mit unserem Team und Lieferbenachrichtigungen werden verarbeitet, um Sie über Ihre Bestellungen zu informieren. Eingehende Nachrichten können in Ihre gewählte Sprache übersetzt werden." },
       { h: "5. Ihre Rechte & Löschung", p: "Sie können Ihre Daten jederzeit in der App einsehen und bearbeiten. Sie können Ihr Konto und die zugehörigen Daten direkt in der App löschen (Einstellungen → Konto löschen) oder uns über WhatsApp darum bitten." },
       { h: "6. Kontakt", p: "Datenschutzfragen? Kontaktieren Sie uns im App-Chat oder über WhatsApp." },

@@ -14,6 +14,7 @@ import '../../providers/cart_provider.dart';
 import '../../services/order_service.dart';
 import '../../services/product_service.dart';
 import '../../services/shift_service.dart';
+import '../../sync/sync_engine.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/app_lottie.dart';
@@ -54,7 +55,13 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (user != null) {
+              await SyncEngine.instance.fullSync(user.id);
+            }
+          },
+          child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -228,6 +235,7 @@ class HomeScreen extends StatelessWidget {
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
+        ),
         ),
       ),
     );

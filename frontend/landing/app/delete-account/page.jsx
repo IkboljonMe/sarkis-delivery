@@ -58,7 +58,7 @@ const CONTENT = {
     sections: [
       {
         h: "\u00dcbersicht",
-        p: "Wir respektieren Ihr Recht auf Datenkontrolle. Sie k\u00f6nnen Ihr Sarkis-Delivery-Konto und alle zugeh\u00f6rigen Daten mit einer der folgenden Methoden dauerhaft l\u00f6schen.",
+        p: "Wir respektieren Ihr Recht auf Datenkontrolle. Sie k\u00f6nnen Ihr Sarko-Delivery-Konto und alle zugeh\u00f6rigen Daten mit einer der folgenden Methoden dauerhaft l\u00f6schen.",
       },
       {
         h: "1. In der App",

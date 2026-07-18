@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../session/secure_session_store.dart';
 import '../utils/constants.dart';
@@ -44,16 +43,6 @@ class ApiClient {
   Future<void> init() async {
     _accessToken = await _secureSession.readAccessToken();
     _refreshToken = await _secureSession.readRefreshToken();
-    // The cached user profile isn't sensitive session material, so it stays
-    // in SharedPreferences for now; Phase 1 moves it into the Drift
-    // `local_user` table so it's queryable/reactive like everything else.
-    final sp = await SharedPreferences.getInstance();
-    final raw = sp.getString('api_user');
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        currentUser = jsonDecode(raw) as Map<String, dynamic>;
-      } catch (_) {}
-    }
   }
 
   Future<void> saveSession(Map<String, dynamic> auth) async {
@@ -63,10 +52,6 @@ class ApiClient {
       currentUser = Map<String, dynamic>.from(auth['user'] as Map);
     }
     await _secureSession.save(accessToken: _accessToken, refreshToken: _refreshToken);
-    if (currentUser != null) {
-      final sp = await SharedPreferences.getInstance();
-      await sp.setString('api_user', jsonEncode(currentUser));
-    }
   }
 
   Future<void> clearSession() async {
@@ -74,8 +59,6 @@ class ApiClient {
     _refreshToken = null;
     currentUser = null;
     await _secureSession.clear();
-    final sp = await SharedPreferences.getInstance();
-    await sp.remove('api_user');
   }
 
   String? get refreshToken => _refreshToken;
@@ -185,7 +168,7 @@ class ApiClient {
     return urls.first;
   }
 
-  /// Turns a fetch into a Firestore-like stream: emits immediately, then
+  /// Turns a fetch into a periodic stream: emits immediately, then
   /// re-fetches every [interval]. Errors after the first emission are
   /// swallowed so a flaky connection doesn't kill open StreamBuilders.
   static Stream<T> poll<T>(Duration interval, Future<T> Function() fetch) async* {

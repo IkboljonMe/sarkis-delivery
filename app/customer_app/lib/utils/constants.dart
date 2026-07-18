@@ -1,7 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import '../demo_firebase_options.dart' show DemoFirebaseOptions;
-
 /// App-wide constants and configuration.
 class AppConstants {
   AppConstants._();
@@ -17,7 +15,6 @@ class AppConstants {
 
   /// Back-compat alias used by the settings WhatsApp shortcut.
   static String get adminWhatsappNumber => adminPhoneDigits;
-  static const String adminUid = 'HjygD2zQpKZ0zakT0JZWFvc3GcA3';
 
   /// Public website (Next.js). REPLACE with the deployed domain after hosting
   /// the `landing/` project. Used for the shareable download link and the
@@ -40,10 +37,6 @@ class AppConstants {
   /// Google Cloud Translate API key, loaded from the bundled .env.
   static String get translateApiKey =>
       dotenv.maybeGet('GOOGLE_TRANSLATE_API_KEY') ?? '';
-
-  // Firebase project id (mirrors DemoFirebaseOptions.current.projectId).
-  static String get firebaseProjectId =>
-      DemoFirebaseOptions.current.projectId;
 
   // --- Groups ---
   // Delivery groups are now admin-drawn map regions (collection

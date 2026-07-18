@@ -14,7 +14,8 @@ import '../services/api_client.dart';
 /// optimistic row. On a connectivity failure the mutation is queued and
 /// retried FIFO as soon as connectivity returns.
 class MutationQueue {
-  MutationQueue(this._db, this._api);
+  MutationQueue._(this._db, this._api);
+  static final MutationQueue instance = MutationQueue._(AppDatabase.instance, ApiClient.instance);
 
   final AppDatabase _db;
   final ApiClient _api;

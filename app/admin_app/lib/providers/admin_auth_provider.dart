@@ -1,9 +1,11 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../local_db/app_database.dart';
 import '../services/auth_service.dart';
+import '../sync/sync_engine.dart';
 
-class AdminAuthProvider extends ChangeNotifier {
+class AdminAuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   final AuthService _auth = AuthService.instance;
 
   static const _rememberKey = 'admin_remember';
@@ -22,12 +24,29 @@ class AdminAuthProvider extends ChangeNotifier {
   String? get uid => _auth.uid;
 
   Future<void> loadPreferences() async {
+    WidgetsBinding.instance.addObserver(this);
     try {
       final prefs = await SharedPreferences.getInstance();
       _rememberMe = prefs.getBool(_rememberKey) ?? true;
       _savedEmail = prefs.getString(_emailKey) ?? '';
       notifyListeners();
     } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _auth.isLoggedIn) {
+      SyncEngine.instance.fullSync().catchError((_) {});
+      SyncEngine.instance.start();
+    } else if (state == AppLifecycleState.paused) {
+      SyncEngine.instance.stop().catchError((_) {});
+    }
   }
 
   void setRememberMe(bool v) {
@@ -56,6 +75,10 @@ class AdminAuthProvider extends ChangeNotifier {
       await _persist(email);
       _busy = false;
       notifyListeners();
+      
+      SyncEngine.instance.fullSync().catchError((_) {});
+      SyncEngine.instance.start();
+      
       return true;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
@@ -78,6 +101,8 @@ class AdminAuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await SyncEngine.instance.stop();
+    await AppDatabase.instance.wipeAll();
     await _auth.signOut();
     notifyListeners();
   }

@@ -13,3 +13,5 @@ Each user request gets its own folder containing:
 - [[2026-07-13 backend build and app rewire/request|2026-07-13 — Backend build, device/IP tracking, superadmin, app rewire]]
 - [[2026-07-13 offline-first storage and realtime sync/request|2026-07-13 — Offline-first local SQL storage & real-time sync (customer_app + admin_app)]]
 - [[2026-07-13 Sarko rebrand and entry animation/request|2026-07-13 — Sarko rebrand + entry animation]]
+- [[2026-07-17 firebase cleanup and sync-code fixes/request|2026-07-17 — Firebase cleanup & sync-code fixes]]
+- [[landing-redesign-and-shop-webapp/request|2026-07-17 — Landing redesign & shop web app]]

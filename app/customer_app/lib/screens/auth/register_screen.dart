@@ -200,7 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ..lng = geo.lng
       ..language = locale.locale.languageCode;
     auth.authMode = 'register';
-    auth.draft = draft;
+    auth.saveDraft(draft);
     if (auth.isLoggedIn) {
       final ok = await auth.completeRegistration();
       if (!mounted) return;
@@ -245,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _loginWithNumber(AppLocalizations t) async {
     final auth = context.read<AuthProvider>();
     auth.authMode = 'login';
-    auth.draft = null;
+    auth.clearDraft();
     await _submitPhone(t);
   }
 

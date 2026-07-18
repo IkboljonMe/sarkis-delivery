@@ -136,7 +136,7 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
     if (choice == 'login') {
       // They're already signed in with this verified number — just open the app.
-      auth.draft = null;
+      auth.clearDraft();
       Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
     } else {
       // Use another number: sign out and return to phone entry.

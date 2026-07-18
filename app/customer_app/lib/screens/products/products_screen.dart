@@ -11,6 +11,7 @@ import '../../providers/cart_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/product_service.dart';
+import '../../sync/sync_engine.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/golden_button.dart';
 import '../../widgets/skeletons.dart';
@@ -39,14 +40,22 @@ class ProductsScreen extends StatelessWidget {
           if (products.isEmpty) {
             return EmptyState(icon: Icons.inventory_2, title: t.products);
           }
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-            itemCount: products.length,
-            itemBuilder: (context, i) =>
-                _ProductCard(product: products[i], lang: lang)
-                    .animate()
-                    .fadeIn(delay: (80 * i).ms)
-                    .slideY(begin: 0.1),
+          return RefreshIndicator(
+            onRefresh: () async {
+              final auth = context.read<AuthProvider>();
+              if (auth.user != null) {
+                await SyncEngine.instance.fullSync(auth.user!.id);
+              }
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+              itemCount: products.length,
+              itemBuilder: (context, i) =>
+                  _ProductCard(product: products[i], lang: lang)
+                      .animate()
+                      .fadeIn(delay: (80 * i).ms)
+                      .slideY(begin: 0.1),
+            ),
           );
         },
       ),

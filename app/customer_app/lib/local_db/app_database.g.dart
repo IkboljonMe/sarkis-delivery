@@ -699,6 +699,542 @@ class LocalUserCompanion extends UpdateCompanion<LocalUserData> {
   }
 }
 
+class $RegistrationDraftsTable extends RegistrationDrafts
+    with TableInfo<$RegistrationDraftsTable, RegistrationDraft> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RegistrationDraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('draft'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _lastNameMeta =
+      const VerificationMeta('lastName');
+  @override
+  late final GeneratedColumn<String> lastName = GeneratedColumn<String>(
+      'last_name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _referredByMeta =
+      const VerificationMeta('referredBy');
+  @override
+  late final GeneratedColumn<String> referredBy = GeneratedColumn<String>(
+      'referred_by', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _addressMeta =
+      const VerificationMeta('address');
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+      'address', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _cityMeta = const VerificationMeta('city');
+  @override
+  late final GeneratedColumn<String> city = GeneratedColumn<String>(
+      'city', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _postalCodeMeta =
+      const VerificationMeta('postalCode');
+  @override
+  late final GeneratedColumn<String> postalCode = GeneratedColumn<String>(
+      'postal_code', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _groupNameMeta =
+      const VerificationMeta('groupName');
+  @override
+  late final GeneratedColumn<String> groupName = GeneratedColumn<String>(
+      'group_name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+      'lat', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+      'lng', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _languageMeta =
+      const VerificationMeta('language');
+  @override
+  late final GeneratedColumn<String> language = GeneratedColumn<String>(
+      'language', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('en'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        lastName,
+        referredBy,
+        address,
+        city,
+        postalCode,
+        groupName,
+        lat,
+        lng,
+        language
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'registration_drafts';
+  @override
+  VerificationContext validateIntegrity(Insertable<RegistrationDraft> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    }
+    if (data.containsKey('last_name')) {
+      context.handle(_lastNameMeta,
+          lastName.isAcceptableOrUnknown(data['last_name']!, _lastNameMeta));
+    }
+    if (data.containsKey('referred_by')) {
+      context.handle(
+          _referredByMeta,
+          referredBy.isAcceptableOrUnknown(
+              data['referred_by']!, _referredByMeta));
+    }
+    if (data.containsKey('address')) {
+      context.handle(_addressMeta,
+          address.isAcceptableOrUnknown(data['address']!, _addressMeta));
+    }
+    if (data.containsKey('city')) {
+      context.handle(
+          _cityMeta, city.isAcceptableOrUnknown(data['city']!, _cityMeta));
+    }
+    if (data.containsKey('postal_code')) {
+      context.handle(
+          _postalCodeMeta,
+          postalCode.isAcceptableOrUnknown(
+              data['postal_code']!, _postalCodeMeta));
+    }
+    if (data.containsKey('group_name')) {
+      context.handle(_groupNameMeta,
+          groupName.isAcceptableOrUnknown(data['group_name']!, _groupNameMeta));
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+          _latMeta, lat.isAcceptableOrUnknown(data['lat']!, _latMeta));
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+          _lngMeta, lng.isAcceptableOrUnknown(data['lng']!, _lngMeta));
+    }
+    if (data.containsKey('language')) {
+      context.handle(_languageMeta,
+          language.isAcceptableOrUnknown(data['language']!, _languageMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RegistrationDraft map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RegistrationDraft(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      lastName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_name'])!,
+      referredBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}referred_by'])!,
+      address: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}address'])!,
+      city: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}city'])!,
+      postalCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}postal_code'])!,
+      groupName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_name'])!,
+      lat: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}lat']),
+      lng: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}lng']),
+      language: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}language'])!,
+    );
+  }
+
+  @override
+  $RegistrationDraftsTable createAlias(String alias) {
+    return $RegistrationDraftsTable(attachedDatabase, alias);
+  }
+}
+
+class RegistrationDraft extends DataClass
+    implements Insertable<RegistrationDraft> {
+  final String id;
+  final String name;
+  final String lastName;
+  final String referredBy;
+  final String address;
+  final String city;
+  final String postalCode;
+  final String groupName;
+  final double? lat;
+  final double? lng;
+  final String language;
+  const RegistrationDraft(
+      {required this.id,
+      required this.name,
+      required this.lastName,
+      required this.referredBy,
+      required this.address,
+      required this.city,
+      required this.postalCode,
+      required this.groupName,
+      this.lat,
+      this.lng,
+      required this.language});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['last_name'] = Variable<String>(lastName);
+    map['referred_by'] = Variable<String>(referredBy);
+    map['address'] = Variable<String>(address);
+    map['city'] = Variable<String>(city);
+    map['postal_code'] = Variable<String>(postalCode);
+    map['group_name'] = Variable<String>(groupName);
+    if (!nullToAbsent || lat != null) {
+      map['lat'] = Variable<double>(lat);
+    }
+    if (!nullToAbsent || lng != null) {
+      map['lng'] = Variable<double>(lng);
+    }
+    map['language'] = Variable<String>(language);
+    return map;
+  }
+
+  RegistrationDraftsCompanion toCompanion(bool nullToAbsent) {
+    return RegistrationDraftsCompanion(
+      id: Value(id),
+      name: Value(name),
+      lastName: Value(lastName),
+      referredBy: Value(referredBy),
+      address: Value(address),
+      city: Value(city),
+      postalCode: Value(postalCode),
+      groupName: Value(groupName),
+      lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
+      lng: lng == null && nullToAbsent ? const Value.absent() : Value(lng),
+      language: Value(language),
+    );
+  }
+
+  factory RegistrationDraft.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RegistrationDraft(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      lastName: serializer.fromJson<String>(json['lastName']),
+      referredBy: serializer.fromJson<String>(json['referredBy']),
+      address: serializer.fromJson<String>(json['address']),
+      city: serializer.fromJson<String>(json['city']),
+      postalCode: serializer.fromJson<String>(json['postalCode']),
+      groupName: serializer.fromJson<String>(json['groupName']),
+      lat: serializer.fromJson<double?>(json['lat']),
+      lng: serializer.fromJson<double?>(json['lng']),
+      language: serializer.fromJson<String>(json['language']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'lastName': serializer.toJson<String>(lastName),
+      'referredBy': serializer.toJson<String>(referredBy),
+      'address': serializer.toJson<String>(address),
+      'city': serializer.toJson<String>(city),
+      'postalCode': serializer.toJson<String>(postalCode),
+      'groupName': serializer.toJson<String>(groupName),
+      'lat': serializer.toJson<double?>(lat),
+      'lng': serializer.toJson<double?>(lng),
+      'language': serializer.toJson<String>(language),
+    };
+  }
+
+  RegistrationDraft copyWith(
+          {String? id,
+          String? name,
+          String? lastName,
+          String? referredBy,
+          String? address,
+          String? city,
+          String? postalCode,
+          String? groupName,
+          Value<double?> lat = const Value.absent(),
+          Value<double?> lng = const Value.absent(),
+          String? language}) =>
+      RegistrationDraft(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        lastName: lastName ?? this.lastName,
+        referredBy: referredBy ?? this.referredBy,
+        address: address ?? this.address,
+        city: city ?? this.city,
+        postalCode: postalCode ?? this.postalCode,
+        groupName: groupName ?? this.groupName,
+        lat: lat.present ? lat.value : this.lat,
+        lng: lng.present ? lng.value : this.lng,
+        language: language ?? this.language,
+      );
+  RegistrationDraft copyWithCompanion(RegistrationDraftsCompanion data) {
+    return RegistrationDraft(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      lastName: data.lastName.present ? data.lastName.value : this.lastName,
+      referredBy:
+          data.referredBy.present ? data.referredBy.value : this.referredBy,
+      address: data.address.present ? data.address.value : this.address,
+      city: data.city.present ? data.city.value : this.city,
+      postalCode:
+          data.postalCode.present ? data.postalCode.value : this.postalCode,
+      groupName: data.groupName.present ? data.groupName.value : this.groupName,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      language: data.language.present ? data.language.value : this.language,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RegistrationDraft(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('lastName: $lastName, ')
+          ..write('referredBy: $referredBy, ')
+          ..write('address: $address, ')
+          ..write('city: $city, ')
+          ..write('postalCode: $postalCode, ')
+          ..write('groupName: $groupName, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('language: $language')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, lastName, referredBy, address, city,
+      postalCode, groupName, lat, lng, language);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RegistrationDraft &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.lastName == this.lastName &&
+          other.referredBy == this.referredBy &&
+          other.address == this.address &&
+          other.city == this.city &&
+          other.postalCode == this.postalCode &&
+          other.groupName == this.groupName &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.language == this.language);
+}
+
+class RegistrationDraftsCompanion extends UpdateCompanion<RegistrationDraft> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> lastName;
+  final Value<String> referredBy;
+  final Value<String> address;
+  final Value<String> city;
+  final Value<String> postalCode;
+  final Value<String> groupName;
+  final Value<double?> lat;
+  final Value<double?> lng;
+  final Value<String> language;
+  final Value<int> rowid;
+  const RegistrationDraftsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.lastName = const Value.absent(),
+    this.referredBy = const Value.absent(),
+    this.address = const Value.absent(),
+    this.city = const Value.absent(),
+    this.postalCode = const Value.absent(),
+    this.groupName = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.language = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RegistrationDraftsCompanion.insert({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.lastName = const Value.absent(),
+    this.referredBy = const Value.absent(),
+    this.address = const Value.absent(),
+    this.city = const Value.absent(),
+    this.postalCode = const Value.absent(),
+    this.groupName = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.language = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  static Insertable<RegistrationDraft> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? lastName,
+    Expression<String>? referredBy,
+    Expression<String>? address,
+    Expression<String>? city,
+    Expression<String>? postalCode,
+    Expression<String>? groupName,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<String>? language,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (lastName != null) 'last_name': lastName,
+      if (referredBy != null) 'referred_by': referredBy,
+      if (address != null) 'address': address,
+      if (city != null) 'city': city,
+      if (postalCode != null) 'postal_code': postalCode,
+      if (groupName != null) 'group_name': groupName,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (language != null) 'language': language,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RegistrationDraftsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<String>? lastName,
+      Value<String>? referredBy,
+      Value<String>? address,
+      Value<String>? city,
+      Value<String>? postalCode,
+      Value<String>? groupName,
+      Value<double?>? lat,
+      Value<double?>? lng,
+      Value<String>? language,
+      Value<int>? rowid}) {
+    return RegistrationDraftsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      lastName: lastName ?? this.lastName,
+      referredBy: referredBy ?? this.referredBy,
+      address: address ?? this.address,
+      city: city ?? this.city,
+      postalCode: postalCode ?? this.postalCode,
+      groupName: groupName ?? this.groupName,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      language: language ?? this.language,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (lastName.present) {
+      map['last_name'] = Variable<String>(lastName.value);
+    }
+    if (referredBy.present) {
+      map['referred_by'] = Variable<String>(referredBy.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (city.present) {
+      map['city'] = Variable<String>(city.value);
+    }
+    if (postalCode.present) {
+      map['postal_code'] = Variable<String>(postalCode.value);
+    }
+    if (groupName.present) {
+      map['group_name'] = Variable<String>(groupName.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (language.present) {
+      map['language'] = Variable<String>(language.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RegistrationDraftsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('lastName: $lastName, ')
+          ..write('referredBy: $referredBy, ')
+          ..write('address: $address, ')
+          ..write('city: $city, ')
+          ..write('postalCode: $postalCode, ')
+          ..write('groupName: $groupName, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('language: $language, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CategoriesTable extends Categories
     with TableInfo<$CategoriesTable, Category> {
   @override
@@ -3817,19 +4353,16 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
   @override
   late final GeneratedColumn<String> senderName = GeneratedColumn<String>(
       'sender_name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant(''));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _isFromAdminMeta =
       const VerificationMeta('isFromAdmin');
   @override
   late final GeneratedColumn<bool> isFromAdmin = GeneratedColumn<bool>(
       'is_from_admin', aliasedName, false,
       type: DriftSqlType.bool,
-      requiredDuringInsert: false,
+      requiredDuringInsert: true,
       defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("is_from_admin" IN (0, 1))'),
-      defaultValue: const Constant(false));
+          'CHECK ("is_from_admin" IN (0, 1))'));
   static const VerificationMeta _isReadMeta = const VerificationMeta('isRead');
   @override
   late final GeneratedColumn<bool> isRead = GeneratedColumn<bool>(
@@ -3843,17 +4376,13 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
   @override
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
       'type', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('text'));
-  static const VerificationMeta _contentMeta =
-      const VerificationMeta('content');
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _textContentMeta =
+      const VerificationMeta('textContent');
   @override
-  late final GeneratedColumn<String> content = GeneratedColumn<String>(
-      'content', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant(''));
+  late final GeneratedColumn<String> textContent = GeneratedColumn<String>(
+      'text_content', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _deletedMeta =
       const VerificationMeta('deleted');
   @override
@@ -3864,14 +4393,96 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
-  static const VerificationMeta _extraJsonMeta =
-      const VerificationMeta('extraJson');
+  static const VerificationMeta _replyToIdMeta =
+      const VerificationMeta('replyToId');
   @override
-  late final GeneratedColumn<String> extraJson = GeneratedColumn<String>(
-      'extra_json', aliasedName, false,
+  late final GeneratedColumn<String> replyToId = GeneratedColumn<String>(
+      'reply_to_id', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      defaultValue: const Constant('{}'));
+      defaultValue: const Constant(''));
+  static const VerificationMeta _replyToTextMeta =
+      const VerificationMeta('replyToText');
+  @override
+  late final GeneratedColumn<String> replyToText = GeneratedColumn<String>(
+      'reply_to_text', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _replyToSenderMeta =
+      const VerificationMeta('replyToSender');
+  @override
+  late final GeneratedColumn<String> replyToSender = GeneratedColumn<String>(
+      'reply_to_sender', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _mediaUrlMeta =
+      const VerificationMeta('mediaUrl');
+  @override
+  late final GeneratedColumn<String> mediaUrl = GeneratedColumn<String>(
+      'media_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mediaUrlsJsonMeta =
+      const VerificationMeta('mediaUrlsJson');
+  @override
+  late final GeneratedColumn<String> mediaUrlsJson = GeneratedColumn<String>(
+      'media_urls_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _durationMsMeta =
+      const VerificationMeta('durationMs');
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+      'duration_ms', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _orderIdMeta =
+      const VerificationMeta('orderId');
+  @override
+  late final GeneratedColumn<String> orderId = GeneratedColumn<String>(
+      'order_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _waveformJsonMeta =
+      const VerificationMeta('waveformJson');
+  @override
+  late final GeneratedColumn<String> waveformJson = GeneratedColumn<String>(
+      'waveform_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sizeBytesMeta =
+      const VerificationMeta('sizeBytes');
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+      'size_bytes', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _uploadingMeta =
+      const VerificationMeta('uploading');
+  @override
+  late final GeneratedColumn<bool> uploading = GeneratedColumn<bool>(
+      'uploading', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("uploading" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _uploadCountMeta =
+      const VerificationMeta('uploadCount');
+  @override
+  late final GeneratedColumn<int> uploadCount = GeneratedColumn<int>(
+      'upload_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _reactionsJsonMeta =
+      const VerificationMeta('reactionsJson');
+  @override
+  late final GeneratedColumn<String> reactionsJson = GeneratedColumn<String>(
+      'reactions_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -3883,7 +4494,9 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
   @override
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
       'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
   static const VerificationMeta _localMediaPathMeta =
       const VerificationMeta('localMediaPath');
   @override
@@ -3911,9 +4524,20 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         isFromAdmin,
         isRead,
         type,
-        content,
+        textContent,
         deleted,
-        extraJson,
+        replyToId,
+        replyToText,
+        replyToSender,
+        mediaUrl,
+        mediaUrlsJson,
+        durationMs,
+        orderId,
+        waveformJson,
+        sizeBytes,
+        uploading,
+        uploadCount,
+        reactionsJson,
         createdAt,
         updatedAt,
         localMediaPath,
@@ -3951,12 +4575,16 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
           _senderNameMeta,
           senderName.isAcceptableOrUnknown(
               data['sender_name']!, _senderNameMeta));
+    } else if (isInserting) {
+      context.missing(_senderNameMeta);
     }
     if (data.containsKey('is_from_admin')) {
       context.handle(
           _isFromAdminMeta,
           isFromAdmin.isAcceptableOrUnknown(
               data['is_from_admin']!, _isFromAdminMeta));
+    } else if (isInserting) {
+      context.missing(_isFromAdminMeta);
     }
     if (data.containsKey('is_read')) {
       context.handle(_isReadMeta,
@@ -3965,18 +4593,82 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     if (data.containsKey('type')) {
       context.handle(
           _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+    } else if (isInserting) {
+      context.missing(_typeMeta);
     }
-    if (data.containsKey('content')) {
-      context.handle(_contentMeta,
-          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    if (data.containsKey('text_content')) {
+      context.handle(
+          _textContentMeta,
+          textContent.isAcceptableOrUnknown(
+              data['text_content']!, _textContentMeta));
     }
     if (data.containsKey('deleted')) {
       context.handle(_deletedMeta,
           deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
     }
-    if (data.containsKey('extra_json')) {
-      context.handle(_extraJsonMeta,
-          extraJson.isAcceptableOrUnknown(data['extra_json']!, _extraJsonMeta));
+    if (data.containsKey('reply_to_id')) {
+      context.handle(
+          _replyToIdMeta,
+          replyToId.isAcceptableOrUnknown(
+              data['reply_to_id']!, _replyToIdMeta));
+    }
+    if (data.containsKey('reply_to_text')) {
+      context.handle(
+          _replyToTextMeta,
+          replyToText.isAcceptableOrUnknown(
+              data['reply_to_text']!, _replyToTextMeta));
+    }
+    if (data.containsKey('reply_to_sender')) {
+      context.handle(
+          _replyToSenderMeta,
+          replyToSender.isAcceptableOrUnknown(
+              data['reply_to_sender']!, _replyToSenderMeta));
+    }
+    if (data.containsKey('media_url')) {
+      context.handle(_mediaUrlMeta,
+          mediaUrl.isAcceptableOrUnknown(data['media_url']!, _mediaUrlMeta));
+    }
+    if (data.containsKey('media_urls_json')) {
+      context.handle(
+          _mediaUrlsJsonMeta,
+          mediaUrlsJson.isAcceptableOrUnknown(
+              data['media_urls_json']!, _mediaUrlsJsonMeta));
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+          _durationMsMeta,
+          durationMs.isAcceptableOrUnknown(
+              data['duration_ms']!, _durationMsMeta));
+    }
+    if (data.containsKey('order_id')) {
+      context.handle(_orderIdMeta,
+          orderId.isAcceptableOrUnknown(data['order_id']!, _orderIdMeta));
+    }
+    if (data.containsKey('waveform_json')) {
+      context.handle(
+          _waveformJsonMeta,
+          waveformJson.isAcceptableOrUnknown(
+              data['waveform_json']!, _waveformJsonMeta));
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(_sizeBytesMeta,
+          sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta));
+    }
+    if (data.containsKey('uploading')) {
+      context.handle(_uploadingMeta,
+          uploading.isAcceptableOrUnknown(data['uploading']!, _uploadingMeta));
+    }
+    if (data.containsKey('upload_count')) {
+      context.handle(
+          _uploadCountMeta,
+          uploadCount.isAcceptableOrUnknown(
+              data['upload_count']!, _uploadCountMeta));
+    }
+    if (data.containsKey('reactions_json')) {
+      context.handle(
+          _reactionsJsonMeta,
+          reactionsJson.isAcceptableOrUnknown(
+              data['reactions_json']!, _reactionsJsonMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -3987,8 +4679,6 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     if (data.containsKey('updated_at')) {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('local_media_path')) {
       context.handle(
@@ -4025,12 +4715,34 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_read'])!,
       type: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      content: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
+      textContent: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}text_content']),
       deleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      extraJson: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}extra_json'])!,
+      replyToId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reply_to_id'])!,
+      replyToText: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reply_to_text'])!,
+      replyToSender: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reply_to_sender'])!,
+      mediaUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_url']),
+      mediaUrlsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}media_urls_json']),
+      durationMs: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_ms'])!,
+      orderId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}order_id'])!,
+      waveformJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}waveform_json']),
+      sizeBytes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}size_bytes'])!,
+      uploading: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}uploading'])!,
+      uploadCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}upload_count'])!,
+      reactionsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reactions_json']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -4056,9 +4768,20 @@ class Message extends DataClass implements Insertable<Message> {
   final bool isFromAdmin;
   final bool isRead;
   final String type;
-  final String content;
+  final String? textContent;
   final bool deleted;
-  final String extraJson;
+  final String replyToId;
+  final String replyToText;
+  final String replyToSender;
+  final String? mediaUrl;
+  final String? mediaUrlsJson;
+  final int durationMs;
+  final String orderId;
+  final String? waveformJson;
+  final int sizeBytes;
+  final bool uploading;
+  final int uploadCount;
+  final String? reactionsJson;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String localMediaPath;
@@ -4071,9 +4794,20 @@ class Message extends DataClass implements Insertable<Message> {
       required this.isFromAdmin,
       required this.isRead,
       required this.type,
-      required this.content,
+      this.textContent,
       required this.deleted,
-      required this.extraJson,
+      required this.replyToId,
+      required this.replyToText,
+      required this.replyToSender,
+      this.mediaUrl,
+      this.mediaUrlsJson,
+      required this.durationMs,
+      required this.orderId,
+      this.waveformJson,
+      required this.sizeBytes,
+      required this.uploading,
+      required this.uploadCount,
+      this.reactionsJson,
       required this.createdAt,
       required this.updatedAt,
       required this.localMediaPath,
@@ -4088,9 +4822,30 @@ class Message extends DataClass implements Insertable<Message> {
     map['is_from_admin'] = Variable<bool>(isFromAdmin);
     map['is_read'] = Variable<bool>(isRead);
     map['type'] = Variable<String>(type);
-    map['content'] = Variable<String>(content);
+    if (!nullToAbsent || textContent != null) {
+      map['text_content'] = Variable<String>(textContent);
+    }
     map['deleted'] = Variable<bool>(deleted);
-    map['extra_json'] = Variable<String>(extraJson);
+    map['reply_to_id'] = Variable<String>(replyToId);
+    map['reply_to_text'] = Variable<String>(replyToText);
+    map['reply_to_sender'] = Variable<String>(replyToSender);
+    if (!nullToAbsent || mediaUrl != null) {
+      map['media_url'] = Variable<String>(mediaUrl);
+    }
+    if (!nullToAbsent || mediaUrlsJson != null) {
+      map['media_urls_json'] = Variable<String>(mediaUrlsJson);
+    }
+    map['duration_ms'] = Variable<int>(durationMs);
+    map['order_id'] = Variable<String>(orderId);
+    if (!nullToAbsent || waveformJson != null) {
+      map['waveform_json'] = Variable<String>(waveformJson);
+    }
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['uploading'] = Variable<bool>(uploading);
+    map['upload_count'] = Variable<int>(uploadCount);
+    if (!nullToAbsent || reactionsJson != null) {
+      map['reactions_json'] = Variable<String>(reactionsJson);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['local_media_path'] = Variable<String>(localMediaPath);
@@ -4107,9 +4862,30 @@ class Message extends DataClass implements Insertable<Message> {
       isFromAdmin: Value(isFromAdmin),
       isRead: Value(isRead),
       type: Value(type),
-      content: Value(content),
+      textContent: textContent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(textContent),
       deleted: Value(deleted),
-      extraJson: Value(extraJson),
+      replyToId: Value(replyToId),
+      replyToText: Value(replyToText),
+      replyToSender: Value(replyToSender),
+      mediaUrl: mediaUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaUrl),
+      mediaUrlsJson: mediaUrlsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mediaUrlsJson),
+      durationMs: Value(durationMs),
+      orderId: Value(orderId),
+      waveformJson: waveformJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waveformJson),
+      sizeBytes: Value(sizeBytes),
+      uploading: Value(uploading),
+      uploadCount: Value(uploadCount),
+      reactionsJson: reactionsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reactionsJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       localMediaPath: Value(localMediaPath),
@@ -4128,9 +4904,20 @@ class Message extends DataClass implements Insertable<Message> {
       isFromAdmin: serializer.fromJson<bool>(json['isFromAdmin']),
       isRead: serializer.fromJson<bool>(json['isRead']),
       type: serializer.fromJson<String>(json['type']),
-      content: serializer.fromJson<String>(json['content']),
+      textContent: serializer.fromJson<String?>(json['textContent']),
       deleted: serializer.fromJson<bool>(json['deleted']),
-      extraJson: serializer.fromJson<String>(json['extraJson']),
+      replyToId: serializer.fromJson<String>(json['replyToId']),
+      replyToText: serializer.fromJson<String>(json['replyToText']),
+      replyToSender: serializer.fromJson<String>(json['replyToSender']),
+      mediaUrl: serializer.fromJson<String?>(json['mediaUrl']),
+      mediaUrlsJson: serializer.fromJson<String?>(json['mediaUrlsJson']),
+      durationMs: serializer.fromJson<int>(json['durationMs']),
+      orderId: serializer.fromJson<String>(json['orderId']),
+      waveformJson: serializer.fromJson<String?>(json['waveformJson']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      uploading: serializer.fromJson<bool>(json['uploading']),
+      uploadCount: serializer.fromJson<int>(json['uploadCount']),
+      reactionsJson: serializer.fromJson<String?>(json['reactionsJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       localMediaPath: serializer.fromJson<String>(json['localMediaPath']),
@@ -4148,9 +4935,20 @@ class Message extends DataClass implements Insertable<Message> {
       'isFromAdmin': serializer.toJson<bool>(isFromAdmin),
       'isRead': serializer.toJson<bool>(isRead),
       'type': serializer.toJson<String>(type),
-      'content': serializer.toJson<String>(content),
+      'textContent': serializer.toJson<String?>(textContent),
       'deleted': serializer.toJson<bool>(deleted),
-      'extraJson': serializer.toJson<String>(extraJson),
+      'replyToId': serializer.toJson<String>(replyToId),
+      'replyToText': serializer.toJson<String>(replyToText),
+      'replyToSender': serializer.toJson<String>(replyToSender),
+      'mediaUrl': serializer.toJson<String?>(mediaUrl),
+      'mediaUrlsJson': serializer.toJson<String?>(mediaUrlsJson),
+      'durationMs': serializer.toJson<int>(durationMs),
+      'orderId': serializer.toJson<String>(orderId),
+      'waveformJson': serializer.toJson<String?>(waveformJson),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'uploading': serializer.toJson<bool>(uploading),
+      'uploadCount': serializer.toJson<int>(uploadCount),
+      'reactionsJson': serializer.toJson<String?>(reactionsJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'localMediaPath': serializer.toJson<String>(localMediaPath),
@@ -4166,9 +4964,20 @@ class Message extends DataClass implements Insertable<Message> {
           bool? isFromAdmin,
           bool? isRead,
           String? type,
-          String? content,
+          Value<String?> textContent = const Value.absent(),
           bool? deleted,
-          String? extraJson,
+          String? replyToId,
+          String? replyToText,
+          String? replyToSender,
+          Value<String?> mediaUrl = const Value.absent(),
+          Value<String?> mediaUrlsJson = const Value.absent(),
+          int? durationMs,
+          String? orderId,
+          Value<String?> waveformJson = const Value.absent(),
+          int? sizeBytes,
+          bool? uploading,
+          int? uploadCount,
+          Value<String?> reactionsJson = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
           String? localMediaPath,
@@ -4181,9 +4990,23 @@ class Message extends DataClass implements Insertable<Message> {
         isFromAdmin: isFromAdmin ?? this.isFromAdmin,
         isRead: isRead ?? this.isRead,
         type: type ?? this.type,
-        content: content ?? this.content,
+        textContent: textContent.present ? textContent.value : this.textContent,
         deleted: deleted ?? this.deleted,
-        extraJson: extraJson ?? this.extraJson,
+        replyToId: replyToId ?? this.replyToId,
+        replyToText: replyToText ?? this.replyToText,
+        replyToSender: replyToSender ?? this.replyToSender,
+        mediaUrl: mediaUrl.present ? mediaUrl.value : this.mediaUrl,
+        mediaUrlsJson:
+            mediaUrlsJson.present ? mediaUrlsJson.value : this.mediaUrlsJson,
+        durationMs: durationMs ?? this.durationMs,
+        orderId: orderId ?? this.orderId,
+        waveformJson:
+            waveformJson.present ? waveformJson.value : this.waveformJson,
+        sizeBytes: sizeBytes ?? this.sizeBytes,
+        uploading: uploading ?? this.uploading,
+        uploadCount: uploadCount ?? this.uploadCount,
+        reactionsJson:
+            reactionsJson.present ? reactionsJson.value : this.reactionsJson,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         localMediaPath: localMediaPath ?? this.localMediaPath,
@@ -4200,9 +5023,32 @@ class Message extends DataClass implements Insertable<Message> {
           data.isFromAdmin.present ? data.isFromAdmin.value : this.isFromAdmin,
       isRead: data.isRead.present ? data.isRead.value : this.isRead,
       type: data.type.present ? data.type.value : this.type,
-      content: data.content.present ? data.content.value : this.content,
+      textContent:
+          data.textContent.present ? data.textContent.value : this.textContent,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
-      extraJson: data.extraJson.present ? data.extraJson.value : this.extraJson,
+      replyToId: data.replyToId.present ? data.replyToId.value : this.replyToId,
+      replyToText:
+          data.replyToText.present ? data.replyToText.value : this.replyToText,
+      replyToSender: data.replyToSender.present
+          ? data.replyToSender.value
+          : this.replyToSender,
+      mediaUrl: data.mediaUrl.present ? data.mediaUrl.value : this.mediaUrl,
+      mediaUrlsJson: data.mediaUrlsJson.present
+          ? data.mediaUrlsJson.value
+          : this.mediaUrlsJson,
+      durationMs:
+          data.durationMs.present ? data.durationMs.value : this.durationMs,
+      orderId: data.orderId.present ? data.orderId.value : this.orderId,
+      waveformJson: data.waveformJson.present
+          ? data.waveformJson.value
+          : this.waveformJson,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      uploading: data.uploading.present ? data.uploading.value : this.uploading,
+      uploadCount:
+          data.uploadCount.present ? data.uploadCount.value : this.uploadCount,
+      reactionsJson: data.reactionsJson.present
+          ? data.reactionsJson.value
+          : this.reactionsJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       localMediaPath: data.localMediaPath.present
@@ -4223,9 +5069,20 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('isFromAdmin: $isFromAdmin, ')
           ..write('isRead: $isRead, ')
           ..write('type: $type, ')
-          ..write('content: $content, ')
+          ..write('textContent: $textContent, ')
           ..write('deleted: $deleted, ')
-          ..write('extraJson: $extraJson, ')
+          ..write('replyToId: $replyToId, ')
+          ..write('replyToText: $replyToText, ')
+          ..write('replyToSender: $replyToSender, ')
+          ..write('mediaUrl: $mediaUrl, ')
+          ..write('mediaUrlsJson: $mediaUrlsJson, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('orderId: $orderId, ')
+          ..write('waveformJson: $waveformJson, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('uploading: $uploading, ')
+          ..write('uploadCount: $uploadCount, ')
+          ..write('reactionsJson: $reactionsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('localMediaPath: $localMediaPath, ')
@@ -4235,21 +5092,33 @@ class Message extends DataClass implements Insertable<Message> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      topicId,
-      senderId,
-      senderName,
-      isFromAdmin,
-      isRead,
-      type,
-      content,
-      deleted,
-      extraJson,
-      createdAt,
-      updatedAt,
-      localMediaPath,
-      pendingSync);
+  int get hashCode => Object.hashAll([
+        id,
+        topicId,
+        senderId,
+        senderName,
+        isFromAdmin,
+        isRead,
+        type,
+        textContent,
+        deleted,
+        replyToId,
+        replyToText,
+        replyToSender,
+        mediaUrl,
+        mediaUrlsJson,
+        durationMs,
+        orderId,
+        waveformJson,
+        sizeBytes,
+        uploading,
+        uploadCount,
+        reactionsJson,
+        createdAt,
+        updatedAt,
+        localMediaPath,
+        pendingSync
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4261,9 +5130,20 @@ class Message extends DataClass implements Insertable<Message> {
           other.isFromAdmin == this.isFromAdmin &&
           other.isRead == this.isRead &&
           other.type == this.type &&
-          other.content == this.content &&
+          other.textContent == this.textContent &&
           other.deleted == this.deleted &&
-          other.extraJson == this.extraJson &&
+          other.replyToId == this.replyToId &&
+          other.replyToText == this.replyToText &&
+          other.replyToSender == this.replyToSender &&
+          other.mediaUrl == this.mediaUrl &&
+          other.mediaUrlsJson == this.mediaUrlsJson &&
+          other.durationMs == this.durationMs &&
+          other.orderId == this.orderId &&
+          other.waveformJson == this.waveformJson &&
+          other.sizeBytes == this.sizeBytes &&
+          other.uploading == this.uploading &&
+          other.uploadCount == this.uploadCount &&
+          other.reactionsJson == this.reactionsJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.localMediaPath == this.localMediaPath &&
@@ -4278,9 +5158,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<bool> isFromAdmin;
   final Value<bool> isRead;
   final Value<String> type;
-  final Value<String> content;
+  final Value<String?> textContent;
   final Value<bool> deleted;
-  final Value<String> extraJson;
+  final Value<String> replyToId;
+  final Value<String> replyToText;
+  final Value<String> replyToSender;
+  final Value<String?> mediaUrl;
+  final Value<String?> mediaUrlsJson;
+  final Value<int> durationMs;
+  final Value<String> orderId;
+  final Value<String?> waveformJson;
+  final Value<int> sizeBytes;
+  final Value<bool> uploading;
+  final Value<int> uploadCount;
+  final Value<String?> reactionsJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> localMediaPath;
@@ -4294,9 +5185,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.isFromAdmin = const Value.absent(),
     this.isRead = const Value.absent(),
     this.type = const Value.absent(),
-    this.content = const Value.absent(),
+    this.textContent = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.extraJson = const Value.absent(),
+    this.replyToId = const Value.absent(),
+    this.replyToText = const Value.absent(),
+    this.replyToSender = const Value.absent(),
+    this.mediaUrl = const Value.absent(),
+    this.mediaUrlsJson = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.orderId = const Value.absent(),
+    this.waveformJson = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.uploading = const Value.absent(),
+    this.uploadCount = const Value.absent(),
+    this.reactionsJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.localMediaPath = const Value.absent(),
@@ -4307,23 +5209,36 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     required String id,
     required String topicId,
     required String senderId,
-    this.senderName = const Value.absent(),
-    this.isFromAdmin = const Value.absent(),
+    required String senderName,
+    required bool isFromAdmin,
     this.isRead = const Value.absent(),
-    this.type = const Value.absent(),
-    this.content = const Value.absent(),
+    required String type,
+    this.textContent = const Value.absent(),
     this.deleted = const Value.absent(),
-    this.extraJson = const Value.absent(),
+    this.replyToId = const Value.absent(),
+    this.replyToText = const Value.absent(),
+    this.replyToSender = const Value.absent(),
+    this.mediaUrl = const Value.absent(),
+    this.mediaUrlsJson = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.orderId = const Value.absent(),
+    this.waveformJson = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.uploading = const Value.absent(),
+    this.uploadCount = const Value.absent(),
+    this.reactionsJson = const Value.absent(),
     required DateTime createdAt,
-    required DateTime updatedAt,
+    this.updatedAt = const Value.absent(),
     this.localMediaPath = const Value.absent(),
     this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         topicId = Value(topicId),
         senderId = Value(senderId),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt);
+        senderName = Value(senderName),
+        isFromAdmin = Value(isFromAdmin),
+        type = Value(type),
+        createdAt = Value(createdAt);
   static Insertable<Message> custom({
     Expression<String>? id,
     Expression<String>? topicId,
@@ -4332,9 +5247,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<bool>? isFromAdmin,
     Expression<bool>? isRead,
     Expression<String>? type,
-    Expression<String>? content,
+    Expression<String>? textContent,
     Expression<bool>? deleted,
-    Expression<String>? extraJson,
+    Expression<String>? replyToId,
+    Expression<String>? replyToText,
+    Expression<String>? replyToSender,
+    Expression<String>? mediaUrl,
+    Expression<String>? mediaUrlsJson,
+    Expression<int>? durationMs,
+    Expression<String>? orderId,
+    Expression<String>? waveformJson,
+    Expression<int>? sizeBytes,
+    Expression<bool>? uploading,
+    Expression<int>? uploadCount,
+    Expression<String>? reactionsJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? localMediaPath,
@@ -4349,9 +5275,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (isFromAdmin != null) 'is_from_admin': isFromAdmin,
       if (isRead != null) 'is_read': isRead,
       if (type != null) 'type': type,
-      if (content != null) 'content': content,
+      if (textContent != null) 'text_content': textContent,
       if (deleted != null) 'deleted': deleted,
-      if (extraJson != null) 'extra_json': extraJson,
+      if (replyToId != null) 'reply_to_id': replyToId,
+      if (replyToText != null) 'reply_to_text': replyToText,
+      if (replyToSender != null) 'reply_to_sender': replyToSender,
+      if (mediaUrl != null) 'media_url': mediaUrl,
+      if (mediaUrlsJson != null) 'media_urls_json': mediaUrlsJson,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (orderId != null) 'order_id': orderId,
+      if (waveformJson != null) 'waveform_json': waveformJson,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (uploading != null) 'uploading': uploading,
+      if (uploadCount != null) 'upload_count': uploadCount,
+      if (reactionsJson != null) 'reactions_json': reactionsJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (localMediaPath != null) 'local_media_path': localMediaPath,
@@ -4368,9 +5305,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       Value<bool>? isFromAdmin,
       Value<bool>? isRead,
       Value<String>? type,
-      Value<String>? content,
+      Value<String?>? textContent,
       Value<bool>? deleted,
-      Value<String>? extraJson,
+      Value<String>? replyToId,
+      Value<String>? replyToText,
+      Value<String>? replyToSender,
+      Value<String?>? mediaUrl,
+      Value<String?>? mediaUrlsJson,
+      Value<int>? durationMs,
+      Value<String>? orderId,
+      Value<String?>? waveformJson,
+      Value<int>? sizeBytes,
+      Value<bool>? uploading,
+      Value<int>? uploadCount,
+      Value<String?>? reactionsJson,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<String>? localMediaPath,
@@ -4384,9 +5332,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       isFromAdmin: isFromAdmin ?? this.isFromAdmin,
       isRead: isRead ?? this.isRead,
       type: type ?? this.type,
-      content: content ?? this.content,
+      textContent: textContent ?? this.textContent,
       deleted: deleted ?? this.deleted,
-      extraJson: extraJson ?? this.extraJson,
+      replyToId: replyToId ?? this.replyToId,
+      replyToText: replyToText ?? this.replyToText,
+      replyToSender: replyToSender ?? this.replyToSender,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaUrlsJson: mediaUrlsJson ?? this.mediaUrlsJson,
+      durationMs: durationMs ?? this.durationMs,
+      orderId: orderId ?? this.orderId,
+      waveformJson: waveformJson ?? this.waveformJson,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      uploading: uploading ?? this.uploading,
+      uploadCount: uploadCount ?? this.uploadCount,
+      reactionsJson: reactionsJson ?? this.reactionsJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       localMediaPath: localMediaPath ?? this.localMediaPath,
@@ -4419,14 +5378,47 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (content.present) {
-      map['content'] = Variable<String>(content.value);
+    if (textContent.present) {
+      map['text_content'] = Variable<String>(textContent.value);
     }
     if (deleted.present) {
       map['deleted'] = Variable<bool>(deleted.value);
     }
-    if (extraJson.present) {
-      map['extra_json'] = Variable<String>(extraJson.value);
+    if (replyToId.present) {
+      map['reply_to_id'] = Variable<String>(replyToId.value);
+    }
+    if (replyToText.present) {
+      map['reply_to_text'] = Variable<String>(replyToText.value);
+    }
+    if (replyToSender.present) {
+      map['reply_to_sender'] = Variable<String>(replyToSender.value);
+    }
+    if (mediaUrl.present) {
+      map['media_url'] = Variable<String>(mediaUrl.value);
+    }
+    if (mediaUrlsJson.present) {
+      map['media_urls_json'] = Variable<String>(mediaUrlsJson.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (orderId.present) {
+      map['order_id'] = Variable<String>(orderId.value);
+    }
+    if (waveformJson.present) {
+      map['waveform_json'] = Variable<String>(waveformJson.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (uploading.present) {
+      map['uploading'] = Variable<bool>(uploading.value);
+    }
+    if (uploadCount.present) {
+      map['upload_count'] = Variable<int>(uploadCount.value);
+    }
+    if (reactionsJson.present) {
+      map['reactions_json'] = Variable<String>(reactionsJson.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -4456,9 +5448,20 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('isFromAdmin: $isFromAdmin, ')
           ..write('isRead: $isRead, ')
           ..write('type: $type, ')
-          ..write('content: $content, ')
+          ..write('textContent: $textContent, ')
           ..write('deleted: $deleted, ')
-          ..write('extraJson: $extraJson, ')
+          ..write('replyToId: $replyToId, ')
+          ..write('replyToText: $replyToText, ')
+          ..write('replyToSender: $replyToSender, ')
+          ..write('mediaUrl: $mediaUrl, ')
+          ..write('mediaUrlsJson: $mediaUrlsJson, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('orderId: $orderId, ')
+          ..write('waveformJson: $waveformJson, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('uploading: $uploading, ')
+          ..write('uploadCount: $uploadCount, ')
+          ..write('reactionsJson: $reactionsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('localMediaPath: $localMediaPath, ')
@@ -6965,6 +7968,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $LocalUserTable localUser = $LocalUserTable(this);
+  late final $RegistrationDraftsTable registrationDrafts =
+      $RegistrationDraftsTable(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $ProductsTable products = $ProductsTable(this);
   late final $CartItemsTable cartItems = $CartItemsTable(this);
@@ -6988,6 +7993,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
         localUser,
+        registrationDrafts,
         categories,
         products,
         cartItems,
@@ -7326,6 +8332,271 @@ typedef $$LocalUserTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$AppDatabase, $LocalUserTable, LocalUserData>
     ),
     LocalUserData,
+    PrefetchHooks Function()>;
+typedef $$RegistrationDraftsTableCreateCompanionBuilder
+    = RegistrationDraftsCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> lastName,
+  Value<String> referredBy,
+  Value<String> address,
+  Value<String> city,
+  Value<String> postalCode,
+  Value<String> groupName,
+  Value<double?> lat,
+  Value<double?> lng,
+  Value<String> language,
+  Value<int> rowid,
+});
+typedef $$RegistrationDraftsTableUpdateCompanionBuilder
+    = RegistrationDraftsCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> lastName,
+  Value<String> referredBy,
+  Value<String> address,
+  Value<String> city,
+  Value<String> postalCode,
+  Value<String> groupName,
+  Value<double?> lat,
+  Value<double?> lng,
+  Value<String> language,
+  Value<int> rowid,
+});
+
+class $$RegistrationDraftsTableFilterComposer
+    extends Composer<_$AppDatabase, $RegistrationDraftsTable> {
+  $$RegistrationDraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastName => $composableBuilder(
+      column: $table.lastName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get referredBy => $composableBuilder(
+      column: $table.referredBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get postalCode => $composableBuilder(
+      column: $table.postalCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupName => $composableBuilder(
+      column: $table.groupName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get lat => $composableBuilder(
+      column: $table.lat, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get lng => $composableBuilder(
+      column: $table.lng, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnFilters(column));
+}
+
+class $$RegistrationDraftsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RegistrationDraftsTable> {
+  $$RegistrationDraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastName => $composableBuilder(
+      column: $table.lastName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get referredBy => $composableBuilder(
+      column: $table.referredBy, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get postalCode => $composableBuilder(
+      column: $table.postalCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupName => $composableBuilder(
+      column: $table.groupName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get lat => $composableBuilder(
+      column: $table.lat, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get lng => $composableBuilder(
+      column: $table.lng, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get language => $composableBuilder(
+      column: $table.language, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RegistrationDraftsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RegistrationDraftsTable> {
+  $$RegistrationDraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get lastName =>
+      $composableBuilder(column: $table.lastName, builder: (column) => column);
+
+  GeneratedColumn<String> get referredBy => $composableBuilder(
+      column: $table.referredBy, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<String> get city =>
+      $composableBuilder(column: $table.city, builder: (column) => column);
+
+  GeneratedColumn<String> get postalCode => $composableBuilder(
+      column: $table.postalCode, builder: (column) => column);
+
+  GeneratedColumn<String> get groupName =>
+      $composableBuilder(column: $table.groupName, builder: (column) => column);
+
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lng =>
+      $composableBuilder(column: $table.lng, builder: (column) => column);
+
+  GeneratedColumn<String> get language =>
+      $composableBuilder(column: $table.language, builder: (column) => column);
+}
+
+class $$RegistrationDraftsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RegistrationDraftsTable,
+    RegistrationDraft,
+    $$RegistrationDraftsTableFilterComposer,
+    $$RegistrationDraftsTableOrderingComposer,
+    $$RegistrationDraftsTableAnnotationComposer,
+    $$RegistrationDraftsTableCreateCompanionBuilder,
+    $$RegistrationDraftsTableUpdateCompanionBuilder,
+    (
+      RegistrationDraft,
+      BaseReferences<_$AppDatabase, $RegistrationDraftsTable, RegistrationDraft>
+    ),
+    RegistrationDraft,
+    PrefetchHooks Function()> {
+  $$RegistrationDraftsTableTableManager(
+      _$AppDatabase db, $RegistrationDraftsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RegistrationDraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RegistrationDraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RegistrationDraftsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> lastName = const Value.absent(),
+            Value<String> referredBy = const Value.absent(),
+            Value<String> address = const Value.absent(),
+            Value<String> city = const Value.absent(),
+            Value<String> postalCode = const Value.absent(),
+            Value<String> groupName = const Value.absent(),
+            Value<double?> lat = const Value.absent(),
+            Value<double?> lng = const Value.absent(),
+            Value<String> language = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RegistrationDraftsCompanion(
+            id: id,
+            name: name,
+            lastName: lastName,
+            referredBy: referredBy,
+            address: address,
+            city: city,
+            postalCode: postalCode,
+            groupName: groupName,
+            lat: lat,
+            lng: lng,
+            language: language,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> lastName = const Value.absent(),
+            Value<String> referredBy = const Value.absent(),
+            Value<String> address = const Value.absent(),
+            Value<String> city = const Value.absent(),
+            Value<String> postalCode = const Value.absent(),
+            Value<String> groupName = const Value.absent(),
+            Value<double?> lat = const Value.absent(),
+            Value<double?> lng = const Value.absent(),
+            Value<String> language = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RegistrationDraftsCompanion.insert(
+            id: id,
+            name: name,
+            lastName: lastName,
+            referredBy: referredBy,
+            address: address,
+            city: city,
+            postalCode: postalCode,
+            groupName: groupName,
+            lat: lat,
+            lng: lng,
+            language: language,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RegistrationDraftsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RegistrationDraftsTable,
+    RegistrationDraft,
+    $$RegistrationDraftsTableFilterComposer,
+    $$RegistrationDraftsTableOrderingComposer,
+    $$RegistrationDraftsTableAnnotationComposer,
+    $$RegistrationDraftsTableCreateCompanionBuilder,
+    $$RegistrationDraftsTableUpdateCompanionBuilder,
+    (
+      RegistrationDraft,
+      BaseReferences<_$AppDatabase, $RegistrationDraftsTable, RegistrationDraft>
+    ),
+    RegistrationDraft,
     PrefetchHooks Function()>;
 typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   required String id,
@@ -8846,15 +10117,26 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   required String id,
   required String topicId,
   required String senderId,
-  Value<String> senderName,
-  Value<bool> isFromAdmin,
+  required String senderName,
+  required bool isFromAdmin,
   Value<bool> isRead,
-  Value<String> type,
-  Value<String> content,
+  required String type,
+  Value<String?> textContent,
   Value<bool> deleted,
-  Value<String> extraJson,
+  Value<String> replyToId,
+  Value<String> replyToText,
+  Value<String> replyToSender,
+  Value<String?> mediaUrl,
+  Value<String?> mediaUrlsJson,
+  Value<int> durationMs,
+  Value<String> orderId,
+  Value<String?> waveformJson,
+  Value<int> sizeBytes,
+  Value<bool> uploading,
+  Value<int> uploadCount,
+  Value<String?> reactionsJson,
   required DateTime createdAt,
-  required DateTime updatedAt,
+  Value<DateTime> updatedAt,
   Value<String> localMediaPath,
   Value<bool> pendingSync,
   Value<int> rowid,
@@ -8867,9 +10149,20 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<bool> isFromAdmin,
   Value<bool> isRead,
   Value<String> type,
-  Value<String> content,
+  Value<String?> textContent,
   Value<bool> deleted,
-  Value<String> extraJson,
+  Value<String> replyToId,
+  Value<String> replyToText,
+  Value<String> replyToSender,
+  Value<String?> mediaUrl,
+  Value<String?> mediaUrlsJson,
+  Value<int> durationMs,
+  Value<String> orderId,
+  Value<String?> waveformJson,
+  Value<int> sizeBytes,
+  Value<bool> uploading,
+  Value<int> uploadCount,
+  Value<String?> reactionsJson,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<String> localMediaPath,
@@ -8907,14 +10200,47 @@ class $$MessagesTableFilterComposer
   ColumnFilters<String> get type => $composableBuilder(
       column: $table.type, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get content => $composableBuilder(
-      column: $table.content, builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get textContent => $composableBuilder(
+      column: $table.textContent, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get deleted => $composableBuilder(
       column: $table.deleted, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get extraJson => $composableBuilder(
-      column: $table.extraJson, builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get replyToId => $composableBuilder(
+      column: $table.replyToId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToText => $composableBuilder(
+      column: $table.replyToText, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get replyToSender => $composableBuilder(
+      column: $table.replyToSender, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaUrl => $composableBuilder(
+      column: $table.mediaUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mediaUrlsJson => $composableBuilder(
+      column: $table.mediaUrlsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+      column: $table.durationMs, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get orderId => $composableBuilder(
+      column: $table.orderId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get waveformJson => $composableBuilder(
+      column: $table.waveformJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+      column: $table.sizeBytes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get uploading => $composableBuilder(
+      column: $table.uploading, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get uploadCount => $composableBuilder(
+      column: $table.uploadCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get reactionsJson => $composableBuilder(
+      column: $table.reactionsJson, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -8960,14 +10286,51 @@ class $$MessagesTableOrderingComposer
   ColumnOrderings<String> get type => $composableBuilder(
       column: $table.type, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get content => $composableBuilder(
-      column: $table.content, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<String> get textContent => $composableBuilder(
+      column: $table.textContent, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
       column: $table.deleted, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get extraJson => $composableBuilder(
-      column: $table.extraJson, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<String> get replyToId => $composableBuilder(
+      column: $table.replyToId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToText => $composableBuilder(
+      column: $table.replyToText, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get replyToSender => $composableBuilder(
+      column: $table.replyToSender,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaUrl => $composableBuilder(
+      column: $table.mediaUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mediaUrlsJson => $composableBuilder(
+      column: $table.mediaUrlsJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+      column: $table.durationMs, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get orderId => $composableBuilder(
+      column: $table.orderId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get waveformJson => $composableBuilder(
+      column: $table.waveformJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+      column: $table.sizeBytes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get uploading => $composableBuilder(
+      column: $table.uploading, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get uploadCount => $composableBuilder(
+      column: $table.uploadCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get reactionsJson => $composableBuilder(
+      column: $table.reactionsJson,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
@@ -9013,14 +10376,47 @@ class $$MessagesTableAnnotationComposer
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<String> get content =>
-      $composableBuilder(column: $table.content, builder: (column) => column);
+  GeneratedColumn<String> get textContent => $composableBuilder(
+      column: $table.textContent, builder: (column) => column);
 
   GeneratedColumn<bool> get deleted =>
       $composableBuilder(column: $table.deleted, builder: (column) => column);
 
-  GeneratedColumn<String> get extraJson =>
-      $composableBuilder(column: $table.extraJson, builder: (column) => column);
+  GeneratedColumn<String> get replyToId =>
+      $composableBuilder(column: $table.replyToId, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToText => $composableBuilder(
+      column: $table.replyToText, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToSender => $composableBuilder(
+      column: $table.replyToSender, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaUrl =>
+      $composableBuilder(column: $table.mediaUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get mediaUrlsJson => $composableBuilder(
+      column: $table.mediaUrlsJson, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+      column: $table.durationMs, builder: (column) => column);
+
+  GeneratedColumn<String> get orderId =>
+      $composableBuilder(column: $table.orderId, builder: (column) => column);
+
+  GeneratedColumn<String> get waveformJson => $composableBuilder(
+      column: $table.waveformJson, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<bool> get uploading =>
+      $composableBuilder(column: $table.uploading, builder: (column) => column);
+
+  GeneratedColumn<int> get uploadCount => $composableBuilder(
+      column: $table.uploadCount, builder: (column) => column);
+
+  GeneratedColumn<String> get reactionsJson => $composableBuilder(
+      column: $table.reactionsJson, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9065,9 +10461,20 @@ class $$MessagesTableTableManager extends RootTableManager<
             Value<bool> isFromAdmin = const Value.absent(),
             Value<bool> isRead = const Value.absent(),
             Value<String> type = const Value.absent(),
-            Value<String> content = const Value.absent(),
+            Value<String?> textContent = const Value.absent(),
             Value<bool> deleted = const Value.absent(),
-            Value<String> extraJson = const Value.absent(),
+            Value<String> replyToId = const Value.absent(),
+            Value<String> replyToText = const Value.absent(),
+            Value<String> replyToSender = const Value.absent(),
+            Value<String?> mediaUrl = const Value.absent(),
+            Value<String?> mediaUrlsJson = const Value.absent(),
+            Value<int> durationMs = const Value.absent(),
+            Value<String> orderId = const Value.absent(),
+            Value<String?> waveformJson = const Value.absent(),
+            Value<int> sizeBytes = const Value.absent(),
+            Value<bool> uploading = const Value.absent(),
+            Value<int> uploadCount = const Value.absent(),
+            Value<String?> reactionsJson = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<String> localMediaPath = const Value.absent(),
@@ -9082,9 +10489,20 @@ class $$MessagesTableTableManager extends RootTableManager<
             isFromAdmin: isFromAdmin,
             isRead: isRead,
             type: type,
-            content: content,
+            textContent: textContent,
             deleted: deleted,
-            extraJson: extraJson,
+            replyToId: replyToId,
+            replyToText: replyToText,
+            replyToSender: replyToSender,
+            mediaUrl: mediaUrl,
+            mediaUrlsJson: mediaUrlsJson,
+            durationMs: durationMs,
+            orderId: orderId,
+            waveformJson: waveformJson,
+            sizeBytes: sizeBytes,
+            uploading: uploading,
+            uploadCount: uploadCount,
+            reactionsJson: reactionsJson,
             createdAt: createdAt,
             updatedAt: updatedAt,
             localMediaPath: localMediaPath,
@@ -9095,15 +10513,26 @@ class $$MessagesTableTableManager extends RootTableManager<
             required String id,
             required String topicId,
             required String senderId,
-            Value<String> senderName = const Value.absent(),
-            Value<bool> isFromAdmin = const Value.absent(),
+            required String senderName,
+            required bool isFromAdmin,
             Value<bool> isRead = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String> content = const Value.absent(),
+            required String type,
+            Value<String?> textContent = const Value.absent(),
             Value<bool> deleted = const Value.absent(),
-            Value<String> extraJson = const Value.absent(),
+            Value<String> replyToId = const Value.absent(),
+            Value<String> replyToText = const Value.absent(),
+            Value<String> replyToSender = const Value.absent(),
+            Value<String?> mediaUrl = const Value.absent(),
+            Value<String?> mediaUrlsJson = const Value.absent(),
+            Value<int> durationMs = const Value.absent(),
+            Value<String> orderId = const Value.absent(),
+            Value<String?> waveformJson = const Value.absent(),
+            Value<int> sizeBytes = const Value.absent(),
+            Value<bool> uploading = const Value.absent(),
+            Value<int> uploadCount = const Value.absent(),
+            Value<String?> reactionsJson = const Value.absent(),
             required DateTime createdAt,
-            required DateTime updatedAt,
+            Value<DateTime> updatedAt = const Value.absent(),
             Value<String> localMediaPath = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -9116,9 +10545,20 @@ class $$MessagesTableTableManager extends RootTableManager<
             isFromAdmin: isFromAdmin,
             isRead: isRead,
             type: type,
-            content: content,
+            textContent: textContent,
             deleted: deleted,
-            extraJson: extraJson,
+            replyToId: replyToId,
+            replyToText: replyToText,
+            replyToSender: replyToSender,
+            mediaUrl: mediaUrl,
+            mediaUrlsJson: mediaUrlsJson,
+            durationMs: durationMs,
+            orderId: orderId,
+            waveformJson: waveformJson,
+            sizeBytes: sizeBytes,
+            uploading: uploading,
+            uploadCount: uploadCount,
+            reactionsJson: reactionsJson,
             createdAt: createdAt,
             updatedAt: updatedAt,
             localMediaPath: localMediaPath,
@@ -10461,6 +11901,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$LocalUserTableTableManager get localUser =>
       $$LocalUserTableTableManager(_db, _db.localUser);
+  $$RegistrationDraftsTableTableManager get registrationDrafts =>
+      $$RegistrationDraftsTableTableManager(_db, _db.registrationDrafts);
   $$CategoriesTableTableManager get categories =>
       $$CategoriesTableTableManager(_db, _db.categories);
   $$ProductsTableTableManager get products =>

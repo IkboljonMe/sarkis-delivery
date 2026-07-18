@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/admin_auth_provider.dart';
+import '../sync/sync_engine.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 import '../widgets/brand_logo.dart';
@@ -27,6 +28,10 @@ class _AdminSplashScreenState extends State<AdminSplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     final loggedIn = context.read<AdminAuthProvider>().isLoggedIn;
+    if (loggedIn) {
+      SyncEngine.instance.fullSync().catchError((_) {});
+      SyncEngine.instance.start();
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(

@@ -1,8 +1,7 @@
-import 'dart:convert';
-
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../local_db/app_database.dart';
 import '../models/coupon_model.dart';
 import '../models/order_item_model.dart';
 import '../models/order_model.dart';
@@ -17,8 +16,6 @@ import '../utils/order_messages.dart';
 
 /// In-memory + persisted cart. Stores qty per productId and the chosen shift.
 class CartProvider extends ChangeNotifier {
-  static const _prefKey = 'cart_state';
-
   final Map<String, int> _qty = {}; // productId -> qty
   ShiftModel? _shift;
   CouponModel? _coupon;
@@ -139,14 +136,46 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> loadPersisted() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_prefKey);
-      if (raw == null) return;
-      final map = jsonDecode(raw) as Map<String, dynamic>;
-      final q = map['qty'] as Map<String, dynamic>?;
-      if (q != null) {
-        _qty.clear();
-        q.forEach((k, v) => _qty[k] = (v as num).toInt());
+      final db = AppDatabase.instance;
+      final meta = await (db.select(db.cartMeta)..where((t) => t.id.equals(0))).getSingleOrNull();
+      final items = await db.select(db.cartItems).get();
+      
+      _qty.clear();
+      for (final row in items) {
+        _qty[row.productId] = row.qty;
+      }
+      
+      if (meta != null) {
+        if (meta.editingOrderId.isNotEmpty) {
+          _editingOrderId = meta.editingOrderId;
+        }
+        if (meta.shiftId.isNotEmpty) {
+          final sRow = await (db.select(db.shifts)..where((t) => t.id.equals(meta.shiftId))).getSingleOrNull();
+          if (sRow != null) {
+            _shift = ShiftModel(
+              id: sRow.id,
+              group: sRow.group,
+              date: sRow.date,
+              label: sRow.label,
+              isOpen: sRow.isOpen,
+              cancelDaysBefore: sRow.cancelDaysBefore,
+              editDaysBefore: sRow.editDaysBefore,
+            );
+          }
+        }
+        if (meta.couponCode.isNotEmpty) {
+          final cRow = await (db.select(db.coupons)..where((t) => t.code.equals(meta.couponCode))).getSingleOrNull();
+          if (cRow != null) {
+            _coupon = CouponModel(
+              id: cRow.code,
+              code: cRow.code,
+              type: cRow.type,
+              value: cRow.value,
+              minOrder: cRow.minOrder,
+              isActive: cRow.isActive,
+            );
+          }
+        }
       }
       notifyListeners();
     } catch (_) {}
@@ -154,8 +183,22 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> _persist() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefKey, jsonEncode({'qty': _qty}));
+      final db = AppDatabase.instance;
+      await db.transaction(() async {
+        await db.delete(db.cartItems).go();
+        for (final entry in _qty.entries) {
+          await db.into(db.cartItems).insert(CartItemsCompanion.insert(
+            productId: entry.key,
+            qty: entry.value,
+          ));
+        }
+        await db.into(db.cartMeta).insertOnConflictUpdate(CartMetaCompanion.insert(
+          id: const Value(0),
+          shiftId: Value(_shift?.id ?? ''),
+          couponCode: Value(_coupon?.code ?? ''),
+          editingOrderId: Value(_editingOrderId ?? ''),
+        ));
+      });
     } catch (_) {}
   }
 
@@ -242,16 +285,19 @@ class CartProvider extends ChangeNotifier {
       if (discount > 0 && coupon != null) {
         await CouponService.instance.incrementUsage(coupon.id);
       }
-      // Greet with an order-confirmation card from the admin (Sarkis).
+      // Share the new order into the chat as an order card. The backend
+      // attributes messages to the authenticated user, so this is sent as
+      // the customer (the old Firebase code could fake an admin sender —
+      // the REST API correctly refuses that).
       try {
         await MessageService.instance.ensureTopic(
             topicId: user.id, userName: user.fullName, userGroup: user.group);
         await MessageService.instance.sendMessage(
           topicId: user.id,
           text: OrderMessages.thankYou(user.language),
-          senderId: AppConstants.adminUid,
-          senderName: 'Sarkis',
-          isFromAdmin: true,
+          senderId: user.id,
+          senderName: user.fullName.isEmpty ? user.name : user.fullName,
+          isFromAdmin: false,
           type: 'order',
           orderId: id,
         );

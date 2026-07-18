@@ -2,7 +2,7 @@ import '../utils/json_date.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// An admin-created delivery group whose coverage is one or more free-drawn
-/// polygons on the map. Stored in the `regionGroups` Firestore collection,
+/// polygons on the map. Served by the backend `/v1/zones` endpoints,
 /// additive to the legacy hardcoded city groups in [AppConstants].
 class RegionGroupModel {
   final String id;
@@ -40,9 +40,9 @@ class RegionGroupModel {
   factory RegionGroupModel.fromJson(Map<String, dynamic> json) {
     final rawPolys = (json['polygons'] as List?) ?? const [];
     final polygons = rawPolys.map<List<LatLng>>((ring) {
-      // Each ring is stored as {points: [...]} because Firestore forbids
-      // directly nesting an array inside another array. Fall back to a raw
-      // list for any legacy documents.
+      // Each ring is stored as {points: [...]} — a wire format inherited
+      // from the Firebase era that the backend still accepts. Fall back to
+      // a raw list for any legacy rows.
       final pts = ring is Map ? (ring['points'] as List? ?? const []) : (ring as List? ?? const []);
       return pts.map<LatLng>((p) {
         final m = p as Map;
@@ -66,7 +66,7 @@ class RegionGroupModel {
         'id': id,
         'name': name,
         'colorValue': colorValue,
-        // Wrap each ring in a map; Firestore rejects arrays-of-arrays.
+        // Wrap each ring in a map (legacy wire format the backend expects).
         'polygons': polygons
             .map((ring) => {
                   'points': ring

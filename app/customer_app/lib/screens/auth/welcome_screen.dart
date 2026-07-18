@@ -58,7 +58,7 @@ class WelcomeScreen extends StatelessWidget {
                 onPressed: () {
                   final auth = context.read<AuthProvider>();
                   auth.authMode = 'login';
-                  auth.draft = null;
+                  auth.clearDraft();
                   Navigator.pushNamed(context, '/phone');
                 },
                 child: Text(t.t('login'),

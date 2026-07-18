@@ -248,7 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _info(t.t('setVersion'), AppConstants.appVersion),
           const SizedBox(height: 8),
-          _info(t.t('setFirebase'), AppConstants.firebaseProjectId),
+          _info(t.t('setApi'), AppConstants.apiBaseUrl),
           const SizedBox(height: 8),
           _info(t.t('setEnv'), 'Production'),
         ],

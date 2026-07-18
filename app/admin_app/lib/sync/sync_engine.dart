@@ -6,13 +6,15 @@ import 'package:drift/drift.dart';
 import '../local_db/app_database.dart';
 import '../realtime/socket_service.dart';
 import '../services/api_client.dart';
+import 'mutation_queue.dart';
 
 /// Single source of truth for keeping the local Drift cache current — see
 /// customer_app's `lib/sync/sync_engine.dart` for the full rationale; this
 /// is the same pattern scoped to staff-wide data (all orders, all chat
 /// topics, all approvals) instead of one customer's own records.
 class SyncEngine {
-  SyncEngine(this._db, this._api, this._socket);
+  SyncEngine._(this._db, this._api, this._socket);
+  static final SyncEngine instance = SyncEngine._(AppDatabase.instance, ApiClient.instance, SocketService.instance);
 
   final AppDatabase _db;
   final ApiClient _api;
@@ -23,12 +25,15 @@ class SyncEngine {
     _eventsSub?.cancel();
     _eventsSub = _socket.events.listen(_handleEvent);
     _socket.connect();
+    MutationQueue.instance.start();
+    MutationQueue.instance.drain();
   }
 
   Future<void> stop() async {
     await _eventsSub?.cancel();
     _eventsSub = null;
     _socket.disconnect();
+    await MutationQueue.instance.stop();
   }
 
   Future<void> fullSync() async {

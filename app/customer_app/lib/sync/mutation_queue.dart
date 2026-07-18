@@ -16,7 +16,8 @@ import '../services/api_client.dart';
 /// have already written an optimistic local row (e.g. an `Orders` row with
 /// `pendingSync=true`) so the UI reflects the action immediately either way.
 class MutationQueue {
-  MutationQueue(this._db, this._api);
+  MutationQueue._(this._db, this._api);
+  static final MutationQueue instance = MutationQueue._(AppDatabase.instance, ApiClient.instance);
 
   final AppDatabase _db;
   final ApiClient _api;
@@ -89,6 +90,16 @@ class MutationQueue {
           final body = jsonDecode(row.bodyJson);
           await _send(row.method, row.path, body);
           await (_db.delete(_db.pendingMutations)..where((t) => t.id.equals(row.id))).go();
+          
+          // Reconcile optimistic local rows
+          if (row.localRefId.isNotEmpty) {
+            if (row.entityType == 'order') {
+              await (_db.delete(_db.orders)..where((t) => t.id.equals(row.localRefId))).go();
+              await (_db.delete(_db.orderItemRows)..where((t) => t.orderId.equals(row.localRefId))).go();
+            } else if (row.entityType == 'message') {
+              await (_db.delete(_db.messages)..where((t) => t.id.equals(row.localRefId))).go();
+            }
+          }
         } on ApiException catch (e) {
           if (e.statusCode == 0) return; // still offline — try again on the next connectivity event
           // A real rejection (validation, 4xx/5xx) — drop it rather than retry forever,

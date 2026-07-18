@@ -1,5 +1,8 @@
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
+import '../local_db/app_database.dart';
 import '../models/user_model.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
@@ -7,6 +10,7 @@ import '../services/fcm_service.dart';
 import '../services/message_service.dart';
 import '../services/region_group_service.dart';
 import '../services/user_service.dart';
+import '../sync/sync_engine.dart';
 import '../utils/constants.dart';
 import '../utils/welcome_message.dart';
 
@@ -27,7 +31,7 @@ class RegistrationDraft {
   String language = 'en';
 }
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
   final AuthService _auth = AuthService.instance;
   final UserService _users = UserService.instance;
 
@@ -43,6 +47,68 @@ class AuthProvider extends ChangeNotifier {
   String authMode = 'login';
   // Pending profile during a registration (phone verified last).
   RegistrationDraft? draft;
+
+  AuthProvider() {
+    _loadDraft();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _auth.isLoggedIn && _auth.uid != null) {
+      SyncEngine.instance.fullSync(_auth.uid!).catchError((_) {});
+      SyncEngine.instance.start(_auth.uid!);
+    } else if (state == AppLifecycleState.paused) {
+      SyncEngine.instance.stop().catchError((_) {});
+    }
+  }
+
+  Future<void> _loadDraft() async {
+    final row = await (AppDatabase.instance.select(AppDatabase.instance.registrationDrafts)..where((t) => t.id.equals('draft'))).getSingleOrNull();
+    if (row != null) {
+      draft = RegistrationDraft()
+        ..name = row.name
+        ..lastName = row.lastName
+        ..referredBy = row.referredBy
+        ..address = row.address
+        ..city = row.city
+        ..postalCode = row.postalCode
+        ..group = row.groupName
+        ..lat = row.lat
+        ..lng = row.lng
+        ..language = row.language;
+    }
+  }
+
+  Future<void> saveDraft(RegistrationDraft d) async {
+    draft = d;
+    await AppDatabase.instance.into(AppDatabase.instance.registrationDrafts).insertOnConflictUpdate(
+      RegistrationDraftsCompanion.insert(
+        id: const Value('draft'),
+        name: Value(d.name),
+        lastName: Value(d.lastName),
+        referredBy: Value(d.referredBy),
+        address: Value(d.address),
+        city: Value(d.city),
+        postalCode: Value(d.postalCode),
+        groupName: Value(d.group),
+        lat: Value(d.lat),
+        lng: Value(d.lng),
+        language: Value(d.language),
+      ),
+    );
+  }
+
+  Future<void> clearDraft() async {
+    draft = null;
+    await (AppDatabase.instance.delete(AppDatabase.instance.registrationDrafts)..where((t) => t.id.equals('draft'))).go();
+  }
 
   UserModel? get user => _user;
 
@@ -65,23 +131,53 @@ class AuthProvider extends ChangeNotifier {
   Future<UserModel?> loadCurrentUser() async {
     if (!_auth.isLoggedIn) return null;
     try {
-      final fetched = await _users.getUser(_auth.uid ?? '');
+      await SyncEngine.instance.syncProfile();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        // Session is genuinely dead — no local fallback.
+        _user = null;
+        notifyListeners();
+        return null;
+      }
+      // Offline / server hiccup: fall through and serve the cached profile.
+    } catch (_) {
+      // Same: prefer the local cache over failing the whole session.
+    }
+    try {
+      final row = await (AppDatabase.instance.select(AppDatabase.instance.localUser)..where((t) => t.id.equals(_auth.uid ?? ''))).getSingleOrNull();
+      if (row != null) {
+        _user = UserModel(
+          id: row.id,
+          name: row.name,
+          lastName: row.lastName,
+          phone: row.phone,
+          address: row.address,
+          city: row.city,
+          postalCode: row.postalCode,
+          group: row.group,
+          lat: row.lat,
+          lng: row.lng,
+          language: row.language,
+          isAdmin: false,
+          referredBy: '',
+        );
+      } else {
+        _user = null;
+      }
       // A profile without a name has not completed registration yet — callers
       // treat a null user as "needs registration".
-      _user = (fetched != null && fetched.name.trim().isNotEmpty) ? fetched : null;
+      if (_user != null && _user!.name.trim().isEmpty) {
+        _user = null;
+      }
       if (_user != null) {
-        await FcmService.instance.init(_user!.id);
+        try {
+          await FcmService.instance.init(_user!.id);
+        } catch (_) {
+          // Push registration must never block login (offline / no Google services).
+        }
       }
       notifyListeners();
       return _user;
-    } on ApiException catch (e) {
-      if (e.statusCode == 401) {
-        _user = null;
-      } else {
-        _error = e.message;
-      }
-      notifyListeners();
-      return null;
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -126,6 +222,15 @@ class AuthProvider extends ChangeNotifier {
       final res = await _auth.verifyOtp(phoneNumber, smsCode);
       _isNewUser = res['isNewUser'] == true;
       _status = AuthStatus.authenticated;
+      
+      final uid = _auth.uid;
+      if (uid != null) {
+        // Seed the local cache in the background — a slow or partially
+        // failing sync must not make a successful login look failed.
+        SyncEngine.instance.fullSync(uid).catchError((_) {});
+        SyncEngine.instance.start(uid);
+      }
+
       await loadCurrentUser();
       _setBusy(false);
       return true;
@@ -182,7 +287,6 @@ class AuthProvider extends ChangeNotifier {
         userName: user.fullName.isEmpty ? user.name : user.fullName,
         userGroup: group,
         text: WelcomeMessage.forLang(language),
-        adminUid: AppConstants.adminUid,
         senderName: WelcomeMessage.senderName,
       );
       _setBusy(false);
@@ -222,7 +326,7 @@ class AuthProvider extends ChangeNotifier {
       language: d.language,
       referredBy: d.referredBy,
     );
-    if (ok) draft = null;
+    if (ok) await clearDraft();
     return ok;
   }
 
@@ -240,14 +344,15 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _auth.signOut();
+    await SyncEngine.instance.stop();
+    await AppDatabase.instance.wipeAll();
+    
     _user = null;
     _pendingPhone = null;
     _status = AuthStatus.unknown;
     notifyListeners();
   }
 
-  /// Permanently deletes the account server-side (anonymize + deactivate),
-  /// then clears the local session.
   Future<void> deleteAccount() async {
     try {
       await _auth.deleteCurrentUser();
@@ -255,6 +360,9 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('deleteAccount: $e');
       await _auth.signOut();
     }
+    await SyncEngine.instance.stop();
+    await AppDatabase.instance.wipeAll();
+
     _user = null;
     _pendingPhone = null;
     _status = AuthStatus.unknown;

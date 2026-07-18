@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import '../local_db/app_database.dart';
 import '../realtime/socket_service.dart';
 import '../services/api_client.dart';
+import 'mutation_queue.dart';
 
 /// Single source of truth for keeping the local Drift cache current.
 ///
@@ -20,7 +21,8 @@ import '../services/api_client.dart';
 /// Every screen reads Drift via `.watch()` instead of polling the network —
 /// this is what replaces `ApiClient.poll()` everywhere.
 class SyncEngine {
-  SyncEngine(this._db, this._api, this._socket);
+  SyncEngine._(this._db, this._api, this._socket);
+  static final SyncEngine instance = SyncEngine._(AppDatabase.instance, ApiClient.instance, SocketService.instance);
 
   final AppDatabase _db;
   final ApiClient _api;
@@ -32,17 +34,21 @@ class SyncEngine {
     _eventsSub = _socket.events.listen((e) => _handleEvent(e, userId));
     _socket.connect();
     _socket.joinChat(userId);
+    MutationQueue.instance.start();
+    MutationQueue.instance.drain();
   }
 
   Future<void> stop() async {
     await _eventsSub?.cancel();
     _eventsSub = null;
     _socket.disconnect();
+    await MutationQueue.instance.stop();
   }
 
   /// Full seed on login + safety-net catch-up on resume/reconnect.
   Future<void> fullSync(String userId) async {
     await Future.wait([
+      syncProfile(),
       syncOrders(),
       syncMessages(userId),
       syncNotifications(),
@@ -74,6 +80,29 @@ class SyncEngine {
         _upsertApproval(e.payload as Map);
         break;
     }
+  }
+
+  // ---------- profile ----------
+
+  Future<void> syncProfile() async {
+    final row = await _api.get('/v1/users/me') as Map;
+    await _db.into(_db.localUser).insertOnConflictUpdate(LocalUserCompanion.insert(
+      id: row['id'] as String,
+      phone: Value(row['phone'] as String? ?? ''),
+      email: Value(row['email'] as String? ?? ''),
+      name: Value(row['name'] as String? ?? ''),
+      lastName: Value(row['lastName'] as String? ?? ''),
+      address: Value(row['address'] as String? ?? ''),
+      city: Value(row['city'] as String? ?? ''),
+      postalCode: Value(row['postalCode'] as String? ?? ''),
+      group: Value(row['group'] as String? ?? ''),
+      lat: Value((row['lat'] as num?)?.toDouble()),
+      lng: Value((row['lng'] as num?)?.toDouble()),
+      language: Value(row['language'] as String? ?? 'en'),
+      photoUrl: Value(row['photoUrl'] as String? ?? ''),
+      isVerified: Value(row['isVerified'] as bool? ?? false),
+      updatedAt: Value(_parseDate(row['updatedAt']) ?? DateTime.now()),
+    ));
   }
 
   // ---------- orders ----------
@@ -146,19 +175,33 @@ class SyncEngine {
   }
 
   Future<void> _upsertMessage(Map json, {String? topicId}) async {
+    final mediaUrls = json['mediaUrls'] as List?;
+    final waveform = json['waveform'] as List?;
+    final reactions = json['reactions'] as Map?;
     await _db.into(_db.messages).insertOnConflictUpdate(MessagesCompanion.insert(
           id: json['id'] as String,
           topicId: topicId ?? (json['topicId'] as String? ?? ''),
           senderId: json['senderId'] as String,
-          senderName: Value(json['senderName'] as String? ?? ''),
-          isFromAdmin: Value(json['isFromAdmin'] as bool? ?? false),
+          senderName: json['senderName'] as String? ?? '',
+          isFromAdmin: json['isFromAdmin'] as bool? ?? false,
           isRead: Value(json['isRead'] as bool? ?? false),
-          type: Value(json['type'] as String? ?? 'text'),
-          content: Value(json['text'] as String? ?? ''),
+          type: json['type'] as String? ?? 'text',
+          textContent: Value(json['text'] as String? ?? ''),
           deleted: Value(json['deleted'] as bool? ?? false),
-          extraJson: Value(_encodeExtra(json)),
+          replyToId: Value(json['replyToId'] as String? ?? ''),
+          replyToText: Value(json['replyToText'] as String? ?? ''),
+          replyToSender: Value(json['replyToSender'] as String? ?? ''),
+          mediaUrl: Value(json['mediaUrl'] as String? ?? ''),
+          mediaUrlsJson: Value(mediaUrls == null || mediaUrls.isEmpty ? null : jsonEncode(mediaUrls)),
+          durationMs: Value(json['durationMs'] as int? ?? 0),
+          orderId: Value(json['orderId'] as String? ?? ''),
+          waveformJson: Value(waveform == null || waveform.isEmpty ? null : jsonEncode(waveform)),
+          sizeBytes: Value(json['sizeBytes'] as int? ?? 0),
+          uploading: Value(json['uploading'] as bool? ?? false),
+          uploadCount: Value(json['uploadCount'] as int? ?? 0),
+          reactionsJson: Value(reactions == null || reactions.isEmpty ? null : jsonEncode(reactions)),
           createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
-          updatedAt: DateTime.now(),
+          updatedAt: Value(DateTime.now()),
           pendingSync: const Value(false),
         ));
   }
@@ -311,11 +354,4 @@ class SyncEngine {
 
   DateTime? _parseDate(dynamic v) => v == null ? null : DateTime.tryParse(v as String);
   String _encodeMap(dynamic v) => v == null ? '{}' : jsonEncode(v);
-  String _encodeExtra(Map json) {
-    final extra = <String, dynamic>{
-      for (final k in ['replyToId', 'replyToText', 'replyToSender', 'reactions', 'mediaUrl', 'mediaUrls', 'durationMs', 'orderId', 'waveform', 'sizeBytes', 'uploadCount'])
-        if (json[k] != null) k: json[k],
-    };
-    return jsonEncode(extra);
-  }
 }

@@ -27,6 +27,8 @@ class Categories extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get expiresAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -48,6 +50,8 @@ class Products extends Table {
   TextColumn get discountType => text().withDefault(const Constant('none'))();
   RealColumn get discountValue => real().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get expiresAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -157,6 +161,8 @@ class Coupons extends Table {
   IntColumn get usageLimit => integer().withDefault(const Constant(0))();
   IntColumn get usedCount => integer().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get expiresAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -171,6 +177,7 @@ class Shifts extends Table {
   IntColumn get cancelDaysBefore => integer().withDefault(const Constant(1))();
   IntColumn get editDaysBefore => integer().withDefault(const Constant(1))();
   DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -182,6 +189,7 @@ class RegionZones extends Table {
   IntColumn get colorValue => integer().withDefault(const Constant(0))();
   TextColumn get polygonsJson => text().withDefault(const Constant('[]'))();
   DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -238,6 +246,7 @@ class SyncCursors extends Table {
   SyncCursors,
 ])
 class AppDatabase extends _$AppDatabase {
+  static final AppDatabase instance = AppDatabase();
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 

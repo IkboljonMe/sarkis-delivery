@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/product_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../sync/sync_engine.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeletons.dart';
 import 'products_screen.dart';
@@ -33,61 +34,69 @@ class CategoriesScreen extends StatelessWidget {
           if (cats.isEmpty) {
             return EmptyState(icon: Icons.category, title: t.categories);
           }
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 1,
-            ),
-            itemCount: cats.length,
-            itemBuilder: (context, i) {
-              final c = cats[i];
-              return GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => ProductsScreen(category: c)),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (c.imageUrl.isNotEmpty)
-                        CachedNetworkImage(
-                          imageUrl: c.imageUrl,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => _fallback(),
-                        )
-                      else
-                        _fallback(),
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Color(0xCC000000)],
+          return RefreshIndicator(
+            onRefresh: () async {
+              final auth = context.read<AuthProvider>();
+              if (auth.user != null) {
+                await SyncEngine.instance.fullSync(auth.user!.id);
+              }
+            },
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 1,
+              ),
+              itemCount: cats.length,
+              itemBuilder: (context, i) {
+                final c = cats[i];
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ProductsScreen(category: c)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (c.imageUrl.isNotEmpty)
+                          CachedNetworkImage(
+                            imageUrl: c.imageUrl,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => _fallback(),
+                          )
+                        else
+                          _fallback(),
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Color(0xCC000000)],
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                        child: Text(c.nameFor(lang),
-                            style: AppTextStyles.headingM),
-                      ),
-                    ],
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: Text(c.nameFor(lang),
+                              style: AppTextStyles.headingM),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-                  .animate()
-                  .fadeIn(delay: (80 * i).ms, duration: 350.ms)
-                  .scale(begin: const Offset(0.95, 0.95));
-            },
+                )
+                    .animate()
+                    .fadeIn(delay: (80 * i).ms, duration: 350.ms)
+                    .scale(begin: const Offset(0.95, 0.95));
+              },
+            ),
           );
         },
       ),

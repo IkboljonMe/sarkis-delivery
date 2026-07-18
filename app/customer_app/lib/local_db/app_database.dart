@@ -32,6 +32,23 @@ class LocalUser extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class RegistrationDrafts extends Table {
+  TextColumn get id => text().withDefault(const Constant('draft'))();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  TextColumn get lastName => text().withDefault(const Constant(''))();
+  TextColumn get referredBy => text().withDefault(const Constant(''))();
+  TextColumn get address => text().withDefault(const Constant(''))();
+  TextColumn get city => text().withDefault(const Constant(''))();
+  TextColumn get postalCode => text().withDefault(const Constant(''))();
+  TextColumn get groupName => text().withDefault(const Constant(''))();
+  RealColumn get lat => real().nullable()();
+  RealColumn get lng => real().nullable()();
+  TextColumn get language => text().withDefault(const Constant('en'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class Categories extends Table {
   TextColumn get id => text()();
   TextColumn get nameJson => text().withDefault(const Constant('{}'))();
@@ -141,17 +158,28 @@ class Messages extends Table {
   TextColumn get id => text()();
   TextColumn get topicId => text()();
   TextColumn get senderId => text()();
-  TextColumn get senderName => text().withDefault(const Constant(''))();
-  BoolColumn get isFromAdmin => boolean().withDefault(const Constant(false))();
+  TextColumn get senderName => text()();
+  BoolColumn get isFromAdmin => boolean()();
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
-  TextColumn get type => text().withDefault(const Constant('text'))();
-  // Named `content`, not `text` — `text` collides with Drift's TextColumn
-  // builder method on this class and breaks codegen.
-  TextColumn get content => text().withDefault(const Constant(''))();
+  TextColumn get type => text()();
+  // Named `textContent`, not `text` — `text` collides with Drift's
+  // TextColumn builder method on this class and breaks codegen.
+  TextColumn get textContent => text().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
-  TextColumn get extraJson => text().withDefault(const Constant('{}'))();
+  TextColumn get replyToId => text().withDefault(const Constant(''))();
+  TextColumn get replyToText => text().withDefault(const Constant(''))();
+  TextColumn get replyToSender => text().withDefault(const Constant(''))();
+  TextColumn get mediaUrl => text().nullable()();
+  TextColumn get mediaUrlsJson => text().nullable()();
+  IntColumn get durationMs => integer().withDefault(const Constant(0))();
+  TextColumn get orderId => text().withDefault(const Constant(''))();
+  TextColumn get waveformJson => text().nullable()();
+  IntColumn get sizeBytes => integer().withDefault(const Constant(0))();
+  BoolColumn get uploading => boolean().withDefault(const Constant(false))();
+  IntColumn get uploadCount => integer().withDefault(const Constant(0))();
+  TextColumn get reactionsJson => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   // Local media path cache for offline viewing, keyed by original mediaUrl.
   TextColumn get localMediaPath => text().withDefault(const Constant(''))();
   BoolColumn get pendingSync => boolean().withDefault(const Constant(false))();
@@ -252,6 +280,7 @@ class SyncCursors extends Table {
 
 @DriftDatabase(tables: [
   LocalUser,
+  RegistrationDrafts,
   Categories,
   Products,
   CartItems,
@@ -269,7 +298,9 @@ class SyncCursors extends Table {
   SyncCursors,
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase._() : super(_openConnection());
+  static final AppDatabase instance = AppDatabase._();
+
   AppDatabase.forTesting(super.e);
 
   @override
