@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "title": "Sarko Delivery Shop — Order fresh traditional breads online",
+    "description": "Order national and traditional breads and baked goods online. Free door delivery in Berlin, Hamburg, Frankfurt and München — pay cash on delivery."
+  },
+  "home": {
+    "errorTitle": "Shop is warming up",
+    "errorMessage": "We couldn't reach the bakery right now. Please try again in a moment.",
+    "retry": "Retry",
+    "heroTitleLine1": "Fresh traditional breads, ",
+    "heroTitleLine2": "to your door",
+    "heroSub": "Free delivery in Berlin, Hamburg, Frankfurt & München — pay cash on arrival.",
+    "categories": "Categories",
+    "noCategoriesTitle": "No categories yet",
+    "noCategoriesMessage": "Check back soon — fresh things are coming.",
+    "allProducts": "All products",
+    "noProductsTitle": "Nothing on the shelves yet",
+    "noProductsMessage": "Our bakers are preparing the catalog."
+  },
+  "product": {
+    "addedToCart": "{name} added to cart",
+    "added": "✓ Added",
+    "add": "Add to cart"
+  }
+}

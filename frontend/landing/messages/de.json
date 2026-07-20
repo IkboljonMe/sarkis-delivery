@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "title": "{app} — Frisches traditionelles Brot, direkt an die Haustür",
+    "description": "Sarko Delivery backt nationales und traditionelles Brot und liefert es an Ihre Haustür in Berlin, Hamburg, Frankfurt und München. Kostenlose Lieferung, Barzahlung bei Ankunft."
+  },
+  "hero": {
+    "eyebrow": "Nach Tradition gebacken · Geliefert in Deutschland",
+    "titleLine1": "Frisches traditionelles Brot,",
+    "titleLine2": "direkt an Ihre Haustür",
+    "sub": "Nationales und traditionelles Brot, frisch gebacken und direkt nach Hause geliefert. Kostenlose Lieferung — Barzahlung bei Ankunft.",
+    "googlePlay": "Google Play",
+    "appStore": "App Store",
+    "noApp": "Keine App?",
+    "orderBrowser": "Im Browser bestellen →"
+  },
+  "nav": {
+    "howItWorks": "Wie es funktioniert",
+    "cities": "Städte",
+    "getTheApp": "App holen",
+    "orderOnline": "Online bestellen",
+    "chatOnWhatsapp": "Auf WhatsApp chatten"
+  },
+  "features": {
+    "deliveryTitle": "Kostenlose Lieferung",
+    "deliverySub": "Keine Liefergebühren. Der Preis, den Sie sehen, ist der Preis, den Sie zahlen.",
+    "cashTitle": "Barzahlung bei Lieferung",
+    "cashSub": "Keine Karten, keine Vorauszahlung. Zahlen Sie bar, wenn Ihr Brot ankommt.",
+    "freshTitle": "Frisch & traditionell",
+    "freshSub": "Nationale Rezepte, so gebacken, wie sie immer gebacken wurden.",
+    "chatTitle": "In-App Chat-Support",
+    "chatSub": "Fragen zu einer Bestellung? Chatten Sie mit unserem Team direkt in der App."
+  },
+  "how": {
+    "eyebrow": "Einfach wie es sein sollte",
+    "title": "Wie es funktioniert",
+    "sub": "Vom Ofen auf Ihren Tisch in drei einfachen Schritten.",
+    "step1Title": "Stöbern & bestellen",
+    "step1Sub": "Wählen Sie Ihre Lieblingsbrote in der App und bestellen Sie in Minuten.",
+    "step2Title": "Wir backen & planen",
+    "step2Sub": "Wir backen Ihre Bestellung frisch und planen sie für den nächsten Liefertag.",
+    "step3Title": "Lieferung an die Haustür",
+    "step3Sub": "Ihre Bestellung kommt an — zahlen Sie bar und genießen Sie es warm."
+  },
+  "cities": {
+    "eyebrow": "In ganz Deutschland",
+    "title": "Wo wir liefern",
+    "sub": "Lieferung in vier deutschen Städten — und es werden mehr."
+  },
+  "getApp": {
+    "eyebrow": "Kostenlos für Android & iOS",
+    "title": "Holen Sie sich die {app} App",
+    "sub": "Bestellen Sie mit wenigen Klicks, chatten Sie mit unserem Team. Kostenlos für Android und iOS.",
+    "preferWeb": "Lieber im Web?",
+    "orderOnlineFull": "Online bestellen unter shop.sarko-delivery.de →"
+  },
+  "cta": {
+    "title": "Hungrig auf echtes Brot?",
+    "sub": "Frisch, traditionell und bei Ihnen zu Hause — kostenlose Lieferung.",
+    "btn": "Jetzt online bestellen"
+  },
+  "footer": {
+    "brandSub": "Traditionelle Brote und Backwaren, frisch gebacken und an Ihre Tür geliefert.",
+    "explore": "Entdecken",
+    "contact": "Kontakt",
+    "legal": "Rechtliches",
+    "privacy": "Datenschutz",
+    "terms": "Nutzungsbedingungen",
+    "deleteAccount": "Konto löschen",
+    "allRights": "Alle Rechte vorbehalten."
+  }
+}

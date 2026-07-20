@@ -12,11 +12,14 @@ import {
 } from "../lib/format";
 import { useCart } from "../app/providers";
 import { useToast } from "./Toast";
+import { useLocale, useTranslations } from "next-intl";
 import FadeImg from "./FadeImg";
 
 export default function ProductCard({ product, index = 0 }) {
   const { addItem } = useCart();
   const toast = useToast();
+  const locale = useLocale();
+  const t = useTranslations("product");
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const addedTimer = useRef(null);
@@ -27,11 +30,11 @@ export default function ProductCard({ product, index = 0 }) {
   const img = imageUrl(product.imageUrl || product.images?.[0] || product.photos?.[0]);
   const discounted = hasDiscount(product);
   const finalPrice = discountedPrice(product);
-  const name = locName(product.name);
+  const name = locName(product.name, locale);
 
   function add() {
     addItem(product, qty);
-    toast(`${name} added to cart`, { tone: "success" });
+    toast(t("addedToCart", { name }), { tone: "success" });
     setAdded(true);
     clearTimeout(addedTimer.current);
     addedTimer.current = setTimeout(() => setAdded(false), 1400);
@@ -55,8 +58,8 @@ export default function ProductCard({ product, index = 0 }) {
 
       <div className="product-body">
         <h3 className="product-name">{name}</h3>
-        {locName(product.description) && (
-          <p className="product-desc">{locName(product.description)}</p>
+        {locName(product.description, locale) && (
+          <p className="product-desc">{locName(product.description, locale)}</p>
         )}
 
         <div className="product-price-row">
@@ -96,7 +99,7 @@ export default function ProductCard({ product, index = 0 }) {
             onClick={add}
             aria-label={`Add ${name} to cart`}
           >
-            {added ? "✓ Added" : "Add to cart"}
+            {added ? t("added") : t("add")}
           </button>
         </div>
       </div>

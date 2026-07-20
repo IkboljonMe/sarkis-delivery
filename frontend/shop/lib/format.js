@@ -1,9 +1,10 @@
 // Localization + money helpers.
 
-/** Pick a localized name: prefer English, fall back to the first value. */
-export function locName(obj) {
+/** Pick a localized name: prefer the active locale, then English, fall back to the first value. */
+export function locName(obj, locale = "en") {
   if (!obj) return "";
   if (typeof obj === "string") return obj;
+  if (obj[locale]) return obj[locale];
   if (obj.en) return obj.en;
   const first = Object.values(obj).find((v) => typeof v === "string" && v);
   return first || "";

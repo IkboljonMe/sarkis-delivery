@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   APP_NAME,
   PLAY_URL,
@@ -7,28 +8,30 @@ import {
   SHOP_URL,
   SUPPORT_EMAIL,
   CONTACT_WHATSAPP,
-} from "./config";
-import RevealInit from "./components/RevealInit";
-import MobileNav from "./components/MobileNav";
-import BackToTop from "./components/BackToTop";
+} from "../config";
+import RevealInit from "../components/RevealInit";
+import MobileNav from "../components/MobileNav";
+import BackToTop from "../components/BackToTop";
 
 const CITIES = ["Berlin", "Hamburg", "Frankfurt", "München"];
 
-const NAV_LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#cities", label: "Cities" },
-  { href: "#get-the-app", label: "Get the app" },
-];
-
 // Smart download link: detect the device from the User-Agent and send the
 // visitor straight to the right store. Desktop / unknown UAs see the landing.
-export default function Home() {
+export default async function Home({ params: { locale } }) {
   const ua = headers().get("user-agent") || "";
   const isAndroid = /android/i.test(ua);
   const isIOS = /iphone|ipad|ipod/i.test(ua) || (/mac/i.test(ua) && /mobile/i.test(ua));
 
   if (isAndroid) redirect(PLAY_URL);
   if (isIOS) redirect(APPSTORE_URL);
+
+  const t = await getTranslations({ locale });
+
+  const NAV_LINKS = [
+    { href: "#how-it-works", label: t("nav.howItWorks") },
+    { href: "#cities", label: t("nav.cities") },
+    { href: "#get-the-app", label: t("nav.getTheApp") },
+  ];
 
   return (
     <>
@@ -51,12 +54,12 @@ export default function Home() {
           </nav>
           <div className="header-actions">
             <a className="btn btn-nav" href={SHOP_URL}>
-              Order online
+              {t("nav.orderOnline")}
             </a>
             <MobileNav
               links={NAV_LINKS}
-              cta={{ href: SHOP_URL, label: "Order online" }}
-              contact={{ href: CONTACT_WHATSAPP, label: "Chat on WhatsApp" }}
+              cta={{ href: SHOP_URL, label: t("nav.orderOnline") }}
+              contact={{ href: CONTACT_WHATSAPP, label: t("nav.chatOnWhatsapp") }}
             />
           </div>
         </div>
@@ -69,35 +72,33 @@ export default function Home() {
           <div className="section-inner hero-inner">
             <div className="hero-copy">
               <p className="eyebrow anim-rise">
-                Baked with tradition · Delivered in Germany
+                {t("hero.eyebrow")}
               </p>
               <h1 className="hero-title">
                 <span className="hero-line anim-rise d-1">
-                  Fresh traditional breads,
+                  {t("hero.titleLine1")}
                 </span>
                 <span className="hero-line anim-rise d-2">
-                  <span className="grad-text">delivered to your door</span>
+                  <span className="grad-text">{t("hero.titleLine2")}</span>
                 </span>
               </h1>
               <p className="hero-sub anim-rise d-3">
-                National and traditional breads and baked goods, baked to order
-                and brought straight to your home. Free delivery — pay cash when
-                it arrives.
+                {t("hero.sub")}
               </p>
               <div className="hero-actions anim-rise d-4">
                 <a className="btn" href={PLAY_URL} aria-label="Get it on Google Play">
-                  <PlayIcon /> Google Play
+                  <PlayIcon /> {t("hero.googlePlay")}
                 </a>
                 <a
                   className="btn secondary"
                   href={APPSTORE_URL}
                   aria-label="Download on the App Store"
                 >
-                  <AppleIcon /> App Store
+                  <AppleIcon /> {t("hero.appStore")}
                 </a>
               </div>
               <p className="hero-alt anim-rise d-5">
-                No app? <a href={SHOP_URL}>Order in your browser →</a>
+                {t("hero.noApp")} <a href={SHOP_URL}>{t("hero.orderBrowser")}</a>
               </p>
             </div>
             <div className="hero-visual anim-scale d-2" aria-hidden>
@@ -113,23 +114,23 @@ export default function Home() {
           <div className="section-inner features-grid" data-reveal-group>
             <div className="feature">
               <span className="feature-icon"><TruckIcon /></span>
-              <h3>Free delivery</h3>
-              <p>No delivery fees, ever. The price you see is the price you pay.</p>
+              <h3>{t("features.deliveryTitle")}</h3>
+              <p>{t("features.deliverySub")}</p>
             </div>
             <div className="feature">
               <span className="feature-icon"><CashIcon /></span>
-              <h3>Cash on delivery</h3>
-              <p>No cards, no prepayment. Pay in cash when your bread arrives.</p>
+              <h3>{t("features.cashTitle")}</h3>
+              <p>{t("features.cashSub")}</p>
             </div>
             <div className="feature">
               <span className="feature-icon"><WheatIcon /></span>
-              <h3>Fresh &amp; traditional</h3>
-              <p>National recipes baked the way they have always been baked.</p>
+              <h3>{t("features.freshTitle")}</h3>
+              <p>{t("features.freshSub")}</p>
             </div>
             <div className="feature">
               <span className="feature-icon"><ChatIcon /></span>
-              <h3>In-app chat support</h3>
-              <p>Questions about an order? Chat with our team right in the app.</p>
+              <h3>{t("features.chatTitle")}</h3>
+              <p>{t("features.chatSub")}</p>
             </div>
           </div>
         </section>
@@ -138,35 +139,32 @@ export default function Home() {
         <section className="how" id="how-it-works">
           <div className="section-inner">
             <div className="section-head" data-reveal>
-              <p className="section-eyebrow">Simple as it should be</p>
-              <h2 className="section-title">How it works</h2>
+              <p className="section-eyebrow">{t("how.eyebrow")}</p>
+              <h2 className="section-title">{t("how.title")}</h2>
               <p className="section-sub">
-                From our oven to your table in three simple steps.
+                {t("how.sub")}
               </p>
             </div>
             <div className="steps" data-reveal-group>
               <div className="step">
                 <span className="step-num">1</span>
-                <h3>Browse &amp; order</h3>
+                <h3>{t("how.step1Title")}</h3>
                 <p>
-                  Pick your favourite breads and baked goods in the app or in
-                  your browser and place your order in minutes.
+                  {t("how.step1Sub")}
                 </p>
               </div>
               <div className="step">
                 <span className="step-num">2</span>
-                <h3>We bake &amp; schedule</h3>
+                <h3>{t("how.step2Title")}</h3>
                 <p>
-                  We bake your order fresh and schedule it for the next delivery
-                  day in your city.
+                  {t("how.step2Sub")}
                 </p>
               </div>
               <div className="step">
                 <span className="step-num">3</span>
-                <h3>Delivered to your door</h3>
+                <h3>{t("how.step3Title")}</h3>
                 <p>
-                  Your order arrives at your door — pay cash on delivery and
-                  enjoy it warm.
+                  {t("how.step3Sub")}
                 </p>
               </div>
             </div>
@@ -177,10 +175,10 @@ export default function Home() {
         <section className="cities" id="cities">
           <div className="section-inner">
             <div className="section-head" data-reveal>
-              <p className="section-eyebrow">Across Germany</p>
-              <h2 className="section-title">Where we deliver</h2>
+              <p className="section-eyebrow">{t("cities.eyebrow")}</p>
+              <h2 className="section-title">{t("cities.title")}</h2>
               <p className="section-sub">
-                Door delivery in four German cities — and counting.
+                {t("cities.sub")}
               </p>
             </div>
             <div className="city-grid" data-reveal-group>
@@ -198,28 +196,27 @@ export default function Home() {
         <section className="get-app" id="get-the-app">
           <div className="section-inner get-app-card" data-reveal>
             <div className="section-head center">
-              <p className="section-eyebrow">Free on Android &amp; iOS</p>
-              <h2 className="section-title">Get the {APP_NAME} app</h2>
+              <p className="section-eyebrow">{t("getApp.eyebrow")}</p>
+              <h2 className="section-title">{t("getApp.title", { app: APP_NAME })}</h2>
               <p className="section-sub">
-                Order in a couple of taps, chat with our team and track your
-                deliveries — free on Android and iOS.
+                {t("getApp.sub")}
               </p>
             </div>
             <div className="hero-actions center-actions">
               <a className="btn" href={PLAY_URL} aria-label="Get it on Google Play">
-                <PlayIcon /> Google Play
+                <PlayIcon /> {t("hero.googlePlay")}
               </a>
               <a
                 className="btn secondary"
                 href={APPSTORE_URL}
                 aria-label="Download on the App Store"
               >
-                <AppleIcon /> App Store
+                <AppleIcon /> {t("hero.appStore")}
               </a>
             </div>
             <p className="hero-alt">
-              Prefer the web?{" "}
-              <a href={SHOP_URL}>Order online at shop.sarko-delivery.de →</a>
+              {t("getApp.preferWeb")}{" "}
+              <a href={SHOP_URL}>{t("getApp.orderOnlineFull")}</a>
             </p>
           </div>
         </section>
@@ -227,13 +224,12 @@ export default function Home() {
         {/* ---------- Final CTA ---------- */}
         <section className="final-cta">
           <div className="section-inner" data-reveal>
-            <h2 className="cta-title">Hungry for real bread?</h2>
+            <h2 className="cta-title">{t("cta.title")}</h2>
             <p className="section-sub">
-              Fresh, traditional and at your door — with free delivery and cash
-              payment on arrival.
+              {t("cta.sub")}
             </p>
             <a className="btn btn-lg" href={SHOP_URL}>
-              Order online now
+              {t("cta.btn")}
             </a>
           </div>
         </section>
@@ -249,12 +245,11 @@ export default function Home() {
               </span>
             </a>
             <p>
-              Traditional breads and baked goods, baked fresh and delivered to
-              your door.
+              {t("footer.brandSub")}
             </p>
           </div>
           <div className="footer-col">
-            <h4>Explore</h4>
+            <h4>{t("footer.explore")}</h4>
             {NAV_LINKS.map((link) => (
               <a key={link.href} href={link.href}>
                 {link.label}
@@ -262,20 +257,20 @@ export default function Home() {
             ))}
           </div>
           <div className="footer-col">
-            <h4>Contact</h4>
+            <h4>{t("footer.contact")}</h4>
             <a href={CONTACT_WHATSAPP}>WhatsApp</a>
             <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
           </div>
           <div className="footer-col">
-            <h4>Legal</h4>
-            <a href="/privacy">Privacy Policy</a>
-            <a href="/terms">Terms of Service</a>
-            <a href="/delete-account">Delete account</a>
+            <h4>{t("footer.legal")}</h4>
+            <a href="/privacy">{t("footer.privacy")}</a>
+            <a href="/terms">{t("footer.terms")}</a>
+            <a href="/delete-account">{t("footer.deleteAccount")}</a>
           </div>
         </div>
         <div className="section-inner footer-bottom">
           <span>
-            © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+            © {new Date().getFullYear()} {APP_NAME}. {t("footer.allRights")}
           </span>
           <span className="footer-cities">
             Berlin · Hamburg · Frankfurt · München

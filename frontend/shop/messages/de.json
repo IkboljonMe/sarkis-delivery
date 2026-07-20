@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "title": "Sarko Delivery Shop — Bestellen Sie frisches traditionelles Brot online",
+    "description": "Bestellen Sie nationales und traditionelles Brot online. Kostenlose Lieferung an die Haustür in Berlin, Hamburg, Frankfurt und München — Barzahlung bei Lieferung."
+  },
+  "home": {
+    "errorTitle": "Der Shop wärmt sich auf",
+    "errorMessage": "Wir konnten die Bäckerei nicht erreichen. Bitte versuchen Sie es in einem Moment erneut.",
+    "retry": "Wiederholen",
+    "heroTitleLine1": "Frisches traditionelles Brot, ",
+    "heroTitleLine2": "an Ihre Haustür",
+    "heroSub": "Kostenlose Lieferung in Berlin, Hamburg, Frankfurt & München — Barzahlung bei Ankunft.",
+    "categories": "Kategorien",
+    "noCategoriesTitle": "Noch keine Kategorien",
+    "noCategoriesMessage": "Schauen Sie bald wieder vorbei — Frisches ist auf dem Weg.",
+    "allProducts": "Alle Produkte",
+    "noProductsTitle": "Noch nichts im Regal",
+    "noProductsMessage": "Unsere Bäcker bereiten den Katalog vor."
+  },
+  "product": {
+    "addedToCart": "{name} zum Warenkorb hinzugefügt",
+    "added": "✓ Hinzugefügt",
+    "add": "In den Warenkorb"
+  }
+}

@@ -2,18 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { api, imageUrl } from "../lib/api";
-import { locName } from "../lib/format";
-import ProductCard from "../components/ProductCard";
-import FadeImg from "../components/FadeImg";
-import { SkeletonCategoryGrid, SkeletonProductGrid } from "../components/Skeletons";
-import EmptyState from "../components/EmptyState";
+import { useTranslations, useLocale } from "next-intl";
+import { api, imageUrl } from "../../lib/api";
+import { locName } from "../../lib/format";
+import ProductCard from "../../components/ProductCard";
+import FadeImg from "../../components/FadeImg";
+import { SkeletonCategoryGrid, SkeletonProductGrid } from "../../components/Skeletons";
+import EmptyState from "../../components/EmptyState";
 
 export default function ShopHome() {
   const [categories, setCategories] = useState(null);
   const [products, setProducts] = useState(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const t = useTranslations("home");
+  const locale = useLocale();
 
   useEffect(() => {
     let alive = true;
@@ -41,11 +44,11 @@ export default function ShopHome() {
       <div className="container">
         <EmptyState
           variant="oven"
-          title="Shop is warming up"
-          message="We couldn't reach the bakery right now. Please try again in a moment."
+          title={t("errorTitle")}
+          message={t("errorMessage")}
           action={
             <button className="btn btn-sm" onClick={retry}>
-              Retry
+              {t("retry")}
             </button>
           }
         />
@@ -57,17 +60,18 @@ export default function ShopHome() {
     <div className="container">
       <section className="shop-hero">
         <h1>
-          Fresh traditional breads, <span className="grad-text">to your door</span>
+          {t("heroTitleLine1")}
+          <span className="grad-text">{t("heroTitleLine2")}</span>
         </h1>
-        <p>Free delivery in Berlin, Hamburg, Frankfurt &amp; München — pay cash on arrival.</p>
+        <p>{t("heroSub")}</p>
       </section>
 
       <section>
-        <h2 className="section-heading">Categories</h2>
+        <h2 className="section-heading">{t("categories")}</h2>
         {categories === null ? (
           <SkeletonCategoryGrid />
         ) : categories.length === 0 ? (
-          <EmptyState title="No categories yet" message="Check back soon — fresh things are coming." />
+          <EmptyState title={t("noCategoriesTitle")} message={t("noCategoriesMessage")} />
         ) : (
           <div className="category-grid">
             {categories
@@ -84,10 +88,10 @@ export default function ShopHome() {
                     <FadeImg src={imageUrl(c.imageUrl)} alt="" loading="lazy" />
                   ) : (
                     <span className="category-fallback" aria-hidden>
-                      {locName(c.name).slice(0, 1).toUpperCase()}
+                      {locName(c.name, locale).slice(0, 1).toUpperCase()}
                     </span>
                   )}
-                  <span className="category-name">{locName(c.name)}</span>
+                  <span className="category-name">{locName(c.name, locale)}</span>
                 </Link>
               ))}
           </div>
@@ -95,11 +99,11 @@ export default function ShopHome() {
       </section>
 
       <section>
-        <h2 className="section-heading">All products</h2>
+        <h2 className="section-heading">{t("allProducts")}</h2>
         {products === null ? (
           <SkeletonProductGrid />
         ) : products.length === 0 ? (
-          <EmptyState title="Nothing on the shelves yet" message="Our bakers are preparing the catalog." />
+          <EmptyState title={t("noProductsTitle")} message={t("noProductsMessage")} />
         ) : (
           <div className="product-grid">
             {products
