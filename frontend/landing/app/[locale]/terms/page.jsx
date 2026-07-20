@@ -1,5 +1,5 @@
-import { TERMS, pickLang } from "../legal";
-import LegalView from "../LegalView";
+import { TERMS, pickLang } from "../../legal";
+import LegalView from "../../LegalView";
 
 export const metadata = { title: "Terms of Service — Sarko Delivery" };
 

@@ -1,5 +1,5 @@
-import { LANGS, DEFAULT_LANG, pickLang } from "../legal";
-import LegalView from "../LegalView";
+import { LANGS, DEFAULT_LANG, pickLang } from "../../legal";
+import LegalView from "../../LegalView";
 
 export const metadata = {
   title: "Delete Account — Sarko Delivery",

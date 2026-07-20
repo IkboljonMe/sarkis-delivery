@@ -1,5 +1,5 @@
-import { PRIVACY, pickLang } from "../legal";
-import LegalView from "../LegalView";
+import { PRIVACY, pickLang } from "../../legal";
+import LegalView from "../../LegalView";
 
 export const metadata = { title: "Privacy Policy — Sarko Delivery" };
 
