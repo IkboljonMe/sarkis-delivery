@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../providers";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -48,15 +49,16 @@ function LoginInner() {
     }
   }
 
-  // Google sign-in: enabled only when a client ID is configured. The actual
-  // Google Identity Services wiring plugs in here once the ID exists —
-  // the backend endpoint (POST /v1/auth/google { idToken }) is already handled
-  // by loginWithGoogle().
-  async function googleSignIn() {
-    if (!GOOGLE_CLIENT_ID) return;
-    setError(
-      "Google sign-in is configured but the sign-in flow needs the Google Identity Services script — coming soon."
-    );
+  async function googleSignInWrapper(credential) {
+    setError("");
+    setBusy(true);
+    try {
+      await loginWithGoogle(credential);
+      router.replace(next);
+    } catch (err) {
+      setError(friendlyAuthError(err, mode));
+      setBusy(false);
+    }
   }
 
   return (
@@ -140,14 +142,23 @@ function LoginInner() {
         </div>
 
         <div className="google-wrap" title={GOOGLE_CLIENT_ID ? "" : "Google sign-in — coming soon"}>
-          <button
-            type="button"
-            className="btn secondary btn-block google-btn"
-            disabled={!GOOGLE_CLIENT_ID}
-            onClick={googleSignIn}
-          >
-            <GoogleIcon /> Continue with Google
-          </button>
+          {GOOGLE_CLIENT_ID ? (
+            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+              <GoogleLogin
+                onSuccess={(res) => googleSignInWrapper(res.credential)}
+                onError={() => setError("Google login was cancelled or failed.")}
+                useOneTap
+              />
+            </GoogleOAuthProvider>
+          ) : (
+            <button
+              type="button"
+              className="btn secondary btn-block google-btn"
+              disabled
+            >
+              <GoogleIcon /> Continue with Google
+            </button>
+          )}
           {!GOOGLE_CLIENT_ID && <span className="tooltip">Coming soon</span>}
         </div>
 
