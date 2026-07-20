@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, imageUrl } from "../../lib/api";
+import { api, imageUrl } from "../../../lib/api";
 import {
   locName,
   formatPrice,
@@ -11,12 +11,12 @@ import {
   hasDiscount,
   effectiveMaxQty,
   CITIES,
-} from "../../lib/format";
-import { useAuth, useCart } from "../providers";
-import { useToast } from "../../components/Toast";
-import FadeImg from "../../components/FadeImg";
-import EmptyState from "../../components/EmptyState";
-import { SkeletonCartLines, SkeletonShiftChips } from "../../components/Skeletons";
+} from "../../../lib/format";
+import { useAuth, useCart } from "../../../app/providers";
+import { useToast } from "../../../components/Toast";
+import FadeImg from "../../../components/FadeImg";
+import EmptyState from "../../../components/EmptyState";
+import { SkeletonCartLines, SkeletonShiftChips } from "../../../components/Skeletons";
 
 export default function CartPage() {
   const router = useRouter();

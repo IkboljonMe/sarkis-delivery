@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { api } from "../../../lib/api";
-import { locName } from "../../../lib/format";
-import ProductCard from "../../../components/ProductCard";
-import { SkeletonProductGrid } from "../../../components/Skeletons";
-import EmptyState from "../../../components/EmptyState";
+import { api } from "../../../../lib/api";
+import { locName } from "../../../../lib/format";
+import ProductCard from "../../../../components/ProductCard";
+import { SkeletonProductGrid } from "../../../../components/Skeletons";
+import EmptyState from "../../../../components/EmptyState";
 
 export default function CategoryPage() {
   const { id } = useParams();

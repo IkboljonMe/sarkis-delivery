@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api } from "../../lib/api";
-import { formatPrice, ORDER_STATUS_LABELS, locName } from "../../lib/format";
-import { useAuth } from "../providers";
-import { SkeletonOrders } from "../../components/Skeletons";
-import EmptyState from "../../components/EmptyState";
+import { api } from "../../../lib/api";
+import { formatPrice, ORDER_STATUS_LABELS, locName } from "../../../lib/format";
+import { useAuth } from "../../providers";
+import { SkeletonOrders } from "../../../components/Skeletons";
+import EmptyState from "../../../components/EmptyState";
 
 export default function OrdersPage() {
   const router = useRouter();
