@@ -3,6 +3,10 @@ icon_out/
 
 # build artifacts
 SarkisBread-*.apk
+node_modules/
+**/build/
+**/dist/
+.dart_tool/
 
 # local screen-audit workspace (screenshots + reports)
 screen_audit/

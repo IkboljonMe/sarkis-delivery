@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, Role, User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes, randomInt } from 'crypto';
 import { OAuth2Client } from 'google-auth-library';

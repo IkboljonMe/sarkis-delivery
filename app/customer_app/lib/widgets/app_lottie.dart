@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-import '../utils/app_colors.dart';
-
 /// Bundled open-source Lottie animations (lottie-flutter examples, MIT).
 /// Single source of truth for animation asset paths.
 class AppAnim {
   AppAnim._();
   static const _base = 'assets/animations';
   static const success = '$_base/success.json'; // celebratory burst
-  static const loading = '$_base/loading.json'; // lightweight loader
   static const thumbsUp = '$_base/thumbs_up.json'; // friendly empty state
   static const envelope = '$_base/envelope.json'; // empty chat / messages
 }
@@ -36,29 +33,6 @@ class LottieView extends StatelessWidget {
       height: size,
       repeat: repeat,
       fit: BoxFit.contain,
-    );
-  }
-}
-
-/// Small, on-brand loading indicator — a gold circular spinner. (Kept as a
-/// named widget so call sites read intentionally; the bundled loading Lottie
-/// looked off-brand, so we use a clean themed spinner instead.)
-class AppLoader extends StatelessWidget {
-  const AppLoader({super.key, this.size = 36});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: const CircularProgressIndicator(
-          strokeWidth: 3,
-          valueColor: AlwaysStoppedAnimation(AppColors.primary),
-        ),
-      ),
     );
   }
 }

@@ -10,7 +10,6 @@ import '../services/message_service.dart';
 import '../services/region_group_service.dart';
 import '../services/user_service.dart';
 import '../sync/sync_engine.dart';
-import '../utils/constants.dart';
 import '../utils/welcome_message.dart';
 
 enum AuthStatus { unknown, codeSent, authenticated, error }

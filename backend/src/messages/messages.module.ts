@@ -13,7 +13,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ChatTopic, Message, Prisma, Role, User } from '@prisma/client';
+import { ChatTopic, Message, Role, User } from '@prisma/client';
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser, Roles } from '../common/decorators';
 import { NotificationsService } from '../notifications/notifications.module';
