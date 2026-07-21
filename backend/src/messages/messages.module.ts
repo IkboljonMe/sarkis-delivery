@@ -37,6 +37,7 @@ const toMessageJson = (m: Message) => {
   const extra = (m.extra as Record<string, any>) ?? {};
   return {
     id: m.id,
+    topicId: m.topicId,
     senderId: m.senderId,
     senderName: m.senderName,
     text: m.deleted ? '' : m.text,
