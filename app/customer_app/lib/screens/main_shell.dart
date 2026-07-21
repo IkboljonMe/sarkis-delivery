@@ -7,7 +7,7 @@ import '../main.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/message_provider.dart';
-import '../services/fcm_service.dart';
+import '../realtime/socket_service.dart';
 import '../services/local_notifications.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'chats/chats_screen.dart';
@@ -30,10 +30,13 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
-      LocalNotifications.showFromMessage(m);
+    _subs.add(SocketService.instance.events.listen((event) {
+      if (event.name != 'notification:created') return;
+      LocalNotifications.showFromPayload(
+        Map<String, dynamic>.from(event.payload as Map),
+      );
     }));
-    // Notification taps (FCM or local) set kRequestedTab; switch to it.
+    // Notification taps set kRequestedTab; switch to it.
     kRequestedTab.addListener(_onRequestedTab);
     if (kRequestedTab.value != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _onRequestedTab());

@@ -1,12 +1,9 @@
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'demo_firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
@@ -37,11 +34,6 @@ void routeNotification(Map<String, dynamic> data) {
   }
 }
 
-@pragma('vm:entry-point')
-Future<void> _bgHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DemoFirebaseOptions.current);
-}
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Lock the app to portrait — it is not designed for landscape.
@@ -53,17 +45,8 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('.env not loaded: $e');
   }
-  try {
-    await Firebase.initializeApp(options: DemoFirebaseOptions.current);
-    FirebaseMessaging.onBackgroundMessage(_bgHandler);
-    await LocalNotifications.init();
-    LocalNotifications.onSelect = routeNotification;
-    FirebaseMessaging.onMessageOpenedApp.listen((m) => routeNotification(m.data));
-    final initial = await FirebaseMessaging.instance.getInitialMessage();
-    if (initial != null) routeNotification(initial.data);
-  } catch (e) {
-    debugPrint('Firebase init skipped: $e');
-  }
+  await LocalNotifications.init();
+  LocalNotifications.onSelect = routeNotification;
 
   // Restore the API session (JWT) before the first screen decides where to go.
   await ApiClient.instance.init();
@@ -73,13 +56,13 @@ Future<void> main() async {
   final cartProvider = CartProvider();
   await cartProvider.loadPersisted();
 
-  runApp(SarkisApp(localeProvider: localeProvider, cartProvider: cartProvider));
+  runApp(SarkoApp(localeProvider: localeProvider, cartProvider: cartProvider));
 }
 
-class SarkisApp extends StatelessWidget {
+class SarkoApp extends StatelessWidget {
   final LocaleProvider localeProvider;
   final CartProvider cartProvider;
-  const SarkisApp({
+  const SarkoApp({
     super.key,
     required this.localeProvider,
     required this.cartProvider,

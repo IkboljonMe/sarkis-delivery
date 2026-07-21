@@ -1,11 +1,12 @@
 import 'dart:convert';
 
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// Displays real Android notifications (including foreground, which FCM does
-/// not auto-display), groups them per chat, and routes taps back to the app.
+/// Displays real Android notifications in response to the realtime
+/// `notification:created` socket event (including while the app is in the
+/// foreground, which the OS does not auto-display), groups them per chat,
+/// and routes taps back to the app.
 class LocalNotifications {
   LocalNotifications._();
 
@@ -16,7 +17,7 @@ class LocalNotifications {
   static void Function(Map<String, dynamic> data)? onSelect;
 
   static const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'sarkis_bread_admin_channel',
+    'app_notifications_channel',
     'Сообщения и заказы',
     description: 'Новые сообщения и обновления заказов',
     importance: Importance.high,
@@ -42,22 +43,27 @@ class LocalNotifications {
         ?.createNotificationChannel(channel);
   }
 
-  /// Shows a heads-up notification for a foreground FCM message. Messages from
-  /// the same chat share a tag/id so they replace (not stack).
-  static Future<void> showFromMessage(RemoteMessage m) async {
+  /// Shows a heads-up notification for a `notification:created` realtime
+  /// payload. Notifications from the same chat share a tag/id so they
+  /// replace (not stack).
+  static Future<void> showFromPayload(Map<String, dynamic> payload) async {
     if (kIsWeb) return;
-    final n = m.notification;
-    final data = m.data;
-    final title = n?.title ?? (data['title'] as String?) ?? 'Sarko Delivery';
-    final body = n?.body ?? (data['body'] as String?) ?? '';
+    final data = (payload['data'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final title = (payload['title'] as String?) ?? 'Sarko Delivery';
+    final body = (payload['body'] as String?) ?? '';
     if (title.isEmpty && body.isEmpty) return;
 
-    final type = (data['type'] as String?) ?? '';
-    final topicId = (data['topicId'] as String?) ?? '';
+    final type = (payload['type'] as String?) ?? (data['type'] as String?) ?? '';
+    final topicId =
+        (payload['topicId'] as String?) ?? (data['topicId'] as String?) ?? '';
     final tag = type == 'chat' && topicId.isNotEmpty ? 'chat_$topicId' : null;
     final id = tag != null
         ? tag.hashCode & 0x7fffffff
         : DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    // Flatten into a single map for the tap payload: nested `data` extras
+    // (e.g. senderName) plus the resolved top-level type/topicId.
+    final tapData = {...data, 'type': type, 'topicId': topicId};
 
     await _plugin.show(
       id,
@@ -74,7 +80,7 @@ class LocalNotifications {
           tag: tag,
         ),
       ),
-      payload: jsonEncode(data),
+      payload: jsonEncode(tapData),
     );
   }
 }

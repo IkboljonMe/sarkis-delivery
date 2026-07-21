@@ -19,9 +19,9 @@ class RealtimeEvent {
 /// token, auto-reconnects (socket.io's own backoff), and republishes every
 /// domain event as a single [events] stream for SyncEngine to consume.
 ///
-/// Sockets only carry live updates while the app is open/foregrounded — FCM
-/// remains the background wake signal, and SyncEngine falls back to a REST
-/// `since=` pull on reconnect for anything missed while disconnected.
+/// Sockets only carry live updates while the app is open/foregrounded — there
+/// is no background wake signal, so SyncEngine falls back to a REST `since=`
+/// pull on reconnect for anything missed while disconnected.
 class SocketService {
   SocketService._();
   static final SocketService instance = SocketService._();

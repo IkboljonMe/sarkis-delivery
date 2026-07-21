@@ -1,6 +1,6 @@
 import 'api_client.dart';
 
-/// Authentication against the Sarkis backend (phone OTP + email/password).
+/// Authentication against the backend (phone OTP + email/password).
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();

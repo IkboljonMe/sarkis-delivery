@@ -1,4 +1,4 @@
-/// Localized "thank you for your order" message, sent from the admin (Sarkis)
+/// Localized "thank you for your order" message, sent from the admin (Sarko)
 /// into the customer's chat as an order attachment right after they order.
 class OrderMessages {
   OrderMessages._();

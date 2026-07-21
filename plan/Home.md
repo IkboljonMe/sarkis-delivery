@@ -15,3 +15,4 @@ Each user request gets its own folder containing:
 - [[2026-07-13 Sarko rebrand and entry animation/request|2026-07-13 — Sarko rebrand + entry animation]]
 - [[2026-07-17 firebase cleanup and sync-code fixes/request|2026-07-17 — Firebase cleanup & sync-code fixes]]
 - [[landing-redesign-and-shop-webapp/request|2026-07-17 — Landing redesign & shop web app]]
+- [[2026-07-21 firebase removal and rebrand cleanup/request|2026-07-21 — Firebase complete removal & old branding cleanup]]

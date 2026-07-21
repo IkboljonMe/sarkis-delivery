@@ -287,8 +287,8 @@ class CartProvider extends ChangeNotifier {
       }
       // Share the new order into the chat as an order card. The backend
       // attributes messages to the authenticated user, so this is sent as
-      // the customer (the old Firebase code could fake an admin sender —
-      // the REST API correctly refuses that).
+      // the customer — the REST API only allows attributing a message to
+      // the caller's own account, not an arbitrary sender.
       try {
         await MessageService.instance.ensureTopic(
             topicId: user.id, userName: user.fullName, userGroup: user.group);

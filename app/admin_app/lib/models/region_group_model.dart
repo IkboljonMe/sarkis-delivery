@@ -40,9 +40,8 @@ class RegionGroupModel {
   factory RegionGroupModel.fromJson(Map<String, dynamic> json) {
     final rawPolys = (json['polygons'] as List?) ?? const [];
     final polygons = rawPolys.map<List<LatLng>>((ring) {
-      // Each ring is stored as {points: [...]} — a wire format inherited
-      // from the Firebase era that the backend still accepts. Fall back to
-      // a raw list for any legacy rows.
+      // Each ring is stored as {points: [...]}. Fall back to a raw list for
+      // any legacy rows.
       final pts = ring is Map ? (ring['points'] as List? ?? const []) : (ring as List? ?? const []);
       return pts.map<LatLng>((p) {
         final m = p as Map;
@@ -66,7 +65,7 @@ class RegionGroupModel {
         'id': id,
         'name': name,
         'colorValue': colorValue,
-        // Wrap each ring in a map (legacy wire format the backend expects).
+        // Wrap each ring in a map (wire format the backend expects).
         'polygons': polygons
             .map((ring) => {
                   'points': ring

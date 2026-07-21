@@ -1,4 +1,4 @@
-# Sarkis Bread — Admin App (v2)
+# Sarko — Admin App (v2)
 
 Dark, premium operational Flutter app for the owner/driver. Russian-primary UI.
 Manage shifts, products, orders, chats, broadcast messages, and drive to
@@ -7,20 +7,18 @@ addresses with one-tap Google Maps navigation.
 ## Setup
 1. Clone the repository.
 2. `cd admin_app`
-3. Add `google-services.json` to `android/app/` (Android builds).
-4. Update `lib/utils/constants.dart` (`adminWhatsappNumber`). Firebase config is
-   in `lib/demo_firebase_options.dart`.
-5. Before the first Android build, add the `compileSdk 36` `subprojects` block to
+3. Update `lib/utils/constants.dart` (`adminWhatsappNumber`).
+4. Before the first Android build, add the `compileSdk 36` `subprojects` block to
    `android/build.gradle.kts` (see `../docs/ANDROID_SETUP.md`).
-6. `flutter pub get`
-7. Run:
+5. `flutter pub get`
+6. Run:
    - Web: `flutter run -d chrome`
    - Android: `flutter run -d <device>`
 
 ## First login
-- Use the email/password created in Firebase Console.
-- The Firestore `users/{uid}` document **must** have `isAdmin: true` — the app
-  verifies this after login and rejects non-admins.
+- Use the email/password created for the admin user.
+- The account **must** have `isAdmin: true` — the app verifies this after
+  login and rejects non-admins.
 
 ## Key features
 - **Dashboard** — live pending/confirmed/on-the-way/delivered counters
@@ -30,11 +28,12 @@ addresses with one-tap Google Maps navigation.
 - **Shifts** — create/open/close/delete delivery dates; shift detail with
   Active/Finished tabs and mark-as-delivered.
 - **Orders** — status tabs + date filter; detail with tap-to-call, copy
-  address, Maps navigation, status workflow, and in-order chat with FCM push.
+  address, Maps navigation, status workflow, and in-order chat with realtime
+  notifications.
 - **Products** — Categories & Products tabs; add/edit with 5-language tabbed
   name/description fields.
 - **Chats** — topic list (unread-first), search, group filter, and broadcast
-  (all / by group) with FCM.
+  (all / by group) with realtime notifications.
 - **Locations** — pick a shift, get current location, ordered address list with
   copy + navigate, and copy-all.
 - **Settings** — min/max qty, contact numbers, app info, logout.

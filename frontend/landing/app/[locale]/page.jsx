@@ -1,5 +1,3 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   APP_NAME,
@@ -15,16 +13,7 @@ import BackToTop from "../components/BackToTop";
 
 const CITIES = ["Berlin", "Hamburg", "Frankfurt", "München"];
 
-// Smart download link: detect the device from the User-Agent and send the
-// visitor straight to the right store. Desktop / unknown UAs see the landing.
 export default async function Home({ params: { locale } }) {
-  const ua = headers().get("user-agent") || "";
-  const isAndroid = /android/i.test(ua);
-  const isIOS = /iphone|ipad|ipod/i.test(ua) || (/mac/i.test(ua) && /mobile/i.test(ua));
-
-  if (isAndroid) redirect(PLAY_URL);
-  if (isIOS) redirect(APPSTORE_URL);
-
   const t = await getTranslations({ locale });
 
   const NAV_LINKS = [

@@ -91,14 +91,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       topicId: o.userId,
       text: _orderStatusMessage(status),
       senderId: admin.uid ?? 'admin',
-      senderName: 'Sarkis',
+      senderName: 'Sarko',
       isFromAdmin: true,
       type: 'order',
       orderId: o.id,
-      silent: true, // push handled by the order-status Cloud Function
+      silent: true, // push handled server-side by the order-status update
     );
-    // The push is sent server-side by onOrderStatusChanged when the order
-    // document's status field updates.
+    // The notification is sent server-side when the order's status changes
+    // (see backend NotificationsService / OrdersService).
     Fluttertoast.showToast(msg: 'Статус обновлён');
   }
 

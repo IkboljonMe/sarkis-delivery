@@ -6,7 +6,6 @@ import '../local_db/app_database.dart';
 import '../models/user_model.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
-import '../services/fcm_service.dart';
 import '../services/message_service.dart';
 import '../services/region_group_service.dart';
 import '../services/user_service.dart';
@@ -169,13 +168,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (_user != null && _user!.name.trim().isEmpty) {
         _user = null;
       }
-      if (_user != null) {
-        try {
-          await FcmService.instance.init(_user!.id);
-        } catch (_) {
-          // Push registration must never block login (offline / no Google services).
-        }
-      }
       notifyListeners();
       return _user;
     } catch (e) {
@@ -280,7 +272,6 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       );
       await _users.saveUser(user);
       _user = user;
-      await FcmService.instance.init(id);
       // Greet the new customer with an automated admin message in their language.
       await MessageService.instance.sendWelcomeIfNew(
         topicId: id,

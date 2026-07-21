@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../l10n/admin_localizations.dart';
 import '../providers/admin_auth_provider.dart';
 import '../providers/group_provider.dart';
-import '../services/fcm_service.dart';
+import '../realtime/socket_service.dart';
 import '../services/local_notifications.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
@@ -40,15 +40,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initMessaging());
-  }
-
-  void _initMessaging() {
-    final uid = context.read<AdminAuthProvider>().uid;
-    if (uid != null) FcmService.instance.registerToken(uid);
-
-    _subs.add(FcmService.instance.onForegroundMessage.listen((m) {
-      LocalNotifications.showFromMessage(m);
+    _subs.add(SocketService.instance.events.listen((event) {
+      if (event.name != 'notification:created') return;
+      LocalNotifications.showFromPayload(
+          Map<String, dynamic>.from(event.payload as Map));
     }));
     // Notification taps are routed globally in main.dart (opens the chat).
   }

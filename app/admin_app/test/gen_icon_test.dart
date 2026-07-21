@@ -1,4 +1,4 @@
-// One-off icon generator: renders the Sarkis Bread brand mark (gold badge +
+// One-off icon generator: renders the Sarko brand mark (gold badge +
 // white wheat sheaf) to PNGs used as the Android launcher icon.
 //
 // Run with:  flutter test test/gen_icon_test.dart

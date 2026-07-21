@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Network access for Firebase and Geocoding API -->
+    <!-- Network access for the API server and Geocoding API -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Voice messages -->
@@ -40,11 +40,6 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="YOUR_GOOGLE_API_KEY_HERE"/>
-
-        <!-- FCM default notification channel -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="sarkis_bread_channel"/>
 
         <meta-data
             android:name="flutterEmbedding"

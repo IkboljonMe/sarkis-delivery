@@ -23,7 +23,7 @@ class AppConstants {
   static const String termsUrl = '$webBaseUrl/terms';
   static const String privacyUrl = '$webBaseUrl/privacy';
 
-  /// Base URL of the Sarkis backend API (no trailing slash). Override via the
+  /// Base URL of the backend API (no trailing slash). Override via the
   /// bundled .env (API_BASE_URL) — e.g. the laptop's LAN IP during device
   /// testing, the VPS domain in production. 10.0.2.2 reaches the host from
   /// the Android emulator.
