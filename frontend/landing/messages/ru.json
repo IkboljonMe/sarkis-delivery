@@ -11,14 +11,22 @@
     "googlePlay": "Google Play",
     "appStore": "App Store",
     "noApp": "Нет приложения?",
-    "orderBrowser": "Заказать в браузере →"
+    "orderBrowser": "Заказать в браузере →",
+    "sceneCaption": "Уже в пути к вашей двери"
   },
   "nav": {
     "howItWorks": "Как это работает",
     "cities": "Города",
     "getTheApp": "Приложение",
     "orderOnline": "Заказать онлайн",
-    "chatOnWhatsapp": "Чат в WhatsApp"
+    "chatOnWhatsapp": "Чат в WhatsApp",
+    "language": "Язык"
+  },
+  "promo": {
+    "ribbon": "Скидка 50% на первый заказ",
+    "ribbonCta": "Заказать →",
+    "badge": "−50% на первый заказ",
+    "dismiss": "Закрыть"
   },
   "features": {
     "deliveryTitle": "Бесплатная доставка",

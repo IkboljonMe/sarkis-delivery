@@ -10,6 +10,9 @@ import {
 import RevealInit from "../components/RevealInit";
 import MobileNav from "../components/MobileNav";
 import BackToTop from "../components/BackToTop";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import PromoRibbon from "../components/PromoRibbon";
+import DeliveryScene from "../components/DeliveryScene";
 
 const CITIES = ["Berlin", "Hamburg", "Frankfurt", "München"];
 
@@ -26,33 +29,45 @@ export default async function Home({ params: { locale } }) {
     <>
       <RevealInit />
 
-      <header className="site-header">
-        <div className="header-inner">
-          <a href="/" className="brand-mark">
-            <img src="/logo.png" alt={`${APP_NAME} logo`} width="38" height="38" />
-            <span>
-              Sarko <small>DELIVERY</small>
-            </span>
-          </a>
-          <nav className="site-nav" aria-label="Main">
-            {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href}>
-                {link.label}
-              </a>
-            ))}
-          </nav>
-          <div className="header-actions">
-            <a className="btn btn-nav" href={SHOP_URL}>
-              {t("nav.orderOnline")}
+      <div className="top-stack">
+        <PromoRibbon
+          text={t("promo.ribbon")}
+          cta={t("promo.ribbonCta")}
+          href={SHOP_URL}
+          dismissLabel={t("promo.dismiss")}
+        />
+
+        <header className="site-header">
+          <div className="header-inner">
+            <a href="/" className="brand-mark">
+              <img src="/logo.png" alt={`${APP_NAME} logo`} width="38" height="38" />
+              <span>
+                Sarko <small>DELIVERY</small>
+              </span>
             </a>
-            <MobileNav
-              links={NAV_LINKS}
-              cta={{ href: SHOP_URL, label: t("nav.orderOnline") }}
-              contact={{ href: CONTACT_WHATSAPP, label: t("nav.chatOnWhatsapp") }}
-            />
+            <nav className="site-nav" aria-label="Main">
+              {NAV_LINKS.map((link) => (
+                <a key={link.href} href={link.href}>
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+            <div className="header-actions">
+              <LanguageSwitcher locale={locale} label={t("nav.language")} />
+              <a className="btn btn-nav" href={SHOP_URL}>
+                {t("nav.orderOnline")}
+              </a>
+              <MobileNav
+                links={NAV_LINKS}
+                cta={{ href: SHOP_URL, label: t("nav.orderOnline") }}
+                contact={{ href: CONTACT_WHATSAPP, label: t("nav.chatOnWhatsapp") }}
+                locale={locale}
+                languageLabel={t("nav.language")}
+              />
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
 
       <main>
         {/* ---------- Hero ---------- */}
@@ -60,7 +75,11 @@ export default async function Home({ params: { locale } }) {
           <div className="hero-glow" aria-hidden />
           <div className="section-inner hero-inner">
             <div className="hero-copy">
-              <p className="eyebrow anim-rise">
+              <span className="promo-badge anim-rise" aria-label={t("promo.badge")}>
+                <span className="promo-badge-pct">−50%</span>
+                {t("promo.badge")}
+              </span>
+              <p className="eyebrow anim-rise d-1">
                 {t("hero.eyebrow")}
               </p>
               <h1 className="hero-title">
@@ -91,9 +110,7 @@ export default async function Home({ params: { locale } }) {
               </p>
             </div>
             <div className="hero-visual anim-scale d-2" aria-hidden>
-              <div className="logo-halo">
-                <img src="/logo.png" alt="" width="220" height="220" />
-              </div>
+              <DeliveryScene caption={t("hero.sceneCaption")} />
             </div>
           </div>
         </section>

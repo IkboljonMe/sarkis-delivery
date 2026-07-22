@@ -8,7 +8,14 @@
     "cities": "Cities",
     "getTheApp": "Get the app",
     "orderOnline": "Order online",
-    "chatOnWhatsapp": "Chat on WhatsApp"
+    "chatOnWhatsapp": "Chat on WhatsApp",
+    "language": "Language"
+  },
+  "promo": {
+    "ribbon": "Get 50% off your first order",
+    "ribbonCta": "Order now →",
+    "badge": "50% OFF your first order",
+    "dismiss": "Dismiss"
   },
   "hero": {
     "eyebrow": "Baked with tradition · Delivered in Germany",
@@ -18,7 +25,8 @@
     "googlePlay": "Google Play",
     "appStore": "App Store",
     "noApp": "No app?",
-    "orderBrowser": "Order in your browser →"
+    "orderBrowser": "Order in your browser →",
+    "sceneCaption": "On its way to your door"
   },
   "features": {
     "deliveryTitle": "Free delivery",

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 // Mobile hamburger + full-screen slide-in menu. Locks body scroll while
 // open, closes on link tap / Escape / resize back to desktop.
-export default function MobileNav({ links, cta, contact }) {
+export default function MobileNav({ links, cta, contact, locale, languageLabel }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
 
@@ -69,6 +70,11 @@ export default function MobileNav({ links, cta, contact }) {
         >
           {cta.label}
         </a>
+        {locale ? (
+          <div className="mobile-menu-lang">
+            <LanguageSwitcher locale={locale} label={languageLabel} />
+          </div>
+        ) : null}
         {contact ? (
           <p className="mobile-menu-contact">
             Questions?{" "}

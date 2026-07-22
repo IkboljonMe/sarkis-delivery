@@ -11,14 +11,22 @@
     "googlePlay": "Google Play",
     "appStore": "App Store",
     "noApp": "Keine App?",
-    "orderBrowser": "Im Browser bestellen →"
+    "orderBrowser": "Im Browser bestellen →",
+    "sceneCaption": "Auf dem Weg zu Ihrer Tür"
   },
   "nav": {
     "howItWorks": "Wie es funktioniert",
     "cities": "Städte",
     "getTheApp": "App holen",
     "orderOnline": "Online bestellen",
-    "chatOnWhatsapp": "Auf WhatsApp chatten"
+    "chatOnWhatsapp": "Auf WhatsApp chatten",
+    "language": "Sprache"
+  },
+  "promo": {
+    "ribbon": "50% Rabatt auf Ihre erste Bestellung",
+    "ribbonCta": "Jetzt bestellen →",
+    "badge": "50% RABATT auf die erste Bestellung",
+    "dismiss": "Schließen"
   },
   "features": {
     "deliveryTitle": "Kostenlose Lieferung",

@@ -39,7 +39,7 @@ body {
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: calc(var(--header-h) + 16px);
+  scroll-padding-top: calc(var(--header-h) + 58px);
 }
 
 body {
@@ -100,15 +100,6 @@ body.nav-locked {
   from {
     opacity: 0;
     transform: scale(0.94) translateY(16px);
-  }
-}
-
-@keyframes float {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-12px);
   }
 }
 
@@ -381,14 +372,252 @@ section[id] {
 
 /* ---------- Header ---------- */
 
-.site-header {
+/* Ribbon + header ride together in one sticky stack, so dismissing the
+   ribbon leaves the header flush at the top with no leftover gap. */
+.top-stack {
   position: sticky;
   top: 0;
   z-index: 50;
+}
+
+.site-header {
   background: rgba(10, 10, 10, 0.82);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Promo ribbon ---------- */
+
+.promo-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 44px 0 12px;
+  min-height: 42px;
+  position: relative;
+  text-align: center;
+  color: #1a1204;
+  background: linear-gradient(100deg, var(--gold-light), var(--accent));
+  background-size: 200% 100%;
+  animation: ribbon-shimmer 7s linear infinite;
+  box-shadow: 0 2px 14px rgba(200, 151, 42, 0.3);
+}
+
+@keyframes ribbon-shimmer {
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.promo-ribbon-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.promo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--font-display, inherit);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--gold-light);
+  background: #0a0a0a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.promo-ribbon-text {
+  letter-spacing: 0.2px;
+}
+
+.promo-ribbon-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13.5px;
+  white-space: nowrap;
+  background: rgba(10, 10, 10, 0.14);
+  border: 1px solid rgba(10, 10, 10, 0.25);
+  transition: background 0.25s ease, transform 0.25s var(--ease-out);
+}
+
+.promo-ribbon-main:hover .promo-ribbon-cta {
+  background: rgba(10, 10, 10, 0.9);
+  color: var(--gold-light);
+  transform: translateX(2px);
+}
+
+.promo-ribbon-close {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #1a1204;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.promo-ribbon-close:hover {
+  background: rgba(10, 10, 10, 0.16);
+}
+
+@media (max-width: 560px) {
+  .promo-ribbon-main {
+    gap: 8px;
+    font-size: 13px;
+  }
+  .promo-ribbon-cta {
+    display: none;
+  }
+}
+
+/* ---------- Language switcher ---------- */
+
+.lang {
+  position: relative;
+}
+
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.lang-btn:hover {
+  border-color: rgba(232, 184, 75, 0.55);
+  color: var(--gold-light);
+}
+
+.lang-code {
+  letter-spacing: 0.5px;
+}
+
+.lang-chevron {
+  transition: transform 0.25s var(--ease-out);
+  opacity: 0.7;
+}
+
+.lang-btn[aria-expanded="true"] .lang-chevron {
+  transform: rotate(180deg);
+}
+
+.lang-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top right;
+  transition: opacity 0.2s ease, transform 0.2s var(--ease-out),
+    visibility 0s linear 0.2s;
+}
+
+.lang-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.2s ease, transform 0.2s var(--ease-out);
+}
+
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.lang-option:hover {
+  background: var(--surface-2);
+  color: var(--gold-light);
+}
+
+.lang-option.is-active {
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+.lang-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.lang-check {
+  margin-left: auto;
+  color: var(--gold-light);
+}
+
+.mobile-menu-lang {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.32s;
+}
+
+.mobile-menu.is-open .mobile-menu-lang {
+  opacity: 1;
+}
+
+/* The mobile menu opens the language list upward from a centered button. */
+.mobile-menu-lang .lang-menu {
+  right: auto;
+  left: 50%;
+  transform: translate(-50%, -6px) scale(0.98);
+  transform-origin: bottom center;
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.mobile-menu-lang .lang-menu.is-open {
+  transform: translateX(-50%);
 }
 
 .header-inner {
@@ -743,32 +972,245 @@ section[id] {
   justify-content: center;
 }
 
-.logo-halo {
+/* ---------- First-order discount badge (hero) ---------- */
+
+.promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 7px 16px 7px 7px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--gold-light);
+  background: rgba(200, 151, 42, 0.1);
+  border: 1px solid rgba(232, 184, 75, 0.4);
+  box-shadow: inset 0 0 22px rgba(200, 151, 42, 0.08);
+}
+
+.promo-badge-pct {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-family: var(--font-display, inherit);
+  font-size: 14px;
+  font-weight: 800;
+  color: #0a0a0a;
+  background: linear-gradient(135deg, var(--gold-light), var(--accent));
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.3);
+}
+
+@media (max-width: 900px) {
+  .promo-badge {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ---------- Delivery scene (animated hero visual) ---------- */
+
+.delivery-scene {
   position: relative;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 42%, rgba(200, 151, 42, 0.22), rgba(20, 20, 20, 0.4) 68%);
-  border: 1px solid rgba(200, 151, 42, 0.28);
-  box-shadow: 0 30px 80px rgba(200, 151, 42, 0.18), inset 0 0 60px rgba(0, 0, 0, 0.45);
-  animation: float 7s ease-in-out infinite alternate;
+}
+
+.scene-halo {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 46%, rgba(200, 151, 42, 0.24), rgba(20, 20, 20, 0.35) 66%);
+  border: 1px solid rgba(200, 151, 42, 0.26);
+  box-shadow: 0 30px 80px rgba(200, 151, 42, 0.16), inset 0 0 60px rgba(0, 0, 0, 0.45);
+}
+
+.scene-halo::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  border: 1px dashed rgba(200, 151, 42, 0.2);
+  animation: spin-slow 40s linear infinite;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scene-stage {
+  position: relative;
+  width: 78%;
+  z-index: 2;
+}
+
+.van-wrap {
+  position: relative;
+  animation: van-bob 1.4s ease-in-out infinite alternate;
   will-change: transform;
 }
 
-.logo-halo::before {
-  content: "";
-  position: absolute;
-  inset: -18px;
-  border-radius: 50%;
-  border: 1px dashed rgba(200, 151, 42, 0.22);
+@keyframes van-bob {
+  from {
+    transform: translateY(0) rotate(-0.6deg);
+  }
+  to {
+    transform: translateY(-6px) rotate(0.6deg);
+  }
 }
 
-.logo-halo img {
-  border-radius: 28px;
-  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+.van-svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
+}
+
+/* Wheels spin in place. */
+.wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wheel-spin 0.9s linear infinite;
+}
+
+@keyframes wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Warm steam puffs rising from the fresh bread. */
+.van-steam {
+  position: absolute;
+  top: 8%;
+  left: 16%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5), transparent 70%);
+  opacity: 0;
+  animation: steam-rise 3s ease-in-out infinite;
+}
+
+.van-steam.s2 {
+  left: 23%;
+  animation-delay: 1.5s;
+}
+
+@keyframes steam-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  35% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-26px) scale(1.5);
+  }
+}
+
+/* Road with dashes streaming past to imply motion. */
+.road {
+  position: relative;
+  margin-top: 2px;
+  height: 26px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, #1a1a1a, #101010);
+  overflow: hidden;
+}
+
+.road-dashes {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: -40px;
+  height: 3px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(232, 184, 75, 0.75) 0 20px,
+    transparent 20px 40px
+  );
+  animation: road-scroll 0.5s linear infinite;
+}
+
+@keyframes road-scroll {
+  to {
+    transform: translate(-40px, -50%);
+  }
+}
+
+.delivery-word {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  transform: translateX(-50%);
+  font-family: var(--font-display, inherit);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: lowercase;
+  background: linear-gradient(120deg, var(--gold-light), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: word-fade 3.4s ease-in-out infinite;
+}
+
+@keyframes word-fade {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  40%, 60% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Baked goods drifting around the van. */
+.goodie {
+  position: absolute;
+  z-index: 1;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+  animation: goodie-float 5s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.goodie-1 { top: 8%; left: 4%; animation-delay: 0s; }
+.goodie-2 { top: 16%; right: 6%; animation-delay: 0.8s; }
+.goodie-3 { bottom: 20%; left: 2%; animation-delay: 1.6s; }
+.goodie-4 { bottom: 12%; right: 4%; animation-delay: 2.2s; }
+
+@keyframes goodie-float {
+  from {
+    transform: translateY(0) rotate(-6deg);
+  }
+  to {
+    transform: translateY(-14px) rotate(6deg);
+  }
+}
+
+.scene-caption {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {
@@ -787,13 +1229,8 @@ section[id] {
   .hero-visual {
     order: -1;
   }
-  .logo-halo {
-    width: 200px;
-    height: 200px;
-  }
-  .logo-halo img {
-    width: 140px;
-    height: 140px;
+  .delivery-scene {
+    max-width: 320px;
   }
 }
 

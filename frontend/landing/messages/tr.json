@@ -1,71 +1,79 @@
 {
   "meta": {
-    "title": "{app} — Fresh traditional breads, delivered to your door",
-    "description": "Sarko Delivery bakes national and traditional breads and delivers them to your door in Berlin, Hamburg, Frankfurt and München. Free delivery, pay cash on arrival."
+    "title": "{app} — Taze geleneksel ekmekler, kapınıza teslim",
+    "description": "Sarko Delivery ulusal ve geleneksel ekmekler pişirir ve Berlin, Hamburg, Frankfurt ve Münih'te kapınıza teslim eder. Ücretsiz teslimat, kapıda nakit ödeme."
   },
   "nav": {
-    "howItWorks": "How it works",
-    "cities": "Cities",
-    "getTheApp": "Get the app",
-    "orderOnline": "Order online",
-    "chatOnWhatsapp": "Chat on WhatsApp"
+    "howItWorks": "Nasıl çalışır",
+    "cities": "Şehirler",
+    "getTheApp": "Uygulamayı indir",
+    "orderOnline": "Online sipariş",
+    "chatOnWhatsapp": "WhatsApp'tan yaz",
+    "language": "Dil"
+  },
+  "promo": {
+    "ribbon": "İlk siparişinizde %50 indirim kazanın",
+    "ribbonCta": "Sipariş ver →",
+    "badge": "İlk siparişte %50 İNDİRİM",
+    "dismiss": "Kapat"
   },
   "hero": {
-    "eyebrow": "Baked with tradition · Delivered in Germany",
-    "titleLine1": "Fresh traditional breads,",
-    "titleLine2": "delivered to your door",
-    "sub": "National and traditional breads and baked goods, baked to order and brought straight to your home. Free delivery — pay cash when it arrives.",
+    "eyebrow": "Gelenekle pişirildi · Almanya'da teslim",
+    "titleLine1": "Taze geleneksel ekmekler,",
+    "titleLine2": "kapınıza teslim",
+    "sub": "Siparişe göre pişirilen ulusal ve geleneksel ekmekler ve fırın ürünleri, doğrudan evinize getirilir. Ücretsiz teslimat — geldiğinde nakit ödeyin.",
     "googlePlay": "Google Play",
     "appStore": "App Store",
-    "noApp": "No app?",
-    "orderBrowser": "Order in your browser →"
+    "noApp": "Uygulama yok mu?",
+    "orderBrowser": "Tarayıcıdan sipariş ver →",
+    "sceneCaption": "Kapınıza doğru yolda"
   },
   "features": {
-    "deliveryTitle": "Free delivery",
-    "deliverySub": "No delivery fees, ever. The price you see is the price you pay.",
-    "cashTitle": "Cash on delivery",
-    "cashSub": "No cards, no prepayment. Pay in cash when your bread arrives.",
-    "freshTitle": "Fresh & traditional",
-    "freshSub": "National recipes baked the way they have always been baked.",
-    "chatTitle": "In-app chat support",
-    "chatSub": "Questions about an order? Chat with our team right in the app."
+    "deliveryTitle": "Ücretsiz teslimat",
+    "deliverySub": "Asla teslimat ücreti yok. Gördüğünüz fiyat ödediğiniz fiyattır.",
+    "cashTitle": "Kapıda nakit ödeme",
+    "cashSub": "Kart yok, ön ödeme yok. Ekmeğiniz geldiğinde nakit ödeyin.",
+    "freshTitle": "Taze & geleneksel",
+    "freshSub": "Her zaman pişirildiği gibi pişirilen ulusal tarifler.",
+    "chatTitle": "Uygulama içi sohbet desteği",
+    "chatSub": "Siparişle ilgili sorular mı? Ekibimizle uygulama içinde sohbet edin."
   },
   "how": {
-    "eyebrow": "Simple as it should be",
-    "title": "How it works",
-    "sub": "From our oven to your table in three simple steps.",
-    "step1Title": "Browse & order",
-    "step1Sub": "Pick your favourite breads and baked goods in the app or in your browser and place your order in minutes.",
-    "step2Title": "We bake & schedule",
-    "step2Sub": "We bake your order fresh and schedule it for the next delivery day in your city.",
-    "step3Title": "Delivered to your door",
-    "step3Sub": "Your order arrives at your door — pay cash on delivery and enjoy it warm."
+    "eyebrow": "Olması gerektiği kadar basit",
+    "title": "Nasıl çalışır",
+    "sub": "Fırınımızdan sofranıza üç basit adımda.",
+    "step1Title": "Göz at & sipariş ver",
+    "step1Sub": "Favori ekmeklerinizi uygulamada veya tarayıcıda seçin ve dakikalar içinde sipariş verin.",
+    "step2Title": "Pişirir & planlarız",
+    "step2Sub": "Siparişinizi taze pişirir ve şehrinizdeki bir sonraki teslimat günü için planlarız.",
+    "step3Title": "Kapınıza teslim",
+    "step3Sub": "Siparişiniz kapınıza gelir — kapıda nakit ödeyin ve sıcak sıcak keyfini çıkarın."
   },
   "cities": {
-    "eyebrow": "Across Germany",
-    "title": "Where we deliver",
-    "sub": "Door delivery in four German cities — and counting."
+    "eyebrow": "Almanya genelinde",
+    "title": "Nerelere teslim ediyoruz",
+    "sub": "Dört Alman şehrinde kapıya teslimat — ve artıyor."
   },
   "getApp": {
-    "eyebrow": "Free on Android & iOS",
-    "title": "Get the {app} app",
-    "sub": "Order in a couple of taps, chat with our team and track your deliveries — free on Android and iOS.",
-    "preferWeb": "Prefer the web?",
-    "orderOnlineFull": "Order online at shop.sarko-delivery.de →"
+    "eyebrow": "Android & iOS için ücretsiz",
+    "title": "{app} uygulamasını indirin",
+    "sub": "Birkaç dokunuşla sipariş verin, ekibimizle sohbet edin ve teslimatlarınızı takip edin — Android ve iOS için ücretsiz.",
+    "preferWeb": "Web'i mi tercih edersiniz?",
+    "orderOnlineFull": "shop.sarko-delivery.de adresinden online sipariş verin →"
   },
   "cta": {
-    "title": "Hungry for real bread?",
-    "sub": "Fresh, traditional and at your door — with free delivery and cash payment on arrival.",
-    "btn": "Order online now"
+    "title": "Gerçek ekmek için aç mısınız?",
+    "sub": "Taze, geleneksel ve kapınızda — ücretsiz teslimat ve kapıda nakit ödeme ile.",
+    "btn": "Şimdi online sipariş ver"
   },
   "footer": {
-    "brandSub": "Traditional breads and baked goods, baked fresh and delivered to your door.",
-    "explore": "Explore",
-    "contact": "Contact",
-    "legal": "Legal",
-    "privacy": "Privacy Policy",
-    "terms": "Terms of Service",
-    "deleteAccount": "Delete account",
-    "allRights": "All rights reserved."
+    "brandSub": "Geleneksel ekmekler ve fırın ürünleri, taze pişirilip kapınıza teslim edilir.",
+    "explore": "Keşfet",
+    "contact": "İletişim",
+    "legal": "Yasal",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Hizmet Şartları",
+    "deleteAccount": "Hesabı sil",
+    "allRights": "Tüm hakları saklıdır."
   }
 }
