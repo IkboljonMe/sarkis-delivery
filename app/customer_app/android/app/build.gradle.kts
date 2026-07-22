@@ -2,10 +2,12 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Firebase (FCM) — reads google-services.json to enable push tokens.
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.sarkisbread.pl"
+    namespace = "com.sarko.site"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -17,8 +19,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.sarkisbread.pl"
+        applicationId = "com.sarko.site"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -48,4 +49,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Firebase Cloud Messaging (native token + background delivery). No Firebase
+    // Dart SDK — the token is bridged to Flutter over the `sarko/push` channel.
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 }

@@ -3,3 +3,8 @@ dist/
 /uploads/
 .env
 *.log
+
+# Secrets / Firebase
+secrets/
+*firebase-adminsdk*.json
+google-services.json

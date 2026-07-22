@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "30587707775",
+    "project_id": "sarko-site",
+    "storage_bucket": "sarko-site.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:30587707775:android:298c93c6aca03933747a4a",
+        "android_client_info": {
+          "package_name": "com.sarko.site"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCElziexS4NKo_0XcKsUy9lVxvwrfeR3gU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

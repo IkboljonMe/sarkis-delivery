@@ -1,4 +1,4 @@
-package com.sarkisbread.pl
+package com.sarko.site.admin
 
 import io.flutter.embedding.android.FlutterActivity
 

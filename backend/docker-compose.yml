@@ -28,6 +28,9 @@ services:
       - "3000:3000"
     volumes:
       - uploads:/app/uploads
+      # FCM service-account key (gitignored; scp it to ./secrets on the host).
+      # Read by GOOGLE_APPLICATION_CREDENTIALS=./secrets/fcm-service-account.json
+      - ./secrets:/app/secrets:ro
     depends_on:
       db:
         condition: service_healthy
