@@ -2,13 +2,27 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/message_model.dart';
+import '../realtime/socket_service.dart';
 import '../services/message_service.dart';
+import '../sync/sync_engine.dart';
 
 class MessageProvider extends ChangeNotifier {
   final MessageService _service = MessageService.instance;
 
   Stream<List<MessageModel>> messagesStream(String topicId) =>
       _service.messagesStream(topicId);
+
+  /// Called when a chat screen opens: join its realtime room and pull the
+  /// latest messages so the screen recovers history on its own, independent of
+  /// whether the login-time sync succeeded. Throws on pull failure so the UI
+  /// can show a retry affordance.
+  Future<void> openChat(String topicId) async {
+    SocketService.instance.joinChat(topicId);
+    await SyncEngine.instance.syncMessages(topicId);
+  }
+
+  /// Called when a chat screen closes: leave its realtime room.
+  void closeChat(String topicId) => SocketService.instance.leaveChat(topicId);
 
   Stream<int> unreadStream(String topicId) =>
       _service.customerUnreadStream(topicId);
@@ -55,6 +69,9 @@ class MessageProvider extends ChangeNotifier {
       uploadCount: uploadCount,
     );
   }
+
+  Future<void> resendMessage(String topicId, String localId) =>
+      _service.resendMessage(topicId, localId);
 
   Future<void> patchMessage(
           String topicId, String msgId, Map<String, dynamic> data) =>

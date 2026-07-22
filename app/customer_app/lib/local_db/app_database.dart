@@ -183,6 +183,9 @@ class Messages extends Table {
   // Local media path cache for offline viewing, keyed by original mediaUrl.
   TextColumn get localMediaPath => text().withDefault(const Constant(''))();
   BoolColumn get pendingSync => boolean().withDefault(const Constant(false))();
+  // Set when the server rejected this optimistic message (non-connectivity
+  // failure) so the bubble can show a "failed — tap to retry" state.
+  BoolColumn get sendFailed => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -304,7 +307,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(messages, messages.sendFailed);
+          }
+        },
+      );
 
   /// Wipes every table — called on logout so nothing from the previous
   /// account lingers locally.

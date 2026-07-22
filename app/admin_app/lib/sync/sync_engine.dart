@@ -20,10 +20,18 @@ class SyncEngine {
   final ApiClient _api;
   final SocketService _socket;
   StreamSubscription? _eventsSub;
+  StreamSubscription? _connectSub;
 
   void start() {
     _eventsSub?.cancel();
+    _connectSub?.cancel();
     _eventsSub = _socket.events.listen(_handleEvent);
+    // On every (re)connect, pull anything missed while disconnected. The very
+    // first connect overlaps the login fullSync — harmless since every sync is
+    // an idempotent upsert.
+    _connectSub = _socket.onConnect.listen((_) {
+      fullSync().catchError((_) {});
+    });
     _socket.connect();
     MutationQueue.instance.start();
     MutationQueue.instance.drain();
@@ -31,7 +39,9 @@ class SyncEngine {
 
   Future<void> stop() async {
     await _eventsSub?.cancel();
+    await _connectSub?.cancel();
     _eventsSub = null;
+    _connectSub = null;
     _socket.disconnect();
     await MutationQueue.instance.stop();
   }
@@ -140,14 +150,21 @@ class SyncEngine {
 
   Future<void> syncMessages(String topicId) async {
     final since = await _cursor('messages:$topicId');
+    // First load pulls recent history; catch-up uses `updatedSince` so edits,
+    // deletes, reactions and read-state that changed while offline are pulled
+    // too (not just brand-new messages, which is all `after`/createdAt saw).
     final path = since == null
         ? '/v1/messages/$topicId'
-        : '/v1/messages/$topicId?after=${Uri.encodeComponent(since.toIso8601String())}';
+        : '/v1/messages/$topicId?updatedSince=${Uri.encodeComponent(since.toIso8601String())}';
     final rows = await _api.get(path) as List;
+    var maxUpdated = since ?? DateTime.fromMillisecondsSinceEpoch(0);
     for (final row in rows) {
-      await _upsertMessage(row as Map, topicId: topicId);
+      final map = row as Map;
+      await _upsertMessage(map, topicId: topicId);
+      final u = _parseDate(map['updatedAt']);
+      if (u != null && u.isAfter(maxUpdated)) maxUpdated = u;
     }
-    if (rows.isNotEmpty) await _setCursor('messages:$topicId', DateTime.now());
+    if (rows.isNotEmpty) await _setCursor('messages:$topicId', maxUpdated);
   }
 
   Future<void> _upsertMessage(Map json, {String? topicId}) async {

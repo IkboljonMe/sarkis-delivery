@@ -28,7 +28,19 @@ class SocketService {
 
   io.Socket? _socket;
   final _controller = StreamController<RealtimeEvent>.broadcast();
+  final _connects = StreamController<void>.broadcast();
+
+  /// Topics we should be in. Re-emitted on every (re)connect so the client
+  /// self-heals its room membership after a network blip or token refresh —
+  /// socket.io reconnects the transport but the server-side room joins do not
+  /// survive, so we have to rejoin ourselves.
+  final Set<String> _activeTopics = {};
+
   Stream<RealtimeEvent> get events => _controller.stream;
+
+  /// Fires on every successful (re)connect handshake. SyncEngine listens to
+  /// run a `since=` catch-up pull for anything missed while disconnected.
+  Stream<void> get onConnect => _connects.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -51,11 +63,20 @@ class SocketService {
     final socket = io.io(
       AppConstants.apiBaseUrl,
       io.OptionBuilder()
-          .setTransports(['websocket'])
+          // Allow polling as a fallback so a proxy that won't upgrade the
+          // websocket still establishes a connection.
+          .setTransports(['websocket', 'polling'])
           .disableAutoConnect()
           .setAuth({'token': token})
           .build(),
     );
+    socket.onConnect((_) {
+      // Re-join every room we should be in, then let SyncEngine reconcile.
+      for (final topicId in _activeTopics) {
+        socket.emit('chat:join', topicId);
+      }
+      _connects.add(null);
+    });
     for (final name in _domainEvents) {
       socket.on(name, (data) => _controller.add(RealtimeEvent(name, data)));
     }
@@ -68,8 +89,15 @@ class SocketService {
   /// expired (the gateway only checks the token once, at handshake time).
   void reconnectWithFreshToken() => connect();
 
-  void joinChat(String topicId) => _socket?.emit('chat:join', topicId);
-  void leaveChat(String topicId) => _socket?.emit('chat:leave', topicId);
+  void joinChat(String topicId) {
+    _activeTopics.add(topicId);
+    _socket?.emit('chat:join', topicId);
+  }
+
+  void leaveChat(String topicId) {
+    _activeTopics.remove(topicId);
+    _socket?.emit('chat:leave', topicId);
+  }
 
   void disconnect() {
     _socket?.dispose();

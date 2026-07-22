@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/admin_auth_provider.dart';
+import '../services/push_service.dart';
 import '../sync/sync_engine.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
@@ -31,6 +32,7 @@ class _AdminSplashScreenState extends State<AdminSplashScreen> {
     if (loggedIn) {
       SyncEngine.instance.fullSync().catchError((_) {});
       SyncEngine.instance.start();
+      PushService.instance.register(); // background/closed-app push
     }
     Navigator.pushReplacement(
       context,

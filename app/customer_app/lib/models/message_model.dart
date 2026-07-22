@@ -1,5 +1,8 @@
 import '../utils/json_date.dart';
 
+/// Delivery state of one of *my* outgoing messages, for the status ticks.
+enum MsgSendStatus { sending, sent, read, failed }
+
 /// A chat message inside a topic (topicId == userId).
 class MessageModel {
   final String id;
@@ -27,6 +30,8 @@ class MessageModel {
   final bool uploading; // media still uploading (optimistic send)
   final int uploadCount; // expected number of album photos while uploading
   final bool deleted; // removed for everyone -> shows "message deleted"
+  final bool pendingSync; // optimistic row not yet acked by the server
+  final bool sendFailed; // server rejected this optimistic message
 
   MessageModel({
     required this.id,
@@ -51,7 +56,17 @@ class MessageModel {
     this.uploading = false,
     this.uploadCount = 0,
     this.deleted = false,
+    this.pendingSync = false,
+    this.sendFailed = false,
   });
+
+  /// Status ticks for one of my own outgoing messages.
+  MsgSendStatus get sendStatus {
+    if (sendFailed) return MsgSendStatus.failed;
+    if (pendingSync) return MsgSendStatus.sending;
+    if (isRead) return MsgSendStatus.read;
+    return MsgSendStatus.sent;
+  }
 
   bool get hasReply => replyToId.isNotEmpty;
   bool get isImage => type == 'image';

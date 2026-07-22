@@ -22,6 +22,7 @@ class MessageBubble extends StatelessWidget {
   final void Function(MessageModel) onLongPress;
   final void Function(String replyToId) onQuoteTap;
   final void Function(String orderId) onOrderTap;
+  final void Function(MessageModel)? onRetry;
 
   const MessageBubble({
     super.key,
@@ -34,6 +35,7 @@ class MessageBubble extends StatelessWidget {
     required this.onLongPress,
     required this.onQuoteTap,
     required this.onOrderTap,
+    this.onRetry,
   });
 
   @override
@@ -105,11 +107,28 @@ class MessageBubble extends StatelessWidget {
               color: mine ? Colors.white70 : AppColors.textMuted)),
       if (mine) ...[
         const SizedBox(width: 4),
-        Icon(m.isRead || m.delivered ? Icons.done_all : Icons.done,
-            size: 14,
-            color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white70),
+        _statusIcon(m, base: Colors.white70),
       ],
     ];
+  }
+
+  /// WhatsApp-style status tick for my outgoing messages.
+  Widget _statusIcon(MessageModel m, {required Color base}) {
+    switch (m.sendStatus) {
+      case MsgSendStatus.sending:
+        return Icon(Icons.access_time, size: 13, color: base);
+      case MsgSendStatus.failed:
+        return GestureDetector(
+          onTap: onRetry == null ? null : () => onRetry!(m),
+          child: const Icon(Icons.error_outline,
+              size: 15, color: Color(0xFFFF6B6B)),
+        );
+      case MsgSendStatus.read:
+        return const Icon(Icons.done_all,
+            size: 14, color: Color(0xFF7FE0FF));
+      case MsgSendStatus.sent:
+        return Icon(Icons.done_all, size: 14, color: base);
+    }
   }
 
   Widget _metaChip(MessageModel m, bool mine, String time) {
@@ -126,9 +145,7 @@ class MessageBubble extends StatelessWidget {
               style: const TextStyle(fontSize: 10, color: Colors.white)),
           if (mine) ...[
             const SizedBox(width: 4),
-            Icon(m.isRead || m.delivered ? Icons.done_all : Icons.done,
-                size: 14,
-                color: m.isRead ? const Color(0xFF7FE0FF) : Colors.white),
+            _statusIcon(m, base: Colors.white),
           ],
         ],
       ),

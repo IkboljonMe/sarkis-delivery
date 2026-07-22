@@ -4515,6 +4515,16 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("pending_sync" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _sendFailedMeta =
+      const VerificationMeta('sendFailed');
+  @override
+  late final GeneratedColumn<bool> sendFailed = GeneratedColumn<bool>(
+      'send_failed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("send_failed" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -4541,7 +4551,8 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         createdAt,
         updatedAt,
         localMediaPath,
-        pendingSync
+        pendingSync,
+        sendFailed
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4692,6 +4703,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
           pendingSync.isAcceptableOrUnknown(
               data['pending_sync']!, _pendingSyncMeta));
     }
+    if (data.containsKey('send_failed')) {
+      context.handle(
+          _sendFailedMeta,
+          sendFailed.isAcceptableOrUnknown(
+              data['send_failed']!, _sendFailedMeta));
+    }
     return context;
   }
 
@@ -4751,6 +4768,8 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
           DriftSqlType.string, data['${effectivePrefix}local_media_path'])!,
       pendingSync: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}pending_sync'])!,
+      sendFailed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}send_failed'])!,
     );
   }
 
@@ -4786,6 +4805,7 @@ class Message extends DataClass implements Insertable<Message> {
   final DateTime updatedAt;
   final String localMediaPath;
   final bool pendingSync;
+  final bool sendFailed;
   const Message(
       {required this.id,
       required this.topicId,
@@ -4811,7 +4831,8 @@ class Message extends DataClass implements Insertable<Message> {
       required this.createdAt,
       required this.updatedAt,
       required this.localMediaPath,
-      required this.pendingSync});
+      required this.pendingSync,
+      required this.sendFailed});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4850,6 +4871,7 @@ class Message extends DataClass implements Insertable<Message> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['local_media_path'] = Variable<String>(localMediaPath);
     map['pending_sync'] = Variable<bool>(pendingSync);
+    map['send_failed'] = Variable<bool>(sendFailed);
     return map;
   }
 
@@ -4890,6 +4912,7 @@ class Message extends DataClass implements Insertable<Message> {
       updatedAt: Value(updatedAt),
       localMediaPath: Value(localMediaPath),
       pendingSync: Value(pendingSync),
+      sendFailed: Value(sendFailed),
     );
   }
 
@@ -4922,6 +4945,7 @@ class Message extends DataClass implements Insertable<Message> {
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       localMediaPath: serializer.fromJson<String>(json['localMediaPath']),
       pendingSync: serializer.fromJson<bool>(json['pendingSync']),
+      sendFailed: serializer.fromJson<bool>(json['sendFailed']),
     );
   }
   @override
@@ -4953,6 +4977,7 @@ class Message extends DataClass implements Insertable<Message> {
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'localMediaPath': serializer.toJson<String>(localMediaPath),
       'pendingSync': serializer.toJson<bool>(pendingSync),
+      'sendFailed': serializer.toJson<bool>(sendFailed),
     };
   }
 
@@ -4981,7 +5006,8 @@ class Message extends DataClass implements Insertable<Message> {
           DateTime? createdAt,
           DateTime? updatedAt,
           String? localMediaPath,
-          bool? pendingSync}) =>
+          bool? pendingSync,
+          bool? sendFailed}) =>
       Message(
         id: id ?? this.id,
         topicId: topicId ?? this.topicId,
@@ -5011,6 +5037,7 @@ class Message extends DataClass implements Insertable<Message> {
         updatedAt: updatedAt ?? this.updatedAt,
         localMediaPath: localMediaPath ?? this.localMediaPath,
         pendingSync: pendingSync ?? this.pendingSync,
+        sendFailed: sendFailed ?? this.sendFailed,
       );
   Message copyWithCompanion(MessagesCompanion data) {
     return Message(
@@ -5056,6 +5083,8 @@ class Message extends DataClass implements Insertable<Message> {
           : this.localMediaPath,
       pendingSync:
           data.pendingSync.present ? data.pendingSync.value : this.pendingSync,
+      sendFailed:
+          data.sendFailed.present ? data.sendFailed.value : this.sendFailed,
     );
   }
 
@@ -5086,7 +5115,8 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('localMediaPath: $localMediaPath, ')
-          ..write('pendingSync: $pendingSync')
+          ..write('pendingSync: $pendingSync, ')
+          ..write('sendFailed: $sendFailed')
           ..write(')'))
         .toString();
   }
@@ -5117,7 +5147,8 @@ class Message extends DataClass implements Insertable<Message> {
         createdAt,
         updatedAt,
         localMediaPath,
-        pendingSync
+        pendingSync,
+        sendFailed
       ]);
   @override
   bool operator ==(Object other) =>
@@ -5147,7 +5178,8 @@ class Message extends DataClass implements Insertable<Message> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.localMediaPath == this.localMediaPath &&
-          other.pendingSync == this.pendingSync);
+          other.pendingSync == this.pendingSync &&
+          other.sendFailed == this.sendFailed);
 }
 
 class MessagesCompanion extends UpdateCompanion<Message> {
@@ -5176,6 +5208,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<DateTime> updatedAt;
   final Value<String> localMediaPath;
   final Value<bool> pendingSync;
+  final Value<bool> sendFailed;
   final Value<int> rowid;
   const MessagesCompanion({
     this.id = const Value.absent(),
@@ -5203,6 +5236,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.updatedAt = const Value.absent(),
     this.localMediaPath = const Value.absent(),
     this.pendingSync = const Value.absent(),
+    this.sendFailed = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MessagesCompanion.insert({
@@ -5231,6 +5265,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.updatedAt = const Value.absent(),
     this.localMediaPath = const Value.absent(),
     this.pendingSync = const Value.absent(),
+    this.sendFailed = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         topicId = Value(topicId),
@@ -5265,6 +5300,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<DateTime>? updatedAt,
     Expression<String>? localMediaPath,
     Expression<bool>? pendingSync,
+    Expression<bool>? sendFailed,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5293,6 +5329,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (localMediaPath != null) 'local_media_path': localMediaPath,
       if (pendingSync != null) 'pending_sync': pendingSync,
+      if (sendFailed != null) 'send_failed': sendFailed,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5323,6 +5360,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       Value<DateTime>? updatedAt,
       Value<String>? localMediaPath,
       Value<bool>? pendingSync,
+      Value<bool>? sendFailed,
       Value<int>? rowid}) {
     return MessagesCompanion(
       id: id ?? this.id,
@@ -5350,6 +5388,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       updatedAt: updatedAt ?? this.updatedAt,
       localMediaPath: localMediaPath ?? this.localMediaPath,
       pendingSync: pendingSync ?? this.pendingSync,
+      sendFailed: sendFailed ?? this.sendFailed,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5432,6 +5471,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (pendingSync.present) {
       map['pending_sync'] = Variable<bool>(pendingSync.value);
     }
+    if (sendFailed.present) {
+      map['send_failed'] = Variable<bool>(sendFailed.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5466,6 +5508,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('updatedAt: $updatedAt, ')
           ..write('localMediaPath: $localMediaPath, ')
           ..write('pendingSync: $pendingSync, ')
+          ..write('sendFailed: $sendFailed, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10139,6 +10182,7 @@ typedef $$MessagesTableCreateCompanionBuilder = MessagesCompanion Function({
   Value<DateTime> updatedAt,
   Value<String> localMediaPath,
   Value<bool> pendingSync,
+  Value<bool> sendFailed,
   Value<int> rowid,
 });
 typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
@@ -10167,6 +10211,7 @@ typedef $$MessagesTableUpdateCompanionBuilder = MessagesCompanion Function({
   Value<DateTime> updatedAt,
   Value<String> localMediaPath,
   Value<bool> pendingSync,
+  Value<bool> sendFailed,
   Value<int> rowid,
 });
 
@@ -10254,6 +10299,9 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get sendFailed => $composableBuilder(
+      column: $table.sendFailed, builder: (column) => ColumnFilters(column));
 }
 
 class $$MessagesTableOrderingComposer
@@ -10344,6 +10392,9 @@ class $$MessagesTableOrderingComposer
 
   ColumnOrderings<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get sendFailed => $composableBuilder(
+      column: $table.sendFailed, builder: (column) => ColumnOrderings(column));
 }
 
 class $$MessagesTableAnnotationComposer
@@ -10429,6 +10480,9 @@ class $$MessagesTableAnnotationComposer
 
   GeneratedColumn<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => column);
+
+  GeneratedColumn<bool> get sendFailed => $composableBuilder(
+      column: $table.sendFailed, builder: (column) => column);
 }
 
 class $$MessagesTableTableManager extends RootTableManager<
@@ -10479,6 +10533,7 @@ class $$MessagesTableTableManager extends RootTableManager<
             Value<DateTime> updatedAt = const Value.absent(),
             Value<String> localMediaPath = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
+            Value<bool> sendFailed = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               MessagesCompanion(
@@ -10507,6 +10562,7 @@ class $$MessagesTableTableManager extends RootTableManager<
             updatedAt: updatedAt,
             localMediaPath: localMediaPath,
             pendingSync: pendingSync,
+            sendFailed: sendFailed,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -10535,6 +10591,7 @@ class $$MessagesTableTableManager extends RootTableManager<
             Value<DateTime> updatedAt = const Value.absent(),
             Value<String> localMediaPath = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
+            Value<bool> sendFailed = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               MessagesCompanion.insert(
@@ -10563,6 +10620,7 @@ class $$MessagesTableTableManager extends RootTableManager<
             updatedAt: updatedAt,
             localMediaPath: localMediaPath,
             pendingSync: pendingSync,
+            sendFailed: sendFailed,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

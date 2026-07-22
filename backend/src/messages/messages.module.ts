@@ -45,6 +45,7 @@ const toMessageJson = (m: Message) => {
     isRead: m.isRead,
     delivered: m.delivered,
     createdAt: m.createdAt.toISOString(),
+    updatedAt: m.updatedAt.toISOString(), // delta-sync cursor (bumped by edits/deletes/reactions/read)
     type: m.type,
     deleted: m.deleted,
     replyToId: extra.replyToId ?? '',
@@ -139,8 +140,21 @@ export class MessagesService {
     return toTopicJson(t);
   }
 
-  async list(user: User, topicId: string, after?: string, limit = 50) {
+  async list(user: User, topicId: string, after?: string, limit = 50, updatedSince?: string) {
     this.assertAccess(user, topicId);
+    // Delta catch-up: `updatedSince` returns everything changed since the
+    // cursor — new messages AND edits/deletes/reactions/read-state — ordered by
+    // updatedAt so nothing that mutated while offline is missed (unlike `after`,
+    // which keys on createdAt and only sees brand-new messages). `after` is
+    // kept for createdAt-ordered scroll-back paging.
+    if (updatedSince) {
+      const rows = await this.prisma.message.findMany({
+        where: { topicId, updatedAt: { gt: new Date(updatedSince) } },
+        orderBy: { updatedAt: 'asc' },
+        take: Math.min(limit, 200),
+      });
+      return rows.map(toMessageJson);
+    }
     const rows = await this.prisma.message.findMany({
       where: {
         topicId,
@@ -332,8 +346,9 @@ export class MessagesController {
     @Param('topicId') topicId: string,
     @Query('after') after?: string,
     @Query('limit') limit?: string,
+    @Query('updatedSince') updatedSince?: string,
   ) {
-    return this.messages.list(user, topicId, after, limit ? Number(limit) : undefined);
+    return this.messages.list(user, topicId, after, limit ? Number(limit) : undefined, updatedSince);
   }
 
   @Post(':topicId')

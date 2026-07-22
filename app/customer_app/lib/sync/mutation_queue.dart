@@ -19,6 +19,8 @@ class MutationQueue {
   MutationQueue._(this._db, this._api);
   static final MutationQueue instance = MutationQueue._(AppDatabase.instance, ApiClient.instance);
 
+  static const _maxRetries = 5;
+
   final AppDatabase _db;
   final ApiClient _api;
   StreamSubscription? _connectivitySub;
@@ -102,11 +104,22 @@ class MutationQueue {
           }
         } on ApiException catch (e) {
           if (e.statusCode == 0) return; // still offline — try again on the next connectivity event
-          // A real rejection (validation, 4xx/5xx) — drop it rather than retry forever,
-          // but keep the error visible for later diagnosis.
-          await (_db.update(_db.pendingMutations)..where((t) => t.id.equals(row.id))).write(
-            PendingMutationsCompanion(retryCount: Value(row.retryCount + 1), lastError: Value(e.message)),
-          );
+          // A real rejection (validation, 4xx/5xx). Flag the optimistic message
+          // so the UI can show a failed/retry state, then give up after a few
+          // attempts rather than retrying forever.
+          final attempts = row.retryCount + 1;
+          if (row.entityType == 'message' && row.localRefId.isNotEmpty) {
+            await (_db.update(_db.messages)..where((t) => t.id.equals(row.localRefId))).write(
+              const MessagesCompanion(sendFailed: Value(true), pendingSync: Value(false)),
+            );
+          }
+          if (attempts >= _maxRetries) {
+            await (_db.delete(_db.pendingMutations)..where((t) => t.id.equals(row.id))).go();
+          } else {
+            await (_db.update(_db.pendingMutations)..where((t) => t.id.equals(row.id))).write(
+              PendingMutationsCompanion(retryCount: Value(attempts), lastError: Value(e.message)),
+            );
+          }
         }
       }
     } finally {

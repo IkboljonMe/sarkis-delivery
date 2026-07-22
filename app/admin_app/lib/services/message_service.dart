@@ -50,7 +50,10 @@ class MessageService {
     final db = AppDatabase.instance;
     return (db.select(db.messages)
           ..where((t) => t.topicId.equals(topicId))
-          ..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)]))
+          // Ascending: index 0 is the oldest, last index is the newest — the
+          // chat list and all its scroll math treat the last item as the
+          // bottom/newest message.
+          ..orderBy([(t) => drift.OrderingTerm.asc(t.createdAt)]))
         .watch()
         .map((rows) => rows.map((r) {
               final extra = r.extraJson.isNotEmpty ? jsonDecode(r.extraJson) as Map<String, dynamic> : <String, dynamic>{};
@@ -75,6 +78,8 @@ class MessageService {
                 uploadCount: (extra['uploadCount'] as num?)?.toInt() ?? 0,
                 reactions: extra['reactions'] != null ? Map<String, String>.from(extra['reactions'] as Map) : const {},
                 isRead: r.isRead,
+                pendingSync: r.pendingSync,
+                sendFailed: r.sendFailed,
               );
             }).toList());
   }
@@ -131,23 +136,64 @@ class MessageService {
           pendingSync: const drift.Value(true),
         ));
 
-    final res = await MutationQueue.instance.run(
-      entityType: 'message',
-      method: 'POST',
-      path: '/v1/messages/$topicId',
-      body: {
-        'type': type,
-        'text': text,
-        ...extra,
-      },
-      localRefId: localId,
-    );
+    return _dispatchSend(topicId, localId, {
+      'type': type,
+      'text': text,
+      ...extra,
+    });
+  }
 
-    if (res != null) {
-      await (db.delete(db.messages)..where((t) => t.id.equals(localId))).go();
-      return (res as Map)['id'] as String;
+  /// POSTs an optimistic message. On success the local row is dropped (the
+  /// server echo replaces it); on a connectivity failure it stays queued and
+  /// `pendingSync` (shows "sending"); on a real server rejection it's flagged
+  /// `sendFailed` so the bubble can offer a retry.
+  Future<String> _dispatchSend(
+      String topicId, String localId, Map<String, dynamic> body) async {
+    final db = AppDatabase.instance;
+    try {
+      final res = await MutationQueue.instance.run(
+        entityType: 'message',
+        method: 'POST',
+        path: '/v1/messages/$topicId',
+        body: body,
+        localRefId: localId,
+      );
+      if (res != null) {
+        await (db.delete(db.messages)..where((t) => t.id.equals(localId))).go();
+        return (res as Map)['id'] as String;
+      }
+      return localId; // queued offline — stays pendingSync
+    } on ApiException catch (e) {
+      if (e.statusCode != 0) {
+        await (db.update(db.messages)..where((t) => t.id.equals(localId)))
+            .write(const MessagesCompanion(
+          sendFailed: drift.Value(true),
+          pendingSync: drift.Value(false),
+        ));
+      }
+      return localId;
     }
-    return localId;
+  }
+
+  /// Re-attempts a previously failed optimistic message (tap-to-retry).
+  Future<void> resendMessage(String topicId, String localId) async {
+    final db = AppDatabase.instance;
+    final r = await (db.select(db.messages)..where((t) => t.id.equals(localId)))
+        .getSingleOrNull();
+    if (r == null) return;
+    await (db.update(db.messages)..where((t) => t.id.equals(localId)))
+        .write(const MessagesCompanion(
+      sendFailed: drift.Value(false),
+      pendingSync: drift.Value(true),
+    ));
+    final extra = r.extraJson.isNotEmpty
+        ? jsonDecode(r.extraJson) as Map<String, dynamic>
+        : <String, dynamic>{};
+    await _dispatchSend(topicId, localId, {
+      'type': r.type,
+      'text': r.content,
+      ...extra,
+    });
   }
 
   Future<void> patchMessage(String topicId, String msgId, Map<String, dynamic> data) async {

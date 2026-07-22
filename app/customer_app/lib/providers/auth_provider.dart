@@ -7,6 +7,7 @@ import '../models/user_model.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/message_service.dart';
+import '../services/push_service.dart';
 import '../services/region_group_service.dart';
 import '../services/user_service.dart';
 import '../sync/sync_engine.dart';
@@ -220,6 +221,7 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
         // failing sync must not make a successful login look failed.
         SyncEngine.instance.fullSync(uid).catchError((_) {});
         SyncEngine.instance.start(uid);
+        PushService.instance.register(); // background/closed-app push
       }
 
       await loadCurrentUser();

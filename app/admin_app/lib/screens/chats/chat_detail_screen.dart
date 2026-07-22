@@ -11,8 +11,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/message_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_auth_provider.dart';
+import '../../realtime/socket_service.dart';
 import '../../services/message_service.dart';
 import '../../services/user_service.dart';
+import '../../sync/sync_engine.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/translate_service.dart';
@@ -90,6 +92,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   int _lastCount = 0;
   bool _pendingScrollToEnd = false;
   UserModel? _customer; // loaded for the call button + profile
+  bool _syncFailed = false; // last history pull failed and cache is empty
 
   @override
   void initState() {
@@ -102,6 +105,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     UserService.instance.getUser(widget.topicId).then((u) {
       if (mounted) setState(() => _customer = u);
     });
+    // Join this customer's realtime room and pull history so the screen
+    // recovers on its own instead of trusting the login-time sync.
+    _openChat();
+  }
+
+  Future<void> _openChat() async {
+    SocketService.instance.joinChat(widget.topicId);
+    try {
+      await SyncEngine.instance.syncMessages(widget.topicId);
+      if (mounted && _syncFailed) setState(() => _syncFailed = false);
+    } catch (_) {
+      if (mounted) setState(() => _syncFailed = true);
+    }
   }
 
   /// When the keyboard opens, only follow to the bottom if already there.
@@ -206,6 +222,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
 
   @override
   void dispose() {
+    SocketService.instance.leaveChat(widget.topicId);
     WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
@@ -519,6 +536,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                 _onMessages(msgs);
                 _ensureTranslations();
                 if (msgs.isEmpty) {
+                  if (_syncFailed) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.cloud_off,
+                              size: 48, color: AppColors.textSecondary),
+                          const SizedBox(height: 12),
+                          Text('Не удалось загрузить сообщения',
+                              style: AppTextStyles.caption),
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: _openChat,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Повторить'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return Center(
                       child:
                           Text('Нет сообщений', style: AppTextStyles.caption));
@@ -638,6 +675,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
       onReplySwipe: (m) => setState(() => _replyTo = m),
       onLongPress: _showReactions,
       onQuoteTap: _scrollToMessage,
+      onRetry: (m) =>
+          MessageService.instance.resendMessage(widget.topicId, m.id),
       onOrderTap: (orderId) => Navigator.push(
         context,
         MaterialPageRoute(

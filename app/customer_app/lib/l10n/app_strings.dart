@@ -88,6 +88,7 @@ const Map<String, String> kEn = {
   'messages': 'Messages',
   'sendMessage': 'Type a message...',
   'noMessages': 'No messages yet',
+  'couldNotLoadMessages': 'Could not load messages',
   'adminOnline': 'Admin',
   'profile': 'Profile',
   'editProfile': 'Edit Profile',

@@ -87,11 +87,30 @@ class _ChatsScreenState extends State<ChatsScreen>
   int _lastCount = 0;
   bool _pendingScrollToEnd = false; // set when I send, to follow my message
 
+  String? _topicId; // the current user's own topic; captured on open
+  bool _syncFailed = false; // last history pull failed and cache is empty
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_onTextChanged);
+    // Join the realtime room and pull history as soon as we know who we are —
+    // the screen recovers on its own instead of trusting the login-time sync.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) _openChat(user.id);
+    });
+  }
+
+  Future<void> _openChat(String topicId) async {
+    _topicId = topicId;
+    try {
+      await context.read<MessageProvider>().openChat(topicId);
+      if (mounted && _syncFailed) setState(() => _syncFailed = false);
+    } catch (_) {
+      if (mounted) setState(() => _syncFailed = true);
+    }
   }
 
   /// When the keyboard opens, only follow to the bottom if the user was
@@ -200,6 +219,8 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   @override
   void dispose() {
+    final topicId = _topicId;
+    if (topicId != null) context.read<MessageProvider>().closeChat(topicId);
     WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
@@ -595,6 +616,29 @@ class _ChatsScreenState extends State<ChatsScreen>
                 _onMessages(user, msgs);
                 _ensureTranslations();
                 if (msgs.isEmpty) {
+                  if (_syncFailed) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.cloud_off,
+                              size: 48, color: AppColors.textSecondary),
+                          const SizedBox(height: 12),
+                          Text(t.t('couldNotLoadMessages'),
+                              style: AppTextStyles.body),
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: () {
+                              final id = _topicId;
+                              if (id != null) _openChat(id);
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: Text(t.t('retry')),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return EmptyState(
                       animation: AppAnim.envelope,
                       icon: Icons.chat_bubble_outline,
@@ -797,6 +841,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       onReplySwipe: (msg) => setState(() => _replyTo = msg),
       onLongPress: (msg) => _showReactions(user, msg),
       onQuoteTap: _scrollToMessage,
+      onRetry: (msg) =>
+          context.read<MessageProvider>().resendMessage(user.id, msg.id),
       onOrderTap: (orderId) => Navigator.push(
         context,
         MaterialPageRoute(

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
+import '../services/push_service.dart';
 import '../sync/sync_engine.dart';
 import '../utils/app_colors.dart';
 import '../widgets/brand_logo.dart';
@@ -95,6 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
       // Background full sync + launch socket for the existing session.
       SyncEngine.instance.fullSync(auth.uid!).catchError((_) {});
       SyncEngine.instance.start(auth.uid!);
+      PushService.instance.register(); // background/closed-app push
     }
 
     Navigator.pushReplacementNamed(

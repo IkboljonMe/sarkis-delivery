@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../local_db/app_database.dart';
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
 import '../sync/sync_engine.dart';
 
 class AdminAuthProvider extends ChangeNotifier with WidgetsBindingObserver {
@@ -78,7 +79,8 @@ class AdminAuthProvider extends ChangeNotifier with WidgetsBindingObserver {
       
       SyncEngine.instance.fullSync().catchError((_) {});
       SyncEngine.instance.start();
-      
+      PushService.instance.register(); // background/closed-app push
+
       return true;
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');

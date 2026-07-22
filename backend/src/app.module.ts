@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { NotificationsInboxModule } from './notifications-inbox/notifications-inbox.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { PushModule } from './push/push.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { SettingsModule } from './settings/settings.module';
 import { ShiftsModule } from './shifts/shifts.module';
@@ -36,6 +37,7 @@ import { ZonesModule } from './zones/zones.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     PrismaModule,
     RealtimeModule,
+    PushModule,
     NotificationsModule,
     NotificationsInboxModule,
     AuthModule,

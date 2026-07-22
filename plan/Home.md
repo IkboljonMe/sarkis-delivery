@@ -17,3 +17,5 @@ Each user request gets its own folder containing:
 - [[landing-redesign-and-shop-webapp/request|2026-07-17 — Landing redesign & shop web app]]
 - [[2026-07-21 firebase removal and rebrand cleanup/request|2026-07-21 — Firebase complete removal & old branding cleanup]]
 - [[2026-07-21 solid cleanup and compression/request|2026-07-21 — SOLID cleanup & compression pass (all codebases)]]
+- [[2026-07-22 landing animation promo and i18n/request|2026-07-22 — Landing animation, 50% promo, & language switcher]]
+- [[2026-07-22 realtime chat reliability and push/request|2026-07-22 — Realtime chat reliability & push (WhatsApp/Telegram-grade)]]
