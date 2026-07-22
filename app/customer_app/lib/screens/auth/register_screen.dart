@@ -70,6 +70,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    // Prefill from an already-established identity (e.g. Google sign-in), so a
+    // new social user only has to accept the terms and set their location.
+    final user = context.read<AuthProvider>().user;
+    if (user != null) {
+      if (user.name.trim().isNotEmpty) _name.text = user.name;
+      if (user.lastName.trim().isNotEmpty) _lastName.text = user.lastName;
+    }
+  }
+
+  @override
   void dispose() {
     _acTimer?.cancel();
     _phoneTimer?.cancel();

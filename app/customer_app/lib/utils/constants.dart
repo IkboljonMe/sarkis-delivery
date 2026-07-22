@@ -38,6 +38,15 @@ class AppConstants {
   static String get translateApiKey =>
       dotenv.maybeGet('GOOGLE_TRANSLATE_API_KEY') ?? '';
 
+  /// Google OAuth *Web/server* client ID, used as `serverClientId` for native
+  /// Google Sign-In. The idToken Google returns is stamped with this as its
+  /// audience, which the backend verifies against GOOGLE_CLIENT_IDS. The
+  /// separate Android OAuth client (registered with the app's SHA-1) authorises
+  /// the app itself and is deliberately NOT referenced here.
+  static String get googleServerClientId =>
+      dotenv.maybeGet('GOOGLE_SERVER_CLIENT_ID') ??
+      '221391501295-54mjhcap1s7dc3mihvpg1ljh90mbqo16.apps.googleusercontent.com';
+
   // --- Groups ---
   // Delivery groups are now admin-drawn map regions (collection
   // `regionGroups`), resolved by point-in-polygon. A group's id is its name.

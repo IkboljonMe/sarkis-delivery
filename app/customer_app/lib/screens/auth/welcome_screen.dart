@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -14,9 +15,34 @@ import '../../widgets/golden_button.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  /// Google sign-in from the welcome screen. A returning Google user (already
+  /// has a delivery address) goes straight in; a brand new one is sent to the
+  /// registration flow to set their delivery location — nothing else is asked.
+  Future<void> _continueWithGoogle(BuildContext context) async {
+    final t = AppLocalizations.of(context);
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.signInWithGoogle();
+    if (!context.mounted) return;
+    if (!ok) {
+      if (auth.error != null) {
+        Fluttertoast.showToast(msg: auth.error!);
+        auth.resetError();
+      }
+      return; // cancelled or failed
+    }
+    if (auth.hasDeliveryAddress) {
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
+    } else {
+      auth.authMode = 'register';
+      Fluttertoast.showToast(msg: t.t('setDeliveryLocation'));
+      Navigator.pushNamedAndRemoveUntil(context, '/register', (r) => false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -64,6 +90,40 @@ class WelcomeScreen extends StatelessWidget {
                 child: Text(t.t('login'),
                     style: const TextStyle(
                         color: AppColors.primary,
+                        fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: AppColors.border)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(t.t('orDivider'), style: AppTextStyles.caption),
+                  ),
+                  const Expanded(child: Divider(color: AppColors.border)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed:
+                    auth.busy ? null : () => _continueWithGoogle(context),
+                icon: auth.busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.primary),
+                      )
+                    : const Icon(Icons.g_mobiledata, size: 28),
+                label: Text(t.t('continueWithGoogle'),
+                    style: const TextStyle(
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600)),
               ),
               const SizedBox(height: 24),

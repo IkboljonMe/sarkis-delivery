@@ -240,6 +240,48 @@ class AuthProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Signs in with Google. On success a backend session is established and the
+  /// profile is loaded. Returns false if the user cancelled or it failed.
+  Future<bool> signInWithGoogle() async {
+    _setBusy(true);
+    _error = null;
+    try {
+      final res = await _auth.signInWithGoogle();
+      if (res == null) {
+        _setBusy(false);
+        return false; // cancelled — not an error
+      }
+      _isNewUser = res['isNewUser'] == true;
+      _status = AuthStatus.authenticated;
+
+      final uid = _auth.uid;
+      if (uid != null) {
+        SyncEngine.instance.fullSync(uid).catchError((_) {});
+        SyncEngine.instance.start(uid);
+        PushService.instance.register();
+      }
+      await loadCurrentUser();
+      _setBusy(false);
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _status = AuthStatus.error;
+      _setBusy(false);
+      return false;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      _status = AuthStatus.error;
+      _setBusy(false);
+      return false;
+    }
+  }
+
+  /// True once the account has a delivery address on file — i.e. registration
+  /// (the location step) is complete and the app can go straight in. A brand
+  /// new Google user has an identity but no address yet.
+  bool get hasDeliveryAddress =>
+      _user != null && _user!.address.trim().isNotEmpty && _user!.lat != null;
+
   Future<bool> saveProfile({
     required String name,
     String lastName = '',

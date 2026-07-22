@@ -96,6 +96,9 @@ class SyncEngine {
 
   Future<void> syncProfile() async {
     final row = await _api.get('/v1/users/me') as Map;
+    // Keep the in-memory/persisted identity in step with the server so uid is
+    // always resolvable (this is what a cold-started session relies on).
+    await _api.setCurrentUser(Map<String, dynamic>.from(row));
     await _db.into(_db.localUser).insertOnConflictUpdate(LocalUserCompanion.insert(
       id: row['id'] as String,
       phone: Value(row['phone'] as String? ?? ''),

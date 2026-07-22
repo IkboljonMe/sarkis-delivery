@@ -43,6 +43,10 @@ class ApiClient {
   Future<void> init() async {
     _accessToken = await _secureSession.readAccessToken();
     _refreshToken = await _secureSession.readRefreshToken();
+    // Restore *who* is logged in, so uid is known before the first network
+    // call — otherwise the profile lookup keys off an empty id and a
+    // perfectly valid session looks logged-out.
+    currentUser = await _secureSession.readUser();
   }
 
   Future<void> saveSession(Map<String, dynamic> auth) async {
@@ -51,7 +55,18 @@ class ApiClient {
     if (auth['user'] is Map) {
       currentUser = Map<String, dynamic>.from(auth['user'] as Map);
     }
-    await _secureSession.save(accessToken: _accessToken, refreshToken: _refreshToken);
+    await _secureSession.save(
+      accessToken: _accessToken,
+      refreshToken: _refreshToken,
+      user: currentUser,
+    );
+  }
+
+  /// Updates the cached current-user (e.g. after a profile sync) and persists
+  /// it so a cold start still knows the logged-in identity.
+  Future<void> setCurrentUser(Map<String, dynamic> user) async {
+    currentUser = Map<String, dynamic>.from(user);
+    await _secureSession.save(user: currentUser);
   }
 
   Future<void> clearSession() async {
